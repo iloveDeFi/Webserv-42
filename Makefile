@@ -1,19 +1,18 @@
 NAME			= webserv
 
-SRCS_LIST	= \
-						main.cpp \
+SRCS_LIST	= 	main.cpp \
 
 SRCS_FOLDER		= srcs
 
-SRCS				= $(addprefix ${SRCS_FOLDER}/, ${SRCS_LIST})
+SRCS			= $(addprefix ${SRCS_FOLDER}/, ${SRCS_LIST})
 
-OBJS				= ${SRCS:.cpp=.o}
+OBJS			= ${SRCS:.cpp=.o}
 
 INCLUDES		= -I includes/Config -I includes/Utils -I includes/HTTP
 
-CC					= clang++
+CC				= clang++
 CFLAGS 			= -Wall -Wextra -Werror -std=c++98 -pthread
-RM					= rm -f
+RM				= rm -f
 
 all:				$(NAME)
 
