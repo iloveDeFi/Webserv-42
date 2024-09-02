@@ -2,7 +2,7 @@ NAME			= webserv
 
 SRCS_LIST	= 	main.cpp \
 
-SRCS_FOLDER		= srcs
+SRCS_FOLDER		= srcs \
 
 SRCS			= $(addprefix ${SRCS_FOLDER}/, ${SRCS_LIST})
 
@@ -13,6 +13,8 @@ INCLUDES		= -I includes/Config -I includes/Utils -I includes/HTTP
 CC				= clang++
 CFLAGS 			= -Wall -Wextra -Werror -std=c++98 -pthread
 RM				= rm -f
+
+# CXXFLAGS 		+= -I/includes/http-request/request/
 
 all:				$(NAME)
 
