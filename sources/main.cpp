@@ -1,5 +1,5 @@
 #include <string>
-#include <iostream
+#include <iostream>
 #include "HttpRequest.hpp"
 
 
@@ -11,7 +11,6 @@ int main(int ac, char **av) {
 
     HttpRequest simulatedRequest;
 
-    // Utilisation des setters pour initialiser les valeurs
     simulatedRequest.setMethod("GET");
     simulatedRequest.setURI("/index.html");
     simulatedRequest.setHTTPVersion("HTTP/1.1");
@@ -20,11 +19,9 @@ int main(int ac, char **av) {
     headers["Host"] = "localhost";
     headers["Connection"] = "keep-alive";
     simulatedRequest.setHeaders(headers);
-
     simulatedRequest.setBody("");
     simulatedRequest.setIsChunked(false);
 
-    // Utilisation des getters pour récupérer les valeurs (exemple)
     std::cout << "Method: " << simulatedRequest.getMethod() << std::endl;
     std::cout << "URI: " << simulatedRequest.getURI() << std::endl;
     std::cout << "HTTP Version: " << simulatedRequest.getHTTPVersion() << std::endl;

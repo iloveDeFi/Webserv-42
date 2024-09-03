@@ -1,6 +1,7 @@
 NAME			= webserv
 
 SRCS_LIST	= 	main.cpp \
+				HttpResponse.
 
 SRCS_FOLDER		= srcs \
 
