@@ -48,3 +48,25 @@ void Client::sendResponse()
 		sent += n;
 	}
 }
+
+void Client::setHttpRequest(const HttpRequest& request)
+{
+	_request = request;
+}
+void Client::setHttpResponse(const HttpResponse& response)
+{
+	_response = response;
+}
+		
+HttpRequest& Client::getHttpRequest()
+{
+	return (_request);
+}
+HttpResponse& Client::getHttpResponse()
+{
+	return (_response);
+}
+int	Client::getClientSocket()
+{
+	return (_socket);
+}

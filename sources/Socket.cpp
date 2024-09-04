@@ -29,7 +29,10 @@ Socket& Socket::operator=(const Socket &other)
 } */
 
 Socket::~Socket()
-{}
+{
+	if (is_open(_fdSocket))
+		Close();
+}
 
 void Socket::Bind()
 {

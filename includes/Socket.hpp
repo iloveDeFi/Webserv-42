@@ -28,14 +28,6 @@ class Socket
 		Socket& operator=(const Socket &other) = delete;
 		~Socket();
 
-		int getFdSocket();
-		struct sockaddr_in& getAddress();
-		socklen_t getLen();
-
-		int setFdSocket();
-		struct sockaddr_in& setAddress();
-		socklen_t setLen();
-
 		void Bind();
 		void Listen();
 		int Accept();
@@ -45,6 +37,11 @@ class Socket
 
 		void SetNonBlocking(bool is_non_blocking);
 		void Close();
+
+		int getFdSocket();
+		struct sockaddr_in& getAddress();
+		socklen_t getLen();
+
 
 		/* class ErrorSocket: public std::exception
 		{

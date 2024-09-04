@@ -85,47 +85,47 @@ void server::handleRequest()
 {
 	fd_set readFds;
 	struct timeval tv;
-	int retval;
+	int tvRes;
 
 	while (true)
 	{  
 		FD_ZERO(&readFds);
 		FD_SET(_serverSocket->getFdSocket(), &readFds);
 
-		// Set timeout as needed
+		// Attendre 5 secondes (et 0microscd) pour un événement sur les 
+		//sockets surveillés avant de retourner.
+		//timeout permet de contrôler la fréquence à laquelle 
+		//le serveur traite les entrées sans être bloqué indéfiniment 
+		//en attente d'activité
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
 
-		retval = select(_serverSocket->getFdSocket() + 1, &readFds, NULL, NULL, &tv);
+		tvRes = select(_serverSocket->getFdSocket() + 1, &readFds, NULL, NULL, &tv);
 
-		if (retval == -1)
+		if (tvRes == -1)
 			throw std::runtime_error("Select error");
-		else if (retval)
+		else if (tvRes == 0)
 		{
-			if (FD_ISSET(_serverSocket->getFdSocket(), &readFds))
-			{
-				int clientFd = _serverSocket->Accept();
-				if (clientFd != -1)
-					handleClient(clientFd);  // Handle each client in a separate method or thread
-			}
-		} 
-		else
+			std::cout << "Timeout occurred, performing routine checks." << std::endl;
+			continue;
+		}
+		if (FD_ISSET(_serverSocket->getFdSocket(), &readFds))
 		{
-			// Handle timeout: perform any periodic checks or maintenance
+			int clientFd = _serverSocket->Accept();
+			if (clientFd != -1)
+				handleClient(clientFd);
 		}
 	}
 }
 
 void server::handleClient(int clientSocket)
 {
-	Client client(clientSocket);//comment avoir l'adresse ip?
+	Client client(clientSocket);
 
 	client.readRequest(readRawData(clientSocket));// parser renvoyé à Alex
 	//il ajoute a client sont attribut _request;
-	client.processRequest(); //gestion de la requete par Baptise
+	client.processRequest(); //gestion de la requete par Baptiste
 	//il ajoute a client sont attribut _response;
-
-	// Renvoyer la _response au client
 	client.sendResponse();
 }
 
@@ -143,9 +143,10 @@ std::string server::readRawData(int clientSocket)
 		if (requestData.find("\r\n\r\n") != std::string::npos)
 			break;
 	}
-
 	if (bytesReceived < 0)
-		perror("Error reading from socket");
+		throw std::runtime_error("Error reading from socket");
 
 	return requestData;
 }
+
+int server::getPort(){return (_port)}

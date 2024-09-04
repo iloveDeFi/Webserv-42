@@ -41,13 +41,13 @@ class server
 		server& operator=(const server &other) = delete;
 		~server();
 
-		int getPort();
 		void loadConfig(const std::string& configFilePath);
 		void handleRequest();
 		void handleClient(int clientSocket);
 		std::string readRawData(int clientSocket);
 
-		void setServerSocket();
+		int getPort();
+
 };
 
 #endif

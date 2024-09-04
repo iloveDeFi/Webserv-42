@@ -23,13 +23,13 @@ class Client
 		void processRequest();
 		void sendResponse();
 
-		void setHttpRequest();
-		void settHttpResponse();
+		void setHttpRequest(const HttpRequest& request);
+		void setHttpResponse(const HttpResponse& response);
 		
 		HttpRequest& getHttpRequest();
 		HttpResponse& getHttpResponse();
 		int	getClientSocket();
-		std::string getIpAddress();
+
 };
 
 
