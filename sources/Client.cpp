@@ -18,7 +18,8 @@ Client& Client::operator=(const Client &src)
 
 Client::~Client()
 {
-	close(_socket);
+	if (is_open(_socket))
+		close(_socket);
 }
 
 void Client::readRequest(const std::string &rawData)

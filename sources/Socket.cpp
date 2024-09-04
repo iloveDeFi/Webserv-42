@@ -31,7 +31,7 @@ Socket& Socket::operator=(const Socket &other)
 Socket::~Socket()
 {
 	if (is_open(_fdSocket))
-		Close();
+		close(_fdSocket);
 }
 
 void Socket::Bind()
@@ -88,11 +88,6 @@ void Socket::SetNonBlocking(bool is_non_blocking)
 		flags = FD_CLOEXEC;
 	if (fcntl(_fdSocket, F_SETFL, flags) == -1)
 		throw std::runtime_error("Failed to configure socket flags");
-}
-
-void Socket::Close()
-{
-	close(_fdSocket);
 }
 
 int Socket::getFdSocket()
