@@ -36,8 +36,7 @@ class server
 		int	_ipAddress,
 		int	_port;
 		int _maxSize; 
-		Location _location;
-		//std::map<std::string, LocationConfig> _locations;
+		std::map<std::string, Location> _locations;
 		
 	public:
 		server(const std::string& fdConfig);
@@ -46,6 +45,7 @@ class server
 		~server();
 
 		void loadConfig(const std::string& configFilePath);
+		Location& parseLocation(std::ifstream config, std::string& value, std::string key);
 		void handleRequest();
 		void prepareFdSets(fd_set &readFds, \
 		const std::vector<int> &clientFds, int &maxFd);

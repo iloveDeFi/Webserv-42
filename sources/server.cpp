@@ -46,11 +46,11 @@ void server::loadConfig(const std::string& configFilePath)
 	std::ifstream config(configFilePath.c_str());
 	if (!config) throw std::runtime_error("Error opening configuration file.");
 	
-	while (std::getline(config, line))
+	while (getline(config, line))
 	{
 		std::istringstream lineStream(line);
-		std::getline(lineStream, key, ':');
-		std::getline(lineStream, value);
+		getline(lineStream, key, ':');
+		getline(lineStream, value);
 		
 		if (key == "listen")
 			_port = stoi(value);
@@ -58,17 +58,18 @@ void server::loadConfig(const std::string& configFilePath)
 			_name = key;
 		else if (key == "size")
 			_maxSize = stoi(value);
-		/* if (key == "root")
-			_locations["default"].root = value;
-		else if (key == "index")
-			_locations["default"].index = parseIndex(value);
-		else if (key == "error")
-			_locations["default"].errorPages.insert(parseError(value));
-		else if (key == "listing")
-			_locations["default"].allowListing = (value == "true"); */
-		
+/* 		else if (key == "location")
+		{
+			_location[value] = parselocation(config, value);
+			
+		} */
 	}
 }
+
+/* Location& server::parseLocation(std::ifstream config, std::string& value, , std::string& key)
+{
+	
+} */
 
 void server::handleRequest()
 {

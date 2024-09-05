@@ -12,18 +12,24 @@
 class Location
 {
 	private:
-		std::string	_root;
-		std::string _index;
+		std::string	_path;
 		std::vector<httpRequestMethod>	_methods;
-		std::map<HttpStatusCode, std::string>	_return;
-		std::map<int, std::string> _errorPages;
-		std::string	_cgiPath;
+		std::map<HttpStatusCode, std::string> _Error;
 
 	public:
 		Location(/* args */);
 		~Location();
+		Location(const Location &other) = delete;
+		Location& operator=(const Location &other) = delete;
 
-		
+		void setPath(const std::string& path);
+		void setMethods(const std::string& methods);
+		void setErrorCode(const std::string& methods);
+
+		std::string& getPath();
+		std::vector<httpRequestMethod>& getMethods();
+		std::map<HttpStatusCode, std::string>& getError();
+
 };
 
 #endif
