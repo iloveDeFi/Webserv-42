@@ -6,6 +6,8 @@
 # include <map>
 # include "Socket.hpp"
 # include "Client.hpp"
+# include "Utils.hpp"
+# include "Location.hpp"
 # include <netinet/in.h>
 # include <sys/socket.h>
 # include <fstream>
@@ -31,8 +33,10 @@ class server
 		/* std::vector<std::string> parseIndex(const std::string& value);
 		std::pair<int, std::string> parseError(const std::string& value); */
 		std::string _name;
+		int	_ipAddress,
 		int	_port;
-		int _maxSize;
+		int _maxSize; 
+		Location _location;
 		//std::map<std::string, LocationConfig> _locations;
 		
 	public:
@@ -43,10 +47,20 @@ class server
 
 		void loadConfig(const std::string& configFilePath);
 		void handleRequest();
+		void prepareFdSets(fd_set &readFds, \
+		const std::vector<int> &clientFds, int &maxFd);
+		void acceptNewClients(const std::vector<int> &clientFds, \
+		int &maxFd);
+		void handleActiveClients(fd_set &readFds, \
+		const std::vector<int> &clientFds);
 		void handleClient(int clientSocket);
 		std::string readRawData(int clientSocket);
 
 		int getPort();
+		int	getSize();
+		Location& getLocation();
+
+		void setIpAddress(int ip);
 
 };
 

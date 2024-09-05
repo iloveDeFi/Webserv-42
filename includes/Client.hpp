@@ -1,10 +1,12 @@
 
 #ifndef CLIENT_HPP
 # define CLIENT_HPP
-# include "server.hpp"
+# include "Server.hpp"
 # include "Socket.hpp"
 # include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
+# include "Location.hpp"
+# include "Utils.hpp"
 
 class Client
 {
@@ -20,8 +22,8 @@ class Client
 		~Client();
 
 		void readRequest(const std::string &rawData);
-		void processRequest();
-		void sendResponse();
+		void processRequest(int port);
+		void sendResponse(Location& location, int size);
 
 		void setHttpRequest(const HttpRequest& request);
 		void setHttpResponse(const HttpResponse& response);

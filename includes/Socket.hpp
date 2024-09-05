@@ -6,8 +6,9 @@
 # include <netinet/in.h>
 # include <fcntl.h>
 # include <unistd.h>
-# include "server.hpp"
-# define MAX_CONNECTIONS 500
+# include "Server.hpp"
+# include "Utils.hpp"
+
 
 class Socket
 {
@@ -36,7 +37,6 @@ class Socket
 		ssize_t Receive(int client_socket, char* buffer, size_t buffer_length, int flags);
 
 		void SetNonBlocking(bool is_non_blocking);
-		void Close();
 
 		int getFdSocket();
 		struct sockaddr_in& getAddress();
