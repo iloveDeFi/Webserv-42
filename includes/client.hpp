@@ -17,7 +17,7 @@ class Client {
 
     public:
         Client(int fd, const std::string& ipAdress);
-        ~Client()
+        ~Client();
         Client(const Client & src);
         Client& operator=(const Client & src);
         void readRequest() const;
