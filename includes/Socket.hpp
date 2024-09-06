@@ -30,7 +30,7 @@ class Socket
 
 		void Bind();
 		void Listen();
-		void Accept();
+		int Accept();
 
 		ssize_t Send(int client_socket, const char* buffer, size_t buffer_length, int flags);
 		ssize_t Receive(int client_socket, char* buffer, size_t buffer_length, int flags);

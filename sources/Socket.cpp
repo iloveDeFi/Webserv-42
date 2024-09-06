@@ -46,10 +46,12 @@ void Socket::Listen()
 		throw std::runtime_error("Error listening socket.");
 }
 
-void Socket::Accept()
+int Socket::Accept()
 {
-	if (accept(_fdSocket, (struct sockaddr*)&_address, &_len) < 0)
+	int socket = accept(_fdSocket, (struct sockaddr*)&_address, &_len);
+	if (socket < 0)
 		throw std::runtime_error("Error accepting socket.");
+	return (socket);
 }
 
 ssize_t Socket::Send(int client_socket, const char* buffer, size_t buffer_length, int flags)
