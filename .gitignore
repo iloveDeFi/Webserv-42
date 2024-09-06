@@ -4,3 +4,4 @@
 # Autres règles d'ignore
 *.log
 *.tmp
+*.DS_Store
