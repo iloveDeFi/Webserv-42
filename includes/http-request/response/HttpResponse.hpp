@@ -19,10 +19,16 @@ class HttpResponse {
         HttpResponse(const HttpResponse& src);
         HttpResponse& operator=(const HttpResponse& src);
 
+        // Setter
         void setHeader(const std::string& name, const std::string& value);
+        // Getter
         std::string getStatusMessage() const;
+        // Other Methods
         std::string toString() const;
         void ensureContentLength();
+        // Response
+        std::string generate404Error(const std::string& uri);
+        std::string generateRedirection(const std::string& newUri);
 };
 
 #endif
