@@ -1,6 +1,6 @@
 #include "HttpRequest.hpp"
 
-HttpRequest::HttpRequest() : _method(""), _uri(""), _version("HTTP/1.1") {}
+HttpRequest::HttpRequest() : _method(""), _uri(""), _version("HTTP/1.1"), _allowedMethods(initMethods()) {}
 
 HttpRequest::~HttpRequest() {}
 
