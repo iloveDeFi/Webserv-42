@@ -26,8 +26,12 @@ std::map<std::string, std::string> HttpRequest::getHeaders() const { return _hea
 std::string HttpRequest::getBody() const { return _body; }
 bool HttpRequest::isChunked() const { return _is_chunked; }
 std::string HttpRequest::getHeader(const std::string& name) const {
-    auto it = _headers.find(name);
-    return it != _headers.end() ? it->second : "";
+    std::map<std::string, std::string>::const_iterator it = _headers.find(name);
+        if (it != _headers.end()) {
+        return it->second;
+    } else {
+        return "";
+    }
 }
 
 // SETTERS
@@ -94,17 +98,25 @@ void HttpRequest::setIsChunked(bool is_chunked) { _is_chunked = is_chunked; }
 //     _body = rawRequest.substr(headers_end + 4);
 // }
 
-std::vector<std::string> HttpRequest::initMethods() {
-    std::vector<std::string> vecMethods;
+// Cleaner to pass from std::vector with linear search O(n) to std::set O(log n) 
+// with loarithmic search and also for element unicity
+std::set<std::string> HttpRequest::initMethods() {
+    std::set<std::string> methods;
 
-    vecMethods.push_back("GET");
-    vecMethods.push_back("HEAD");
-    vecMethods.push_back("POST");
-    vecMethods.push_back("PUT");
-    vecMethods.push_back("DELETE");
-    vecMethods.push_back("CONNECT");
-    vecMethods.push_back("OPTIONS");
-    vecMethods.push_back("TRACE");
-    vecMethods.push_back("PATCH");
-    return vecMethods;
+    methods.insert("GET");
+    methods.insert("HEAD");
+    methods.insert("POST");
+    methods.insert("PUT");
+    methods.insert("DELETE");
+    methods.insert("CONNECT");
+    methods.insert("OPTIONS");
+    methods.insert("TRACE");
+    methods.insert("PATCH");
+    
+    return methods;
+}
+
+bool HttpRequest::isMethodAllowed(const std::string& method) const {
+    std::set<std::string>::const_iterator it = _allowedMethods.find(method);
+    return it != _allowedMethods.end();
 }

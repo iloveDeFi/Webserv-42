@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <set>
 
 // Gère l'analyse et la représentation d'une requête HTTP.
 class HttpRequest {
@@ -12,9 +13,10 @@ class HttpRequest {
         std::string _uri;
         std::string _version;
         std::map<std::string, std::string> _headers;
+        std::set<std::string> _allowedMethods;
         std::string _body;
         bool _is_chunked;
-
+        
     public:
         HttpRequest();
         ~HttpRequest();
@@ -40,7 +42,8 @@ class HttpRequest {
 
         // Other Methods
         // void parse(const std::string& rawRequest);
-        std::vector<std::string> initMethods();
+        std::set<std::string> initMethods();
+        bool isMethodAllowed(const std::string& method) const;
 };
 
 std::ostream&	operator<<(std::ostream& os, const HttpRequest& re);
