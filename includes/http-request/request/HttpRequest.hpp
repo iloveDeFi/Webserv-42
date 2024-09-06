@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <map>
+#include <vector>
+#include <set>
 
 // Gère l'analyse et la représentation d'une requête HTTP.
 class HttpRequest {
@@ -11,9 +13,10 @@ class HttpRequest {
         std::string _uri;
         std::string _version;
         std::map<std::string, std::string> _headers;
+        std::set<std::string> _allowedMethods;
         std::string _body;
         bool _is_chunked;
-
+        
     public:
         HttpRequest();
         ~HttpRequest();
@@ -21,23 +24,28 @@ class HttpRequest {
         HttpRequest& operator=(const HttpRequest& src);
 
          // Getters
-        std::string getMethod() const { return _method; }
-        std::string getURI() const { return _uri; }
-        std::string getHTTPVersion() const { return _version; }
-        std::map<std::string, std::string> getHeaders() const { return _headers; }
-        std::string getBody() const { return _body; }
-        bool isChunked() const { return _is_chunked; }
+        std::string getMethod() const;
+        std::string getURI() const;
+        std::string getHTTPVersion() const;
+        std::map<std::string, std::string> getHeaders() const;
+        std::string getHeader(const std::string& name) const; // check here
+        std::string getBody() const;
+        bool isChunked() const;
 
         // Setter (si nécessaire pour simuler des données)
-        void setMethod(const std::string& method) { _method = method; }
-        void setURI(const std::string& uri) { _uri = uri; }
-        void setHTTPVersion(const std::string& version) { _version = version; }
-        void setHeaders(const std::map<std::string, std::string>& headers) { _headers = headers; }
-        void setBody(const std::string& body) { _body = body; }
-        void setIsChunked(bool is_chunked) { _is_chunked = is_chunked; }
+        void setMethod(const std::string& method);
+        void setURI(const std::string& uri);
+        void setHTTPVersion(const std::string& version);
+        void setHeaders(const std::map<std::string, std::string>& headers);
+        void setBody(const std::string& body);
+        void setIsChunked(bool is_chunked);
 
-        std::string getHeader(const std::string& name) const;
-        void parse(const std::string& rawRequest);
+        // Other Methods
+        // void parse(const std::string& rawRequest);
+        std::set<std::string> initMethods();
+        bool isMethodAllowed(const std::string& method) const;
 };
+
+std::ostream&	operator<<(std::ostream& os, const HttpRequest& re);
 
 #endif
