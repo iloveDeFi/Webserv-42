@@ -43,4 +43,6 @@ class HttpRequest {
         std::vector<std::string> initMethods();
 };
 
+std::ostream&	operator<<(std::ostream& os, const HttpRequest& re);
+
 #endif

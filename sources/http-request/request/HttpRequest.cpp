@@ -13,6 +13,7 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& src) {
         this->_version = src._version;
         this->_headers = src._headers;
         this->_body = src._body;
+        this->_is_chunked = src._is_chunked;
     }
     return *this;
 }
