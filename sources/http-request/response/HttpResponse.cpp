@@ -56,3 +56,14 @@ std::string HttpResponse::toString() const {
     response += "\r\n" + _body;
     return response;
 }
+
+std::string HttpResponse::generate404Error(const std::string& uri) {
+    std::string errorPage = "<html><body><h1>404 Not Found</h1>";
+    errorPage += "<p>The requested resource " + uri + " was not found on this server.</p></body></html>";
+    
+    return "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n" + errorPage;
+}
+
+std::string HttpResponse::generateRedirection(const std::string& newUri) {
+    return "HTTP/1.1 302 Found\r\nLocation: " + newUri + "\r\n\r\n";
+}
