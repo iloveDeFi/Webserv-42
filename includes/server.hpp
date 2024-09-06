@@ -26,7 +26,7 @@
 	LocationConfig(std::string r = "", bool listing = false) : root(r), allowListing(listing) {}
 }; */
 
-class server
+class Server
 {
 	private:
 		Socket* _serverSocket;
@@ -39,10 +39,10 @@ class server
 		std::map<std::string, Location> _locations;
 		
 	public:
-		server(const std::string& fdConfig);
-		server(const server &other) = delete;
-		server& operator=(const server &other) = delete;
-		~server();
+		Server(const std::string& fdConfig, const std::map<std::string, Location>& location);
+		Server(const Server &other) = delete;
+		Server& operator=(const Server &other) = delete;
+		~Server();
 
 		void loadConfig(const std::string& configFilePath);
 		Location& parseLocation(std::ifstream config, std::string& value, std::string key);

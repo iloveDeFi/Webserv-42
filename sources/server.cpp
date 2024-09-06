@@ -1,14 +1,15 @@
 
-#include "server.hpp"
+#include "Server.hpp"
 
 //const int PORT = 8888;
 
-server::server(const std::string& fdConfig):_serverSocket(NULL)
+Server::Server(const std::string& fdConfig, const std::map<std::string, Location>& location):_serverSocket(NULL)
 {
 	int ip;
 	socklen_t addrLen;
 
 	loadConfig(fdConfig);
+	_location = location;
 	_serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, _port, INADDR_ANY);
 	addrLen = sizeof(_serverSocket->_address);
 	ip = getsockname(_serverSocket->f_fdSocket, \
@@ -20,7 +21,7 @@ server::server(const std::string& fdConfig):_serverSocket(NULL)
 	_serverSocket->Listen();
 }
 
-server::~server()
+Server::~Server()
 {
 	close(_serverSocket->getFdSocket());
 	delete _serverSocket;
@@ -37,7 +38,7 @@ server::~server()
 //AJOUTER # Limitations:client_max_body_size 8M; ??
 // ou location /images ??
 
-void server::loadConfig(const std::string& configFilePath)
+void Server::loadConfig(const std::string& configFilePath)
 {
 	std::string line;
 	std::string key;
@@ -57,7 +58,7 @@ void server::loadConfig(const std::string& configFilePath)
 		else if (key == "name")
 			_name = key;
 		else if (key == "size")
-			_maxSize = stoi(value);
+			_maxSize = stoi(value);// trouver moyen pour avoir que le chiffre (pas 1M)
 /* 		else if (key == "location")
 		{
 			_location[value] = parselocation(config, value);
@@ -71,7 +72,7 @@ void server::loadConfig(const std::string& configFilePath)
 	
 } */
 
-void server::handleRequest()
+void Server::handleRequest()
 {
 	fd_set readFds;
 	std::vector<int> clientFds;
@@ -96,6 +97,8 @@ void server::handleRequest()
 			std::cout << "Timeout occurred, performing routine checks." << std::endl;
 			continue;
 		}
+		//FD_ISSET() returns true if the file descriptor fd is a 
+		//member of the set pointed to by fdset. (int FD_ISSET(int fd, fd_set *fdset))
 		if (FD_ISSET(_serverSocket->getFdSocket(), &readFds))
 			accepteNewClients(&clientFds, &maxFd);
 		handleActiveClients(&readFds, &clientFds);
@@ -103,7 +106,7 @@ void server::handleRequest()
 
 }
 
-void server::prepareFdSets(fd_set &readFds, \
+void Server::prepareFdSets(fd_set &readFds, \
 const std::vector<int> &clientFds, int &maxFd)
 {
 	//FD_ZERO() initializes the set pointed to by fdset to be empty.
@@ -118,7 +121,7 @@ const std::vector<int> &clientFds, int &maxFd)
 			maxFd = clientFd;
 	}
 }
-void server::acceptNewClients(const std::vector<int> &clientFds, \
+void Server::acceptNewClients(const std::vector<int> &clientFds, \
 int &maxFd)
 {
 	int clientFd = _serverSocket->Accept();
@@ -128,7 +131,7 @@ int &maxFd)
 		std::cout << "New client connected: " << clientFd << std::endl;
 	}
 }
-void server::handleActiveClients(fd_set &readFds, \
+void Server::handleActiveClients(fd_set &readFds, \
 const std::vector<int> &clientFds)
 {
 	for (size_t i = 0; i < clientFds.size(); ++i)
@@ -151,7 +154,7 @@ const std::vector<int> &clientFds)
 	}
 }
 
-void server::handleClient(int clientSocket)
+void Server::handleClient(int clientSocket)
 {
     Client client(clientSocket);
 
@@ -162,7 +165,7 @@ void server::handleClient(int clientSocket)
     client.sendResponse();
 }
 
-std::string server::readRawData(int clientSocket)
+std::string Server::readRawData(int clientSocket)
 {
 	const size_t buffer_size = 1024;
 	char buffer[buffer_size];
@@ -182,13 +185,13 @@ std::string server::readRawData(int clientSocket)
 	return requestData;
 }
 
-int server::getPort(){return (_port)}
+int Server::getPort(){return (_port)}
 
-int server::getSize(){return (_maxSize)}
+int Server::getSize(){return (_maxSize)}
 
-Location& server::getLocation(){return (_location)} 
+Location& Server::getLocation(){return (_location)} 
 
-void server::setIpAddress(int ip)
+void Server::setIpAddress(int ip)
 {
 	_ipAddress = ip;
 }
