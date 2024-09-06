@@ -1,0 +1,6 @@
+# Ignore VS Code settings
+.vscode/settings.json
+
+# Autres règles d'ignore
+*.log
+*.tmp

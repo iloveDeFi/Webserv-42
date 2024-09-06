@@ -3,20 +3,20 @@
 
 //const int PORT = 8888;
 
-Server::Server(const std::string& fdConfig, const std::map<std::string, Location>& location):_serverSocket(NULL)
+Server::Server(const std::string& fdConfig, \
+const std::map<std::string, Location>& location):_serverSocket(NULL), _locations(location)
 {
 	int ip;
 	socklen_t addrLen;
 
 	loadConfig(fdConfig);
-	_location = location;
 	_serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, _port, INADDR_ANY);
-	addrLen = sizeof(_serverSocket->_address);
-	ip = getsockname(_serverSocket->f_fdSocket, \
-	(struct sockaddr *)&_serverSocket->_address, &addrLen);
+	addrLen = sizeof(_serverSocket->getAddress());
+	ip = getsockname(_serverSocket->getFdSocket(), \
+	(struct sockaddr *)&_serverSocket->getAddress(), &addrLen);
 	if (ip == -1)
 		throw std::runtime_error("Error getting host IP.");
-	setIpAddress(ip)
+	setIpAddress(ip);
 	_serverSocket->Bind();
 	_serverSocket->Listen();
 }
@@ -80,7 +80,7 @@ void Server::handleRequest()
 
 	while (true)
 	{
-		prepareFdSets(&readFds, &clientFds, &maxFd);
+		prepareFdSets(readFds, clientFds, maxFd);
 
 		// Attendre 5 secondes (et 0microscd) pour un événement sur les 
 		//sockets surveillés avant de retourner.
@@ -100,8 +100,8 @@ void Server::handleRequest()
 		//FD_ISSET() returns true if the file descriptor fd is a 
 		//member of the set pointed to by fdset. (int FD_ISSET(int fd, fd_set *fdset))
 		if (FD_ISSET(_serverSocket->getFdSocket(), &readFds))
-			accepteNewClients(&clientFds, &maxFd);
-		handleActiveClients(&readFds, &clientFds);
+			acceptNewClients(clientFds/* , maxFd */);
+		handleActiveClients(readFds, clientFds);
 	}
 
 }
@@ -116,13 +116,12 @@ const std::vector<int> &clientFds, int &maxFd)
 
 	for (size_t i = 0; i < clientFds.size(); ++i)
 	{
-		FD_SET(clientFd, &readFds);
-		if (clientFd > maxFd)
-			maxFd = clientFd;
+		FD_SET(clientFds[i], &readFds);
+		if (clientFds[i] > maxFd)
+			maxFd = clientFds[i];
 	}
 }
-void Server::acceptNewClients(const std::vector<int> &clientFds, \
-int &maxFd)
+void Server::acceptNewClients(std::vector<int> &clientFds/* , int &maxFd */)
 {
 	int clientFd = _serverSocket->Accept();
 	if (clientFd != -1)
@@ -131,15 +130,16 @@ int &maxFd)
 		std::cout << "New client connected: " << clientFd << std::endl;
 	}
 }
-void Server::handleActiveClients(fd_set &readFds, \
-const std::vector<int> &clientFds)
+void Server::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
 {
 	for (size_t i = 0; i < clientFds.size(); ++i)
 	{
 		if (FD_ISSET(clientFds[i], &readFds))
 		{
 			try
-				handleClient(clientFds[i]);
+			{
+				handleClient(clientFds[i]/* , getpeername(clientFds[i], ) */);
+			}
 			catch (const std::exception& e)
 			{
 				std::cerr << "Client error: " << e.what() << std::endl;
@@ -154,15 +154,15 @@ const std::vector<int> &clientFds)
 	}
 }
 
-void Server::handleClient(int clientSocket)
+void Server::handleClient(int clientSocket/* , int ip */)
 {
-    Client client(clientSocket);
+	Client client(clientSocket /* ip */);
 
-    client.readRequest(readRawData(clientSocket));// parser renvoyé à Alex
-    //il ajoute a client sont attribut _request;
-    client.processRequest(getLocation(), getSize()); //gestion de la requete par Baptiste
-    //il ajoute a client sont attribut _response;
-    client.sendResponse();
+	client.readRequest(readRawData(clientSocket));// parser renvoyé à Alex
+	//il ajoute a client sont attribut _request;
+	client.processRequest(getLocation(), getSize()); //gestion de la requete par Baptiste
+	//il ajoute a client sont attribut _response;
+	client.sendResponse();
 }
 
 std::string Server::readRawData(int clientSocket)
@@ -185,11 +185,11 @@ std::string Server::readRawData(int clientSocket)
 	return requestData;
 }
 
-int Server::getPort(){return (_port)}
+int Server::getPort(){return (_port);}
 
-int Server::getSize(){return (_maxSize)}
+int Server::getSize(){return (_maxSize);}
 
-Location& Server::getLocation(){return (_location)} 
+std::map<std::string, Location>& Server::getLocation(){return (_locations);} 
 
 void Server::setIpAddress(int ip)
 {

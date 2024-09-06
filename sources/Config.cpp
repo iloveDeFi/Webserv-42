@@ -1,20 +1,29 @@
 #include "Config.hpp"
 
-Config::Config(ifstream originalCofig)
+Config::Config(std::ifstream &originalCofig)
 {
 	std::string line;
 	std::string str;
 
-	while (getline(config, line))
+	while (getline(originalCofig, line))
 		str.append(line);
-	_location = NULL;
+	_location = new std::map<std::string, Location>();
 	_strConfig = str;
 }
 
 Config::~Config()
 {
+	if (_location != NULL)
+		delete _location;
+
 }
 
-Location& getLocation() { return(_location) }
+const std::map<std::string, Location>& Config::getLocation() const
+{
+	return(*_location);
+}
 
-std::string& getFdConfig() { return(_fdConfig) }
+const std::string& Config::getFdConfig() const
+{ 
+	return(_strConfig);
+}

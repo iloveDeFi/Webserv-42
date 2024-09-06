@@ -30,7 +30,7 @@ Socket& Socket::operator=(const Socket &other)
 
 Socket::~Socket()
 {
-	if (is_open(_fdSocket))
+	//if (is_open(_fdSocket))
 		close(_fdSocket);
 }
 
@@ -46,7 +46,7 @@ void Socket::Listen()
 		throw std::runtime_error("Error listening socket.");
 }
 
-int Socket::Accept()
+void Socket::Accept()
 {
 	if (accept(_fdSocket, (struct sockaddr*)&_address, &_len) < 0)
 		throw std::runtime_error("Error accepting socket.");

@@ -1,33 +1,37 @@
-NAME			= webserv
+NAME = webserv
 
-SRCS_LIST	= 	main.cpp \
+SRCS_FOLDER = sources
+INCLUDES_FOLDER = includes
 
-SRCS_FOLDER		= srcs
+SRCS_LIST = main.cpp \
+            $(addprefix $(SRCS_FOLDER)/, Client.cpp Config.cpp \
+			HttpRequest.cpp HttpResponse.cpp Location.cpp \
+			Server.cpp Socket.cpp Utils.cpp)
 
-SRCS			= $(addprefix ${SRCS_FOLDER}/, ${SRCS_LIST})
+SRCS = $(SRCS_LIST)
 
-OBJS			= ${SRCS:.cpp=.o}
+OBJS = $(SRCS:.cpp=.o)
 
-INCLUDES		= -I includes/Config -I includes/Utils -I includes/HTTP
+CC = clang++
+CFLAGS = -Wall -Wextra -Werror -std=c++98 -pthread
+INCLUDES = -I $(INCLUDES_FOLDER)
 
-CC				= clang++
-CFLAGS 			= -Wall -Wextra -Werror -std=c++98 -pthread
-RM				= rm -f
+RM = rm -f
 
-all:				$(NAME)
+all: $(NAME)
 
-$(NAME):		$(OBJS)
-						$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(NAME)
+$(NAME): $(OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(NAME)
 
 %.o: %.cpp
-						${CC} ${CFLAGS} $(INCLUDES) -o $@ -c $<
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-						${RM} ${OBJS}
+	$(RM) $(OBJS)
 
-fclean:			clean
-						${RM} ${NAME}
+fclean: clean
+	$(RM) $(NAME)
 
-re:					fclean all
+re: fclean all
 
-.PHONY: 		all fclean clean re
+.PHONY: all clean fclean re

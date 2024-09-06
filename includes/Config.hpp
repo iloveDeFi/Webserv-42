@@ -8,15 +8,15 @@
 class Config
 {
 	private:
-		std::map<std::string, Location> _location;
+		std::map<std::string, Location>* _location;
 		std::string _strConfig;
 
 	public:
-		Config(ifstream originalCofig);
+		Config(std::ifstream &originalCofig);
 		~Config();
 
-		Location& getLocation();
-		std::string& getFdConfig();
+		const std::map<std::string, Location>& getLocation() const;
+		const std::string& getFdConfig() const;
 };
 
 #endif

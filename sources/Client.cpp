@@ -1,7 +1,7 @@
 
 #include "Client.hpp"
 
-Client::Client(int fd): _socket(fd) {}
+Client::Client(int fd/* , int ip */): _socket(fd)/* , _ipAddress(ip) */ {}
 
 /* Client::Client(const Client & src)
 : _request(src._request), _response(src._response)
@@ -18,17 +18,20 @@ Client& Client::operator=(const Client &src)
 
 Client::~Client()
 {
-	if (is_open(_socket))
-		close(_socket);
+/* 	if (is_open(_socket))
+		close(_socket); */
 }
 
 void Client::readRequest(const std::string &rawData)
 {
+	(void)rawData;
 	//appeler parser Alex
 }
 
-void Client::processRequest()
+void Client::processRequest(std::map<std::string, Location>& location, int size)
 {
+	(void)location;
+	(void)size;
 	//appeler gestion Baptiste
 }
 

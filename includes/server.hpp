@@ -33,15 +33,15 @@ class Server
 		/* std::vector<std::string> parseIndex(const std::string& value);
 		std::pair<int, std::string> parseError(const std::string& value); */
 		std::string _name;
-		int	_ipAddress,
+		int	_ipAddress;
 		int	_port;
 		int _maxSize; 
 		std::map<std::string, Location> _locations;
 		
 	public:
 		Server(const std::string& fdConfig, const std::map<std::string, Location>& location);
-		Server(const Server &other) = delete;
-		Server& operator=(const Server &other) = delete;
+		/* Server(const Server &other) = delete;
+		Server& operator=(const Server &other) = delete; */
 		~Server();
 
 		void loadConfig(const std::string& configFilePath);
@@ -49,16 +49,14 @@ class Server
 		void handleRequest();
 		void prepareFdSets(fd_set &readFds, \
 		const std::vector<int> &clientFds, int &maxFd);
-		void acceptNewClients(const std::vector<int> &clientFds, \
-		int &maxFd);
-		void handleActiveClients(fd_set &readFds, \
-		const std::vector<int> &clientFds);
-		void handleClient(int clientSocket);
+		void acceptNewClients(std::vector<int> &clientFds/* , int &maxFd */);
+		void handleActiveClients(fd_set &readFds, std::vector<int> &clientFds);
+		void handleClient(int clientSocket/* , int ip */);
 		std::string readRawData(int clientSocket);
 
 		int getPort();
 		int	getSize();
-		Location& getLocation();
+		std::map<std::string, Location>& getLocation();
 
 		void setIpAddress(int ip);
 

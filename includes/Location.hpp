@@ -4,10 +4,8 @@
 # include <iostream>
 # include <vector>
 # include <map>
-# include "Socket.hpp"
-# include "Client.hpp"
-# include "Server.hpp"
 # include "Utils.hpp"
+# include <sstream>
 
 class Location
 {
@@ -19,8 +17,8 @@ class Location
 	public:
 		Location(/* args */);
 		~Location();
-		Location(const Location &other) = delete;
-		Location& operator=(const Location &other) = delete;
+		/* Location(const Location &other) = delete;
+		Location& operator=(const Location &other) = delete; */
 
 		void setPath(const std::string& path);
 		void setMethods(const std::string& methods);

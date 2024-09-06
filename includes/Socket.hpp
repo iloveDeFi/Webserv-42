@@ -6,7 +6,6 @@
 # include <netinet/in.h>
 # include <fcntl.h>
 # include <unistd.h>
-# include "Server.hpp"
 # include "Utils.hpp"
 
 
@@ -25,13 +24,13 @@ class Socket
 		//peut entraîner des comportements non définis, comme 
 		//des fermetures de socket inattendues ou des 
 		//conflits sur les ressources réseau.
-		Socket(const Socket &other) = delete;
-		Socket& operator=(const Socket &other) = delete;
+		/* Socket(const Socket &other) = delete;
+		Socket& operator=(const Socket &other) = delete; */
 		~Socket();
 
 		void Bind();
 		void Listen();
-		int Accept();
+		void Accept();
 
 		ssize_t Send(int client_socket, const char* buffer, size_t buffer_length, int flags);
 		ssize_t Receive(int client_socket, char* buffer, size_t buffer_length, int flags);
