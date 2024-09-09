@@ -1,5 +1,53 @@
 #include "HttpRequest.hpp"
 
+void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    // Récupérer les informations de la requête
+    std::string uri = req.getURI();
+    std::string version = req.getHTTPVersion();
+    
+    // Exemple de contenu pour la réponse
+    std::string responseBody = "You requested: " + uri;
+
+    // Définir les détails de la réponse
+    res.setStatusCode(200); // HTTP 200 OK
+    res.setStatusMessage("OK");
+    res.setBody(responseBody);
+    res.setHTTPVersion(version);
+}
+
+void HeadRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+}
+
+void PostRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+}
+
+void PutRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+}
+
+void DeleteRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+}
+
+void OptionsRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+}
+
+void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+}
+
+void PatchRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+}
+
+void UnsupportedRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+}
+
+
 HttpRequest::HttpRequest() : _method(""), _uri(""), _version("HTTP/1.1"), _allowedMethods(initMethods()) {}
 
 HttpRequest::~HttpRequest() {}
@@ -42,9 +90,10 @@ void HttpRequest::setHeaders(const std::map<std::string, std::string>& headers) 
 void HttpRequest::setBody(const std::string& body) { _body = body; }
 void HttpRequest::setIsChunked(bool is_chunked) { _is_chunked = is_chunked; }
 
+
 // Cleaner to pass from std::vector with linear search O(n) to std::set O(log n) 
 // with loarithmic search and also for element unicity
-std::set<std::string> HttpRequest::initMethods() {
+std::set<std::string> HttpRequest::initMethods() const {
     std::set<std::string> methods;
 
     methods.insert("GET");
@@ -56,11 +105,54 @@ std::set<std::string> HttpRequest::initMethods() {
     methods.insert("OPTIONS");
     methods.insert("TRACE");
     methods.insert("PATCH");
+    methods.insert("UNSUPPORTED");
     
     return methods;
 }
 
+
 bool HttpRequest::isMethodAllowed(const std::string& method) const {
     std::set<std::string>::const_iterator it = _allowedMethods.find(method);
     return it != _allowedMethods.end();
+}
+
+// OR
+// bool HttpRequest::isMethodAllowed(const std::string& method) const {
+//     return initMethods().count(method) > 0;
+// }
+
+
+void HttpRequest::requestController(HttpResponse& response) {
+    // Map pour associer les méthodes aux gestionnaires
+    typedef void (RequestController::*HandlerFunction)(const HttpRequest&, HttpResponse&);
+
+    std::map<std::string, HandlerFunction> handlerMap;
+    GetRequestHandler getHandler;
+    HeadRequestHandler headHandler;
+    PostRequestHandler postHandler;
+    PutRequestHandler putHandler;
+    DeleteRequestHandler deleteHandler;
+    ConnectRequestHandler connectHandler;
+    OptionsRequestHandler optionsHandler;
+    TraceRequestHandler traceHandler;
+    PatchRequestHandler patchHandler;
+    UnsupportedRequestHandler unsupportedHandler;
+
+    handlerMap["GET"] = &GetRequestHandler::handle;
+    handlerMap["HEAD"] = &HeadRequestHandler::handle;
+    handlerMap["POST"] = &PostRequestHandler::handle;
+    handlerMap["PUT"] = &PutRequestHandler::handle;
+    handlerMap["DELETE"] = &DeleteRequestHandler::handle;
+    handlerMap["CONNECT"] = &ConnectRequestHandler::handle;
+    handlerMap["OPTIONS"] = &OptionsRequestHandler::handle;
+    handlerMap["TRACE"] = &TraceRequestHandler::handle;
+    handlerMap["PATCH"] = &PatchRequestHandler::handle;
+    handlerMap["UNSUPPORTED"] = &UnsupportedRequestHandler::handle;
+
+    std::map<std::string, HandlerFunction>::iterator it = handlerMap.find(getMethod());
+    if (it != handlerMap.end()) {
+        (it->second)(*this, response);  // Appeler la fonction correspondante
+    } else {
+        unsupportedHandler.handle(*this, response);
+    }
 }
