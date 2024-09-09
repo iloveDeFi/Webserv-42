@@ -1,7 +1,7 @@
 
 #include "Client.hpp"
 
-Client::Client(int fd, int ip): _socket(fd), _ipAddress(ip) {}
+Client::Client(int fd, const struct sockaddr_in& address): _socket(fd), _address(address) {}
 
 /* Client::Client(const Client & src)
 : _request(src._request), _response(src._response)
@@ -73,4 +73,12 @@ HttpResponse& Client::getHttpResponse()
 int	Client::getClientSocket()
 {
 	return (_socket);
+}
+
+std::string Client::getIPaddress()
+{
+	char* cString = inet_ntoa(_address.sin_addr);
+	std::string ipAddress = std::string(cString);
+	return (ipAddress);
+	//to implemant but probably without using inet_ntoa()
 }

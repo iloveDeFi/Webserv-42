@@ -7,18 +7,20 @@
 # include <fstream>
 # include <unistd.h>
 # include <sys/socket.h>
+# include <netinet/in.h>
+#include <arpa/inet.h>//to remove if no ip address
 
 
 class Client
 {
 	private:
 		int _socket;
-		std::string _ipAddress;
+		struct sockaddr_in _address;
 		HttpRequest _request;
 		HttpResponse _response;
 		
 	public:
-		Client(int socket, int ip);
+		Client(int socket, const struct sockaddr_in& address);
 		/* Client(const Client &other) = delete;
 		Client& operator=(const Client &other) = delete; */
 		~Client();
@@ -33,6 +35,7 @@ class Client
 		HttpRequest& getHttpRequest();
 		HttpResponse& getHttpResponse();
 		int	getClientSocket();
+		std::string getIPaddress();
 
 };
 

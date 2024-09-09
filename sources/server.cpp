@@ -3,7 +3,7 @@
 
 //const int PORT = 8888;
 
-Server::Server(const std::string& fdConfig, \
+Server::Server(std::ifstream& fdConfig, \
 const std::map<std::string, Location>& location):_serverSocket(NULL), _locations(location)
 {
 	int ip;
@@ -38,16 +38,17 @@ Server::~Server()
 //AJOUTER # Limitations:client_max_body_size 8M; ??
 // ou location /images ??
 
-void Server::loadConfig(const std::string& configFilePath)
+void Server::loadConfig(std::ifstream& configFile)
 {
 	std::string line;
 	std::string key;
 	std::string value;
 	
-	std::ifstream config(configFilePath.c_str());
-	if (!config) throw std::runtime_error("Error opening configuration file.");
+	//std::ifstream config(configFilePath.c_str());
+	if (!configFile)
+		throw std::runtime_error("Error opening configuration file.");
 	
-	while (getline(config, line))
+	while (getline(configFile, line))
 	{
 		std::istringstream lineStream(line);
 		getline(lineStream, key, ':');
@@ -138,7 +139,7 @@ void Server::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
 		{
 			try
 			{
-				handleClient(clientFds[i], getpeername(clientFds[i], ));
+				handleClient(clientFds[i]);
 			}
 			catch (const std::exception& e)
 			{
@@ -154,9 +155,15 @@ void Server::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
 	}
 }
 
-void Server::handleClient(int clientSocket, int ip)
+void Server::handleClient(int clientSocket)
 {
-	Client client(clientSocket, ip);
+	struct sockaddr_in clientAddr;
+    socklen_t addrLen = sizeof(clientAddr);
+	
+	if (getpeername(clientSocket, (struct sockaddr*)&clientAddr, &addrLen) == -1)
+		throw std::runtime_error("Error getting client IP address");
+
+	Client client(clientSocket, clientAddr);
 
 	client.readRequest(readRawData(clientSocket));// parser renvoyé à Alex
 	//il ajoute a client sont attribut _request;
