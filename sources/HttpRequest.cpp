@@ -1,9 +1,26 @@
 #include "HttpRequest.hpp"
 
+// --- Request message general format:
+// HTTP Request Line : METHOD_VERB/CHEMIN_RESSOURCE/PROTOCOL_HTPP
+// HTTP Request HeaderS : NAME OR VALUE
+// (empty line)
+// HTTP Request Body
+
+// --- Response message general format:
+// HTTP Response Line
+// HTTP Response Headers
+// (empty line)
+// HTTP Response Body
+
+
 void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     // Récupérer les informations de la requête
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
+    // query parameters
+    // headers
+    // cookie
+    // cache
     
     // Exemple de contenu pour la réponse
     std::string responseBody = "You requested: " + uri;
@@ -15,37 +32,83 @@ void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     res.setHTTPVersion(version);
 }
 
-void HeadRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
-    
-}
-
+// TO DO : handle content-type / content-lenght / body
 void PostRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
-    
-}
+    // -----------GET
+    std::string uri = req.getURI();
+    std::string version = req.getHTTPVersion();
+    // BODY
+    std::string body = req.getBody();
+    // HEADER
+    // PARAM
+    // COOKIE
 
-void PutRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
-    
+    // -----------HANDLE
+    // -----------SET
 }
 
 void DeleteRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
-    
+    // -----------GET
+    std::string uri = req.getURI();
+    // HTTP
+    std::string version = req.getHTTPVersion();
+    // Param
+    // Check exist
+    // Cookies
+
+    // -----------HANDLE
+    // -----------SET
 }
 
-void OptionsRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
-    
-}
+// void HeadRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+//     // -----------GET
+//     // URI
+//     // std::string uri = req.getURI();
+//     // Body
+//     // Header
+//     // Param
+//     // cookie
 
-void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
-    
-}
+//     // -----------HANDLE
+//     // -----------SET
+// }
 
-void PatchRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
-    
-}
 
-void UnsupportedRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+
+// void PutRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+//     // -----------GET
+//     // URI
+//     // std::string uri = req.getURI();
+//     // BODY
+//     // HEADER
+//     // check exist
+//     // param
+//     // cookie
+//     // -----------HANDLE
+//     // -----------SET
+// }
+
+
+// void ConnectRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+//     // -----------HANDLE
+//     // -----------SET
+// }
+
+// void OptionsRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     
-}
+// }
+
+// void TraceRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+// }
+
+// void PatchRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+// }
+
+// void UnsupportedRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+    
+// }
 
 
 HttpRequest::HttpRequest() : _method(""), _uri(""), _version("HTTP/1.1"), _allowedMethods(initMethods()) {}
