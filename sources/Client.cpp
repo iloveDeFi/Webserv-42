@@ -1,7 +1,7 @@
 
 #include "Client.hpp"
 
-Client::Client(int fd/* , int ip */): _socket(fd)/* , _ipAddress(ip) */ {}
+Client::Client(int fd, int ip): _socket(fd), _ipAddress(ip) {}
 
 /* Client::Client(const Client & src)
 : _request(src._request), _response(src._response)

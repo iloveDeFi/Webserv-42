@@ -138,7 +138,7 @@ void Server::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
 		{
 			try
 			{
-				handleClient(clientFds[i]/* , getpeername(clientFds[i], ) */);
+				handleClient(clientFds[i], getpeername(clientFds[i], ));
 			}
 			catch (const std::exception& e)
 			{
@@ -154,9 +154,9 @@ void Server::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
 	}
 }
 
-void Server::handleClient(int clientSocket/* , int ip */)
+void Server::handleClient(int clientSocket, int ip)
 {
-	Client client(clientSocket /* ip */);
+	Client client(clientSocket, ip);
 
 	client.readRequest(readRawData(clientSocket));// parser renvoyé à Alex
 	//il ajoute a client sont attribut _request;

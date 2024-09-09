@@ -9,17 +9,16 @@
 # include <sys/socket.h>
 
 
-
 class Client
 {
 	private:
 		int _socket;
-		std::string _ipAddress;//
+		std::string _ipAddress;
 		HttpRequest _request;
 		HttpResponse _response;
 		
 	public:
-		Client(int socket/* , int ip */);
+		Client(int socket, int ip);
 		/* Client(const Client &other) = delete;
 		Client& operator=(const Client &other) = delete; */
 		~Client();

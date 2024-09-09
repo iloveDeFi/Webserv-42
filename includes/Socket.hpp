@@ -8,7 +8,6 @@
 # include <unistd.h>
 # include "Utils.hpp"
 
-
 class Socket
 {
 	private:

@@ -51,7 +51,7 @@ class Server
 		const std::vector<int> &clientFds, int &maxFd);
 		void acceptNewClients(std::vector<int> &clientFds/* , int &maxFd */);
 		void handleActiveClients(fd_set &readFds, std::vector<int> &clientFds);
-		void handleClient(int clientSocket/* , int ip */);
+		void handleClient(int clientSocket, int ip);
 		std::string readRawData(int clientSocket);
 
 		int getPort();
