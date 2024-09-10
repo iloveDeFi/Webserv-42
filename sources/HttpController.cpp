@@ -67,7 +67,7 @@ void DeleteRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
 }
 
 void HttpRequest::requestController(HttpResponse& response, std::map<std::string, std::string>& resourceDatabase) {
-    // Map to associate methods with handlers
+    
     typedef void (RequestController::*HandlerFunction)(const HttpRequest&, HttpResponse&);
 
     std::map<std::string, HandlerFunction> handlerMap;

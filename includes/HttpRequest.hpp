@@ -49,7 +49,7 @@ class HttpRequest {
 
         // Other methods
         bool isMethodAllowed(const std::string& method) const;
-        void requestController(HttpResponse& response);
+        void requestController(HttpResponse& response, std::map<std::string, std::string>& resourceDatabase);
 };
 
 std::ostream&	operator<<(std::ostream& os, const HttpRequest& re);
