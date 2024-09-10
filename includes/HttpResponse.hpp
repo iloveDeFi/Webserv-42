@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include "HttpRequest.hpp"
 
 // Handle creation and representation of an HTTP Response
 class HttpResponse {
