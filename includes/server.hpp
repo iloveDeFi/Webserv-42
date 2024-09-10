@@ -1,4 +1,3 @@
-
 #ifndef SERVER_HPP
 # define SERVER_HPP
 # include <iostream>
@@ -8,6 +7,7 @@
 # include "Client.hpp"
 # include "Utils.hpp"
 # include "Location.hpp"
+# include "HttpRequest.hpp"
 # include <netinet/in.h>
 # include <sys/socket.h>
 # include <fstream>
@@ -16,27 +16,14 @@
 # include <string>
 # include <poll.h>
 
-/* struct LocationConfig
-{
-	std::string root = "/html";
-	std::vector<std::string> index;
-	std::map<int, std::string> errorPages;
-	bool allowListing;
-
-	LocationConfig(std::string r = "", bool listing = false) : root(r), allowListing(listing) {}
-}; */
-
 class Server
 {
 	private:
 		Socket* _serverSocket;
-		/* std::vector<std::string> parseIndex(const std::string& value);
-		std::pair<int, std::string> parseError(const std::string& value); */
 		std::string _name;
-		int	_ipAddress,
-		int	_port;
-		int _maxSize; 
-		std::map<std::string, Location> _locations;
+		int _port;
+		int _maxSize;
+		std::vector<Location> _locations; 
 		
 	public:
 		Server(const std::string& fdConfig, const std::map<std::string, Location>& location);
@@ -45,22 +32,22 @@ class Server
 		~Server();
 
 		void loadConfig(const std::string& configFilePath);
-		Location& parseLocation(std::ifstream config, std::string& value, std::string key);
+		Location& parseLocation(std::ifstream& config, std::string& value, std::string key);
 		void handleRequest();
-		void prepareFdSets(fd_set &readFds, \
-		const std::vector<int> &clientFds, int &maxFd);
-		void acceptNewClients(const std::vector<int> &clientFds, \
-		int &maxFd);
-		void handleActiveClients(fd_set &readFds, \
-		const std::vector<int> &clientFds);
+		void prepareFdSets(fd_set &readFds, const std::vector<int> &clientFds, int &maxFd);
+		void acceptNewClients(const std::vector<int> &clientFds, int &maxFd);
+		void handleActiveClients(fd_set &readFds, const std::vector<int> &clientFds);
 		void handleClient(int clientSocket);
 		std::string readRawData(int clientSocket);
 
-		int getPort();
-		int	getSize();
-		Location& getLocation();
+		int getPort() const;
+		int getSize() const;
 
-		void setIpAddress(int ip);
+		Location& getLocation();
+		void addLocation(const Location& loc);
+		Location* matchLocation(const std::string& requestUri);
+
+		void setIpAddress(const std::string& ip);
 
 };
 
