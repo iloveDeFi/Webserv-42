@@ -6,7 +6,11 @@
 #include <string>
 #include "HttpRequest.hpp"
 
-// Handle creation and representation of an HTTP Response
+// My response format is:
+// HTTP Response Line
+// HTTP Response Headers
+// (empty line)
+// HTTP Response Body
 class HttpResponse {
     private:
         int _statusCode;
@@ -20,16 +24,31 @@ class HttpResponse {
         HttpResponse(const HttpResponse& src);
         HttpResponse& operator=(const HttpResponse& src);
 
-        // Setter
-        void setHeader(const std::string& name, const std::string& value);
-        // Getter
-        std::string getStatusMessage() const;
-        // Other Methods
-        std::string toString() const;
+         // Setters
+        // 1) response line
+        std::string setHTTPVersion(const std::string& version);
+        std::string setMethod(const std::string& method);
+        std::string setURI(const std::string& uri);
+        
+        // 2) headers
+        std::map<std::string, std::string> setHeaders();
+        std::string setHeader(const std::string& name, const std::string& value);
+        std::string setHeadersAsString();
+        // 3) body
+        std::string setBody();
+        std::string setQueryParameters();
+        std::string setCookies();
+        bool isChunked();
+
+        // Utils Methods
+        std::string toString();
         void ensureContentLength();
+
         // Response
         std::string generate404Error(const std::string& uri);
         std::string generateRedirection(const std::string& newUri);
 };
+
+std::ostream&	operator<<(std::ostream& os, const HttpResponse& re);
 
 #endif

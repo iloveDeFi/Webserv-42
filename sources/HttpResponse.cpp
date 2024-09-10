@@ -38,6 +38,16 @@ std::string HttpResponse::getStatusMessage() const {
     }
 }
 
+// ----- SETTERS ----- :
+// 1) RESPONSE LINE
+std::string HttpResponse::setMethod(const std::string& method) { _method = method; }
+std::string HttpResponse::setURI(const std::string& uri) { _uri = uri; }
+std::string HttpResponse::setHTTPVersion(const std::string& version) { _version = version; }
+// 2) HEADERS
+void HttpResponse::setHeaders(const std::map<std::string, std::string>& headers) { _headers = headers; }
+// 3) BODY
+void HttpResponse::setBody(const std::string& body) { _body = body; }
+void HttpResponse::setIsChunked(bool is_chunked) { _is_chunked = is_chunked; }
 void HttpResponse::ensureContentLength() {
     // define header content length if dosent exist
     if (_headers.find("Content-Length") == _headers.end()) {
@@ -52,7 +62,6 @@ std::string HttpResponse::toString() const {
     for (it = _headers.begin(); it != _headers.end(); ++it) {
         response += it->first + ": " + it->second + "\r\n";
     }
-
     response += "\r\n" + _body;
     return response;
 }

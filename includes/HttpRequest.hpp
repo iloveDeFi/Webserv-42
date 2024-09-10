@@ -6,61 +6,14 @@
 #include <vector>
 #include <set>
 #include "HttpResponse.hpp"
+#include "HttpController.hpp"
 
+/// My request format is:
+// 1) HTTP Request Line : METHOD_VERB/CHEMIN_RESSOURCE/PROTOCOL_HTPP
+// 2) HTTP Request HeaderS : NAME OR VALUE
+// 3) (empty line)
+// 4) HTTP Request Body
 
-class RequestController {
-    public:
-        virtual void handle(const HttpRequest& req, HttpResponse& res) = 0;
-        virtual ~RequestController() {}
-};
-
-class GetRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class HeadRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class PostRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class PutRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class DeleteRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class ConnectRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class OptionsRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class PatchRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class UnsupportedRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-
-// Gère l'analyse et la représentation d'une requête HTTP.
 class HttpRequest {
     private:
         std::string _method;
@@ -69,6 +22,8 @@ class HttpRequest {
         std::map<std::string, std::string> _headersAsString;
         std::set<std::string> _allowedMethods;
         std::string _body;
+        std::string _queryParameters;
+        std::string _cookies;
         bool _is_chunked;
         
     public:
@@ -85,14 +40,14 @@ class HttpRequest {
         // 2) HEADERS
         std::map<std::string, std::string> getHeaders() const;
         std::string getHeader(const std::string& name) const;
-        std::string HttpRequest::getHeadersAsString() const;
+        std::string getHeadersAsString() const;
         // 3) BODY
         std::string getBody() const;
-        std::string HttpRequest::getQueryParameters() const;
-        std::string HttpRequest::getCookies() const;
-        bool isChunked() const;
+        std::string getQueryParameters() const;
+        std::string getCookies() const;
+        bool getIsChunked() const;
 
-        // Controller to handle request
+        // TO DO : HERE OR OTHER FILE ? Controller to handle request
         void requestController(const HttpRequest& request, HttpResponse& response);
 };
 
