@@ -19,12 +19,13 @@ class HttpRequest {
         std::string _method;
         std::string _uri;
         std::string _version;
-        std::map<std::string, std::string> _headersAsString;
+        std::map<std::string, std::string> _headers;
         std::set<std::string> _allowedMethods;
         std::string _body;
         std::string _queryParameters;
         std::string _cookies;
-        bool _is_chunked;
+        bool _isChunked;
+        static const std::set<std::string> initMethods();
         
     public:
         HttpRequest();
@@ -40,15 +41,15 @@ class HttpRequest {
         // 2) HEADERS
         std::map<std::string, std::string> getHeaders() const;
         std::string getHeader(const std::string& name) const;
-        std::string getHeadersAsString() const;
         // 3) BODY
         std::string getBody() const;
         std::string getQueryParameters() const;
         std::string getCookies() const;
-        bool getIsChunked() const;
+        bool isChunked() const;
 
-        // TO DO : HERE OR OTHER FILE ? Controller to handle request
-        void requestController(const HttpRequest& request, HttpResponse& response);
+        // Other methods
+        bool isMethodAllowed(const std::string& method) const;
+        void requestController(HttpResponse& response);
 };
 
 std::ostream&	operator<<(std::ostream& os, const HttpRequest& re);

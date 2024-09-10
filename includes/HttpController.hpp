@@ -3,55 +3,29 @@
 
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
-
+#include <string>
+#include <map>
 class RequestController {
     public:
         virtual void handle(const HttpRequest& req, HttpResponse& res) = 0;
         virtual ~RequestController() {}
 };
-
 class GetRequestHandler : public RequestController {
     public:
         void handle(const HttpRequest& req, HttpResponse& res);
 };
-
-class HeadRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
 class PostRequestHandler : public RequestController {
     public:
         void handle(const HttpRequest& req, HttpResponse& res);
 };
-
-class PutRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
 class DeleteRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
+    private:
+        std::map<std::string, std::string>& _resourceDatabase;
 
-class ConnectRequestHandler : public RequestController {
     public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
+        DeleteRequestHandler(std::map<std::string, std::string>& resourceDatabase)
+            : _resourceDatabase(resourceDatabase) {}
 
-class OptionsRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class PatchRequestHandler : public RequestController {
-    public:
-        void handle(const HttpRequest& req, HttpResponse& res);
-};
-
-class UnsupportedRequestHandler : public RequestController {
-    public:
         void handle(const HttpRequest& req, HttpResponse& res);
 };
 
