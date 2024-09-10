@@ -1,6 +1,5 @@
-
-#ifndef SERVER_HPP
-# define SERVER_HPP
+#ifndef MNGMTSERVER_HPP
+# define MNGMTSERVER_HPP
 # include <iostream>
 # include <vector>
 # include <map>
@@ -26,10 +25,10 @@
 	LocationConfig(std::string r = "", bool listing = false) : root(r), allowListing(listing) {}
 }; */
 
-class ManagmentServer
+class ManagementServer
 {
 	private:
-		struct server
+		struct _server
 		{
 			Socket* _serverSocket;
 			/* std::vector<std::string> parseIndex(const std::string& value);
@@ -40,28 +39,29 @@ class ManagmentServer
 			int _maxSize; 
 			std::map<std::string, Location> _locations;
 		};
+		 std::vector<_server> _servers;
+		 void addNewServer(std::istringstream &configLine, \
+		 std::map<std::string, Location>& _locations);
 		
 	public:
-		ManagmentServer(std::ifstream& fdConfig, const std::map<std::string, Location>& location);
+		ManagementServer(std::ifstream& fdConfig, std::vector<std::map<std::string, Location> > serverLocations);
 		/* Server(const Server &other) = delete;
 		Server& operator=(const Server &other) = delete; */
-		~ManagmentServer();
-
-		void loadConfig(std::ifstream& configFile);
+		~ManagementServer();
 		Location& parseLocation(std::ifstream config, std::string& value, std::string key);
 		void handleRequest();
 		void prepareFdSets(fd_set &readFds, \
 		const std::vector<int> &clientFds, int &maxFd);
-		void acceptNewClients(std::vector<int> &clientFds/* , int &maxFd */);
+		void acceptNewClients(std::vector<int> &clientFds, fd_set &readFds);
 		void handleActiveClients(fd_set &readFds, std::vector<int> &clientFds);
 		void handleClient(int clientSocket);
 		std::string readRawData(int clientSocket);
 
-		int getPort();
-		int	getSize();
-		std::map<std::string, Location>& getLocation();
+		int getPort(std::vector<_server>::iterator it);
+		int	getSize(std::vector<_server>::iterator it);
+		std::map<std::string, Location>& getLocation(std::vector<_server>::iterator it);
 
-		void setIpAddress(int ip);
+		void setIpAddress(std::vector<_server>::iterator it, int ip);
 
 };
 

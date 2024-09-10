@@ -3,7 +3,7 @@
 #include <fstream>
 #include "Config.hpp"
 #include "Location.hpp"
-#include "Server.hpp"
+#include "MngmtServers.hpp"
 #include "Socket.hpp"
 #include "Client.hpp"
 #include "Utils.hpp"
@@ -16,7 +16,7 @@ int main(int ac, char **av)
     }
 	std::ifstream settings(av[1]);
 	Config config(settings);
-	Server webserv(config.getFdConfig(), config.getLocation());
+	ManagementServer webserv(config.getFdConfig(), config.getLocations());
 	webserv.handleRequest();
 	return (0);
 }

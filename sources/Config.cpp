@@ -15,7 +15,7 @@ Config::Config(std::ifstream &originalCofig)
 /* 		str.append(line);
 		str.append("\n"); */
 	}
-	_location = new std::map<std::string, Location>();
+	_locations = new std::vector<std::map<std::string, Location> >();
 	//std::cout << str << std::endl;
 	config.close();
 	_config.open("config.txt");
@@ -29,20 +29,21 @@ Config::Config(const Config &other)
 Config& Config::operator=(const Config &other)
 {
 	if (this != &other)
-		_location = other._location;
+		_locations = other._locations;
 	return (*this);
 }
 
 Config::~Config()
 {
-	if (_location != NULL)
-		delete _location;
+/* 	for (std::vector<std::map<std::string, Location>>::iterator \
+	it = _locations->begin();  it != _locations->end(); it++) */
+	delete _locations;
 	_config.close();
 }
 
-const std::map<std::string, Location>& Config::getLocation() const
+const std::vector<std::map<std::string, Location> >& Config::getLocations() const
 {
-	return(*_location);
+	return(*_locations);
 }
 
 std::ifstream& Config::getFdConfig()

@@ -8,7 +8,7 @@
 class Config
 {
 	private:
-		std::map<std::string, Location>* _location;
+		std::vector<std::map<std::string, Location> >* _locations;
 		std::ifstream _config;
 
 	public:
@@ -17,7 +17,7 @@ class Config
 		Config(const Config &other);
 		Config& operator=(const Config &other);
 
-		const std::map<std::string, Location>& getLocation() const;
+		const std::vector<std::map<std::string, Location> >& getLocations() const;
 		std::ifstream& getFdConfig();
 		const std::ifstream& getFdConfig() const;
 };
