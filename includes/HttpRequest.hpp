@@ -66,7 +66,7 @@ class HttpRequest {
         std::string _method;
         std::string _uri;
         std::string _version;
-        std::map<std::string, std::string> _headers;
+        std::map<std::string, std::string> _headersAsString;
         std::set<std::string> _allowedMethods;
         std::string _body;
         bool _is_chunked;
@@ -77,27 +77,22 @@ class HttpRequest {
         HttpRequest(const HttpRequest& src);
         HttpRequest& operator=(const HttpRequest& src);
 
-         // Getters
+        // Getters
+        // 1) REQUEST LINE
         std::string getMethod() const;
         std::string getURI() const;
         std::string getHTTPVersion() const;
+        // 2) HEADERS
         std::map<std::string, std::string> getHeaders() const;
-        std::string getHeader(const std::string& name) const; // check here
+        std::string getHeader(const std::string& name) const;
+        std::string HttpRequest::getHeadersAsString() const;
+        // 3) BODY
         std::string getBody() const;
+        std::string HttpRequest::getQueryParameters() const;
+        std::string HttpRequest::getCookies() const;
         bool isChunked() const;
 
-        // Setter (si nécessaire pour simuler des données)
-        void setMethod(const std::string& method);
-        void setURI(const std::string& uri);
-        void setHTTPVersion(const std::string& version);
-        void setHeaders(const std::map<std::string, std::string>& headers);
-        void setBody(const std::string& body);
-        void setIsChunked(bool is_chunked);
-
-        // Other Methods
-        std::set<std::string> initMethods() const;
-        bool isMethodAllowed(const std::string& method) const;
-        // TO do : Controller to handle request
+        // Controller to handle request
         void requestController(const HttpRequest& request, HttpResponse& response);
 };
 
