@@ -24,10 +24,14 @@ HttpResponse& HttpResponse::operator=(const HttpResponse& src) {
 }
 
 // Setters
-void HttpResponse::setStatusCode(int statusCode) { _statusCode = statusCode; }
+// 1) response line
 void HttpResponse::setHTTPVersion(const std::string& version) { _version = version; }
-void HttpResponse::setHeaders(const std::map<std::string, std::string>& headers) { _headers = headers; }
+void HttpResponse::setStatusCode(int statusCode) { _statusCode = statusCode; }
+void HttpResponse::setReasonMessage(const std::string& reasonMessage) { _reasonMessage = reasonMessage; }
+// 2) headers
 void HttpResponse::setHeader(const std::string& name, const std::string& value) { _headers[name] = value; }
+void HttpResponse::setHeaders(const std::map<std::string, std::string>& headers) { _headers = headers; }
+// 3) body
 void HttpResponse::setBody(const std::string& body) { _body = body; }
 void HttpResponse::setIsChunked(bool isChunked) { _isChunked = isChunked; }
 
@@ -40,7 +44,7 @@ void HttpResponse::ensureContentLength() {
 
 // Convert response to string
 std::string HttpResponse::toString() const {
-    std::string response = _version + " " + std::to_string(_statusCode) + " " + getStatusMessage() + "\r\n";
+    std::string response = _version + " " + std::to_string(_statusCode) + " " + _reasonMessage + "\r\n";
     
     for (const auto& header : _headers) {
         response += header.first + ": " + header.second + "\r\n";
@@ -60,4 +64,19 @@ std::string HttpResponse::generate404Error(const std::string& uri) {
 // Generate redirection response
 std::string HttpResponse::generateRedirection(const std::string& newUri) {
     return "HTTP/1.1 302 Found\r\nLocation: " + newUri + "\r\n\r\n";
+}
+
+// Surcharge de l'opérateur << à l'intérieur de la classe
+std::ostream& HttpResponse::print(std::ostream& os) const {
+    os << "--- RESPONSE LINE INFOS: ---" << std::endl;
+    os << "Version is: " <<  _version << " Status code is: " << _statusCode << " Reason Message is: " << _reasonMessage << "\n\n";
+
+    os << "--- HEADER INFOS: ---" << std::endl;
+    os << "Headers are: " << _headers << std::endl;
+
+    os << "--- BODY INFOS: ---" << std::endl;
+    os << "Content-Length: " << _body.size() << "\n\n";
+    os << "Body is: " << _body << "\n";
+    os << "Body chunked: "<< _isChunked << "\n";
+    return os;
 }

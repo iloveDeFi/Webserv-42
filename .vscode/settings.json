@@ -70,6 +70,8 @@
         "utility": "cpp",
         "set": "cpp",
         "fstream": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "deque": "cpp",
+        "stack": "cpp"
     }
 }
