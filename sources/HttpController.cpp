@@ -11,7 +11,7 @@ void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     res.setHTTPVersion(version);
     res.setStatusCode(200);
     res.setHeader("Content-Type", "text/plain");
-    // TO DO : use data base resource from server
+    // TO DO : Or to set body use data base resource from server
     // res.setBody(resourceDatabase[path]);
     res.setBody(responseBody);
     res.ensureContentLength();

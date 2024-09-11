@@ -1,17 +1,17 @@
 #include "HttpResponse.hpp"
 
 HttpResponse::HttpResponse() 
-    : _statusCode(200), _version("HTTP/1.1"), _headers(), _body(""), _isChunked(false) {}
+    : _statusCode(200), _httpVersion("HTTP/1.1"), _headers(), _body(""), _isChunked(false) {}
 
 HttpResponse::~HttpResponse() {}
 
 HttpResponse::HttpResponse(const HttpResponse& src)
-    : _statusCode(src._statusCode), _version(src._version), _headers(src._headers), _body(src._body), _isChunked(src._isChunked) {}
+    : _statusCode(src._statusCode), _httpVersion(src._httpVersion), _headers(src._headers), _body(src._body), _isChunked(src._isChunked) {}
 
 HttpResponse& HttpResponse::operator=(const HttpResponse& src) {
     if (this != &src) {
         _statusCode = src._statusCode;
-        _version = src._version;
+        _httpVersion = src._httpVersion;
         _headers = src._headers;
         _body = src._body;
         _isChunked = src._isChunked;
@@ -21,7 +21,7 @@ HttpResponse& HttpResponse::operator=(const HttpResponse& src) {
 
 // Setters
 // 1) response line
-void HttpResponse::setHTTPVersion(const std::string& version) { _version = version; }
+void HttpResponse::setHTTPVersion(const std::string& httpVersion) { _httpVersion = httpVersion; }
 void HttpResponse::setStatusCode(int statusCode) { _statusCode = statusCode; }
 void HttpResponse::setReasonMessage(const std::string& reasonMessage) { _reasonMessage = reasonMessage; }
 // 2) headers
@@ -38,7 +38,7 @@ void HttpResponse::ensureContentLength() {
 }
 
 std::string HttpResponse::toString() const {
-    std::string response = _version + " " + std::to_string(_statusCode) + " " + _reasonMessage + "\r\n";
+    std::string response = _httpVersion + " " + std::to_string(_statusCode) + " " + _reasonMessage + "\r\n";
     
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
         response += it->first + ": " + it->second + "\r\n";
@@ -61,7 +61,7 @@ std::string HttpResponse::generateRedirection(const std::string& newUri) {
 
 std::ostream& HttpResponse::print(std::ostream& os) const {
     os << "--- RESPONSE LINE INFOS: ---" << std::endl;
-    os << "Version is: " <<  _version << " Status code is: " << _statusCode << " Reason Message is: " << _reasonMessage << "\n\n";
+    os << "httpVersion is: " <<  _httpVersion << " Status code is: " << _statusCode << " Reason Message is: " << _reasonMessage << "\n\n";
 
     os << "--- HEADER INFOS: ---" << std::endl;
     os << "Headers name: " << _name << std::endl;

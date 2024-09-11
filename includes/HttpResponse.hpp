@@ -13,12 +13,14 @@
 class HttpResponse {
     private:
         // RESPONSE LINE
-        std::string _version;
+        std::string _httpVersion;
         int _statusCode;
         std::string _reasonMessage;
-        // HEADER
+        // HEADERS
         std::string _name;
         std::string _value;
+        std::string _contentType;
+        int _contentLength;
         std::map<std::string, std::string> _headers;
         // BODY
         std::string _body;
@@ -47,7 +49,7 @@ class HttpResponse {
 
         // OTHER
         void ensureContentLength();
-        std::string toString() const;
+        std::string toString() const; // or use std::to_string ?
 
         // SPECIAL RESPONSES
         std::string generate404Error(const std::string& uri);
