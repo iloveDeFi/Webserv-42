@@ -30,8 +30,8 @@ std::string HttpRequest::getURI() const { return _uri; }
 std::string HttpRequest::getHTTPVersion() const { return _version; }
 
 // 2) HEADERS
-std::string HttpRequest::getContentType(std::string contentType) const { return _contentType; }
-int HttpRequest::getContentLength(int contentLength) const { return _contentLength; }
+// std::string _name;
+// std::string _value;
 std::map<std::string, std::string> HttpRequest::getHeaders() const { return _headers; }
 std::string HttpRequest::getHeader(const std::string& name) const {
     std::map<std::string, std::string>::const_iterator it = _headers.find(name);
@@ -41,6 +41,15 @@ std::string HttpRequest::getHeader(const std::string& name) const {
         return "";
     }
 }
+std::string HttpRequest::getContentType(std::string contentType) const { return _contentType; }
+int HttpRequest::getContentLength(int contentLength) const { return _contentLength; }
+// accept
+// accept-language
+// accept-encoding
+// connection
+// cookie
+// host
+// user-agent
 
 // 3) BODY
 std::string HttpRequest::getBody() const { return _body; }

@@ -21,12 +21,12 @@ class HttpRequest {
         std::string _uri;
         std::string _version;
 
-        // 2) HEADER
+        // 2) HEADERS
         std::string _name;
         std::string _value;
+        std::map<std::string, std::string> _headers;
         std::string _contentType;
         int _contentLength;
-        std::map<std::string, std::string> _headers;
         // accept
         // accept-language
         // accept-encoding
@@ -42,9 +42,10 @@ class HttpRequest {
         bool _isChunked;
 
         // OTHER
-        std::set<std::string> _allowedMethods;
         static const std::set<std::string> initMethods();
-        std::map<std::string, std::string>& resourceDatabase;
+        std::set<std::string> _allowedMethods;
+        // TO DO : add following in server class i guess
+        // std::map<std::string, std::string>& resourceDatabase;
         
     public:
         HttpRequest();
