@@ -19,13 +19,7 @@ class PostRequestHandler : public RequestController {
         void handle(const HttpRequest& req, HttpResponse& res);
 };
 class DeleteRequestHandler : public RequestController {
-    private:
-        std::map<std::string, std::string>& _resourceDatabase;
-
     public:
-        DeleteRequestHandler(std::map<std::string, std::string>& resourceDatabase)
-            : _resourceDatabase(resourceDatabase) {}
-
         void handle(const HttpRequest& req, HttpResponse& res);
 };
 

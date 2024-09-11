@@ -11,6 +11,8 @@ void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     res.setHTTPVersion(version);
     res.setStatusCode(200);
     res.setHeader("Content-Type", "text/plain");
+    // TO DO : use data base resource from server
+    // res.setBody(resourceDatabase[path]);
     res.setBody(responseBody);
     res.ensureContentLength();
 }
@@ -67,22 +69,28 @@ void DeleteRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
 }
 
 void HttpRequest::requestController(HttpResponse& response, std::map<std::string, std::string>& resourceDatabase) {
-    
-    typedef void (RequestController::*HandlerFunction)(const HttpRequest&, HttpResponse&);
 
-    std::map<std::string, HandlerFunction> handlerMap;
+    // Pointeur de fonction membre pour handle()
+    typedef void (RequestController::*HandlerFunction)(const HttpRequest& req, HttpResponse& res);
 
-    GetRequestHandler getHandler;
-    PostRequestHandler postHandler;
+    // Création des handlers
+    GetRequestHandler getHandler(resourceDatabase);
+    PostRequestHandler postHandler(resourceDatabase);
     DeleteRequestHandler deleteHandler(resourceDatabase);
 
-    handlerMap["GET"] = &GetRequestHandler::handle;
-    handlerMap["POST"] = &PostRequestHandler::handle;
-    handlerMap["DELETE"] = &DeleteRequestHandler::handle;
+    // Map associant les méthodes HTTP avec les handlers
+    std::map<std::string, RequestController*> handlerMap;
+    handlerMap["GET"] = &getHandler;
+    handlerMap["POST"] = &postHandler;
+    handlerMap["DELETE"] = &deleteHandler;
 
-    std::map<std::string, HandlerFunction>::iterator it = handlerMap.find(getMethod());
+    // Trouver le bon handler en fonction de la méthode HTTP
+    std::string method = getMethod();
+    std::map<std::string, RequestController*>::iterator it = handlerMap.find(method);
+    
     if (it != handlerMap.end()) {
-        (this->*(it->second))(response);
+        RequestController* handler = it->second;
+        handler->handle(*this, response);
     } else {
         response.setStatusCode(405);
         response.setBody("405 Method Not Allowed");
@@ -90,3 +98,4 @@ void HttpRequest::requestController(HttpResponse& response, std::map<std::string
         response.ensureContentLength();
     }
 }
+

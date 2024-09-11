@@ -31,29 +31,29 @@ class HttpResponse {
         HttpResponse& operator=(const HttpResponse& src);
 
         // Setters
-        // 1) Response line
+        // 1) RESPONSE LINE
         void setHTTPVersion(const std::string& version);
         void setStatusCode(int status);
         void setReasonMessage(const std::string& reasonMessage);
 
-        // 2) Headers
+        // 2) HEADER
         void setHeader(const std::string& name, const std::string& value);
         void setHeaders(const std::map<std::string, std::string>& headers);
         std::string addHeader(std::string allow, std::string method) const;
 
-        // 3) Body
+        // 3) BODY
         void setBody(const std::string& body);
         void setIsChunked(bool isChunked);
 
-        // My utils methods
+        // OTHER
         void ensureContentLength();
         std::string toString() const;
 
-        // My response templates
+        // SPECIAL RESPONSES
         std::string generate404Error(const std::string& uri);
         std::string generateRedirection(const std::string& newUri);
 
-        // Internal to class cause no getters in response
+        // PRINT DATA (Internal to class cause no getters in response)
         std::ostream& print(std::ostream& os) const;
 };
 

@@ -16,15 +16,15 @@
 
 class HttpRequest {
     private:
-        // REQUEST LINE
+        // 1) REQUEST LINE
         std::string _method;
         std::string _uri;
         std::string _version;
 
-        // HEADER
+        // 2) HEADER
         std::map<std::string, std::string> _headers;
 
-        // BODY
+        // 3) BODY
         std::string _body;
         std::string _queryParameters;
         std::string _cookies;
@@ -33,6 +33,7 @@ class HttpRequest {
         // OTHER
         std::set<std::string> _allowedMethods;
         static const std::set<std::string> initMethods();
+        std::map<std::string, std::string>& resourceDatabase;
         
     public:
         HttpRequest();
@@ -56,11 +57,11 @@ class HttpRequest {
         std::string getCookies() const;
         bool isChunked() const;
 
-        // Other methods
+        // OTHER
         bool isMethodAllowed(const std::string& method) const;
-        void requestController(HttpResponse& response, std::map<std::string, std::string>& resourceDatabase);
 };
 
+// PRINT DATA
 std::ostream&	operator<<(std::ostream& os, const HttpRequest& re);
 
 #endif

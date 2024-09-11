@@ -1,5 +1,6 @@
 #include "HttpRequest.hpp"
 
+// COPLIEN'S FORM
 HttpRequest::HttpRequest() 
     : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _allowedMethods(initMethods()), _body(""), _queryParameters(""), _cookies(""), _isChunked(false) {}
 
@@ -23,12 +24,12 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& src) {
     return *this;
 }
 
-// REQUEST LINE
+// 1) REQUEST LINE
 std::string HttpRequest::getMethod() const { return _method; }
 std::string HttpRequest::getURI() const { return _uri; }
 std::string HttpRequest::getHTTPVersion() const { return _version; }
 
-// HEADER
+// 2) HEADER
 std::map<std::string, std::string> HttpRequest::getHeaders() const { return _headers; }
 std::string HttpRequest::getHeader(const std::string& name) const {
     std::map<std::string, std::string>::const_iterator it = _headers.find(name);
@@ -39,7 +40,7 @@ std::string HttpRequest::getHeader(const std::string& name) const {
     }
 }
 
-// BODY
+// 3) BODY
 std::string HttpRequest::getBody() const { return _body; }
 std::string HttpRequest::getQueryParameters() const { return _queryParameters; }
 std::string HttpRequest::getCookies() const { return _cookies; }
@@ -54,22 +55,7 @@ bool HttpRequest::isMethodAllowed(const std::string& method) const {
     return _allowedMethods.find(method) != _allowedMethods.end();
 }
 
-void HttpRequest::requestController(HttpResponse& response, std::map<std::string, std::string>& resourceDatabase) {
-    if (!isMethodAllowed(getMethod())) {
-        response.setStatusCode(405);
-        response.addHeader("Allow", "GET, POST, DELETE");
-        response.setBody("405 Method Not Allowed");
-    } else {
-        if (getMethod() == "GET") {
-            GetRequestHandler().handle(*this, response);
-        } else if (getMethod() == "POST") {
-            PostRequestHandler().handle(*this, response);
-        } else if (getMethod() == "DELETE") {
-            DeleteRequestHandler().handle(*this, response);
-        }
-    }
-}
-
+// PRINT DATA
 std::ostream& operator<<(std::ostream& os, const HttpRequest& req) {
     os << "Method: " << req.getMethod() << "\n";
     os << "URI: " << req.getURI() << "\n";
