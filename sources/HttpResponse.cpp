@@ -20,17 +20,23 @@ HttpResponse& HttpResponse::operator=(const HttpResponse& src) {
 }
 
 // Setters
-// 1) response line
+// 1) RESPONSE LINE
 void HttpResponse::setHTTPVersion(const std::string& httpVersion) { _httpVersion = httpVersion; }
 void HttpResponse::setStatusCode(int statusCode) { _statusCode = statusCode; }
 void HttpResponse::setReasonMessage(const std::string& reasonMessage) { _reasonMessage = reasonMessage; }
-// 2) headers
+
+// 2) HEADERS
 void HttpResponse::setHeader(const std::string& name, const std::string& value) { _headers[name] = value; }
 void HttpResponse::setHeaders(const std::map<std::string, std::string>& headers) { _headers = headers; }
-// 3) body
+// std::string addHeader(std::string allow, std::string method) const {};
+void HttpResponse::setContentType(std::string contentType) { _contentType = contentType; }
+void HttpResponse::setContentLength(int contentLength) { _contentLength = contentLength; }
+
+// 3) BODY
 void HttpResponse::setBody(const std::string& body) { _body = body; }
 void HttpResponse::setIsChunked(bool isChunked) { _isChunked = isChunked; }
 
+// OTHER
 void HttpResponse::ensureContentLength() {
     if (_headers.find("Content-Length") == _headers.end()) {
         _headers["Content-Length"] = std::to_string(_body.size());
@@ -48,6 +54,7 @@ std::string HttpResponse::toString() const {
     return response;
 }
 
+// SPECIAL RESPONSES 
 std::string HttpResponse::generate404Error(const std::string& uri) {
     std::string errorPage = "<html><body><h1>404 Not Found</h1>";
     errorPage += "<p>The requested resource " + uri + " was not found on this server.</p></body></html>";
@@ -59,6 +66,7 @@ std::string HttpResponse::generateRedirection(const std::string& newUri) {
     return "HTTP/1.1 302 Found\r\nLocation: " + newUri + "\r\n\r\n";
 }
 
+// PRINT DATA
 std::ostream& HttpResponse::print(std::ostream& os) const {
     os << "--- RESPONSE LINE INFOS: ---" << std::endl;
     os << "httpVersion is: " <<  _httpVersion << " Status code is: " << _statusCode << " Reason Message is: " << _reasonMessage << "\n\n";

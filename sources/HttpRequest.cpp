@@ -29,7 +29,9 @@ std::string HttpRequest::getMethod() const { return _method; }
 std::string HttpRequest::getURI() const { return _uri; }
 std::string HttpRequest::getHTTPVersion() const { return _version; }
 
-// 2) HEADER
+// 2) HEADERS
+std::string HttpRequest::getContentType(std::string contentType) const { return _contentType; }
+int HttpRequest::getContentLength(int contentLength) const { return _contentLength; }
 std::map<std::string, std::string> HttpRequest::getHeaders() const { return _headers; }
 std::string HttpRequest::getHeader(const std::string& name) const {
     std::map<std::string, std::string>::const_iterator it = _headers.find(name);

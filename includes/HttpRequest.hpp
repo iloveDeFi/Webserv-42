@@ -22,7 +22,18 @@ class HttpRequest {
         std::string _version;
 
         // 2) HEADER
+        std::string _name;
+        std::string _value;
+        std::string _contentType;
+        int _contentLength;
         std::map<std::string, std::string> _headers;
+        // accept
+        // accept-language
+        // accept-encoding
+        // connection
+        // cookie
+        // host
+        // user-agent
 
         // 3) BODY
         std::string _body;
@@ -50,6 +61,8 @@ class HttpRequest {
         // 2) HEADERS
         std::map<std::string, std::string> getHeaders() const;
         std::string getHeader(const std::string& name) const;
+        std::string getContentType(std::string contentType) const;
+        int getContentLength(int contentLength) const;
 
         // 3) BODY
         std::string getBody() const;

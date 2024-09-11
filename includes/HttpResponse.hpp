@@ -22,6 +22,13 @@ class HttpResponse {
         std::string _contentType;
         int _contentLength;
         std::map<std::string, std::string> _headers;
+        // cache-control
+        // expires
+        // location
+        // server
+        // set-cookie
+        // (separation lines)
+
         // BODY
         std::string _body;
         bool _isChunked;
@@ -38,14 +45,25 @@ class HttpResponse {
         void setStatusCode(int status);
         void setReasonMessage(const std::string& reasonMessage);
 
-        // 2) HEADER
+        // 2) HEADERS
         void setHeader(const std::string& name, const std::string& value);
         void setHeaders(const std::map<std::string, std::string>& headers);
         std::string addHeader(std::string allow, std::string method) const;
+        void setContentType(std::string contentType);
+        void setContentLength(int contentLength);
+        // name
+        // value
+        // cache-control
+        // expires
+        // location
+        // server
+        // set-cookie
 
         // 3) BODY
+        // TO DO : other types of data?
         void setBody(const std::string& body);
         void setIsChunked(bool isChunked);
+        // (separation lines)
 
         // OTHER
         void ensureContentLength();
