@@ -1,9 +1,9 @@
 #include "MngmtServers.hpp"
 
-//fichier fdConfig imaginé :
-//server1: root:/html index:index.html,index.htm error:404,not_found.html \
-error:500,error.html listing:true name:mywebserv listen:8888 \
-Limitations:client_max_body_size 8M; ??
+//fichier fdConfig imaginé sans retour à la ligne:
+//server1: root:/html index:index.html,index.htm error:404,not_found.html
+//error:500,error.html listing:true name:mywebserv listen:8888
+//Limitations:client_max_body_size 8M; ??
 //server2:root:/html index:index.html etc.
 
 ManagementServer::ManagementServer(std::ifstream& fdConfig, \
@@ -17,6 +17,8 @@ std::vector<std::map<std::string, Location> > serversLocations)
 
 	while (getline(fdConfig, line))
 	{
+		if (it == serversLocations.end())
+            throw std::runtime_error("More server configurations than expected.");
 		std::istringstream lineStream(line);
 		addNewServer(lineStream, *it);
 		it++;
@@ -37,23 +39,32 @@ ManagementServer::~ManagementServer()
 void ManagementServer::addNewServer(std::istringstream &configLine, \
 std::map<std::string, Location>& locations)
 {
+	std::string pair;
+	_server newServer;
 	int ip;
 	socklen_t addrLen;
-	std::string key;
-	std::string value;
 
-	_server newServer;
-	while (configLine.eof())
+	while (getline(configLine, pair, ' '))
 	{
-		getline(configLine, key, ':');
-		getline(configLine, value);
+		size_t delimiterPos = pair.find(':');
+		if (delimiterPos == std::string::npos)
+			throw std::runtime_error("Invalid configuration format.");
+			
+		std::string key = pair.substr(0, delimiterPos);
+		std::string value = pair.substr(delimiterPos + 1);
+
 		if (key == "listen")
-		newServer._port = stoi(value);
+			newServer._port = stoi(value);
 		else if (key == "name")
-			newServer._name = key;
+			newServer._name = value;
 		else if (key == "size")
-			newServer._maxSize = stoi(value);// trouver moyen pour avoir que le chiffre (pas 1M)
+		{
+			//trouver moyen de mieux gérer la taille (lettre/valeur)
+			value = value.substr(0, value.size() - 1);
+			newServer._maxSize = stoi(value);
+		}
 	}
+
 	newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
 	addrLen = sizeof(newServer._serverSocket->getAddress());
 	ip = getsockname(newServer._serverSocket->getFdSocket(), \
@@ -62,12 +73,10 @@ std::map<std::string, Location>& locations)
 		throw std::runtime_error("Error getting host IP.");
 	
 	_servers.push_back(newServer);
-	std::vector<_server>::iterator it = _servers.end() - 1;
-	setIpAddress(it, ip);
+	_servers.back()._ipAddress = ip;
 	newServer._serverSocket->Bind();
 	newServer._serverSocket->Listen();
 	newServer._locations = locations;
-	
 }
 
 void ManagementServer::handleRequest()
@@ -166,16 +175,31 @@ void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<int> &cl
 void ManagementServer::handleClient(int clientSocket)
 {
 	struct sockaddr_in clientAddr;
+	struct sockaddr_in serverAddr;
     socklen_t addrLen = sizeof(clientAddr);
+	socklen_t serverAddrLen = sizeof(serverAddr);
 	
 	if (getpeername(clientSocket, (struct sockaddr*)&clientAddr, &addrLen) == -1)
 		throw std::runtime_error("Error getting client IP address");
 
+	//déterminer le serveur sur lequel est le client
+	if (getsockname(clientSocket, (struct sockaddr*)&serverAddr, &serverAddrLen) == -1)
+		throw std::runtime_error("Error getting server socket information");
+	int serverPort = ntohs(serverAddr.sin_port);
+	_server* currentServer = nullptr;
+	for (std::vector<_server>::iterator it = _servers.begin(); it != _servers.end(); ++it)
+	{
+		if (it->_port == serverPort)
+		{
+			currentServer = &(*it);
+			break;
+		}
+	}
 	Client client(clientSocket, clientAddr);
 
 	client.readRequest(readRawData(clientSocket));// parser renvoyé à Alex
 	//il ajoute a client sont attribut _request;
-	client.processRequest(getLocation(), getSize()); //gestion de la requete par Baptiste
+	client.processRequest(currentServer->_locations, currentServer->_maxSize); //gestion de la requete par Baptiste
 	//il ajoute a client sont attribut _response;
 	client.sendResponse();
 }
