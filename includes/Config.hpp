@@ -10,6 +10,7 @@ class Config
 	private:
 		std::vector<std::map<std::string, Location> >* _locations;
 		std::ifstream _config;
+		void parseLocation(std::istringstream &configLine);
 
 	public:
 		Config(std::ifstream &originalCofig);
