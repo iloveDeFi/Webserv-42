@@ -1,2 +1,2 @@
 root:/html index:index.html,index.htm error:404,not_found.html error:500,error.html listing:true name:mywebserv listen:8888 Size:8M;
-root:/html index:index.html,index.htm error:404,not_found.html error:500,error.html listing:true name:mywebserv listen:8888 Size:8M;
+root:/html index:index.html,index.htm error:404,not_found.html error:500,error.html listing:true name:mywebserv2 listen:8080 Size:8M;

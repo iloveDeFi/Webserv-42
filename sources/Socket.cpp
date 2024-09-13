@@ -3,6 +3,7 @@
 
 Socket::Socket(int domain, int service, int protocol, int port, u_long interface)
 {
+	std::cout << "port in constructor socket " << port << std::endl;
 	_fdSocket = socket(domain, service, protocol);
 	if (_fdSocket < 0)
 		throw std::runtime_error("Error creating socket.");
@@ -38,12 +39,14 @@ void Socket::Bind()
 {
 	if (bind(_fdSocket, (struct sockaddr*)&_address, _len) < 0)
 		throw std::runtime_error("Error binding socket.");
+	std::cout << "Binding complete on port " << ntohs(_address.sin_port) << std::endl;
 }
 
 void Socket::Listen()
 {
 	if (listen(_fdSocket, MAX_CONNECTIONS) < 0)
 		throw std::runtime_error("Error listening socket.");
+	std::cout << "Listening complete" << std::endl;
 }
 
 int Socket::Accept()
@@ -80,17 +83,7 @@ ssize_t Socket::Receive(int client_socket, char* buffer, size_t buffer_length, i
 //pour définir les flags du descripteur de fichier.
 // Permet la modification dynamique des propriétés de descripteurs de fichiers. 
 
-void Socket::SetNonBlocking(bool is_non_blocking)
-{
-	int flags;
 
-	if (is_non_blocking)
-		flags = O_NONBLOCK | FD_CLOEXEC;
-	else
-		flags = FD_CLOEXEC;
-	if (fcntl(_fdSocket, F_SETFL, flags) == -1)
-		throw std::runtime_error("Failed to configure socket flags");
-}
 
 int Socket::getFdSocket()
 {

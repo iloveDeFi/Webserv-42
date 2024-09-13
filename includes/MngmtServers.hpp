@@ -48,6 +48,7 @@ class ManagementServer
 		/* Server(const Server &other) = delete;
 		Server& operator=(const Server &other) = delete; */
 		~ManagementServer();
+		void setNonBlocking(int fd);
 		Location& parseLocation(std::ifstream config, std::string& value, std::string key);
 		void handleRequest();
 		void prepareFdSets(fd_set &readFds, \

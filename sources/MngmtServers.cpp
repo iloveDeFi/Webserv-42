@@ -18,7 +18,7 @@ std::vector<std::map<std::string, Location> > serversLocations)
 	while (getline(fdConfig, line))
 	{
 		if (it == serversLocations.end())
-            throw std::runtime_error("More server configurations than expected.");
+			throw std::runtime_error("More server configurations than expected.");
 		std::istringstream lineStream(line);
 		addNewServer(lineStream, *it);
 		it++;
@@ -64,19 +64,22 @@ std::map<std::string, Location>& locations)
 			newServer._maxSize = stoi(value);
 		}
 	}
-
+	// std::cout << "port1 " << newServer._port << std::endl;
 	newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
 	addrLen = sizeof(newServer._serverSocket->getAddress());
+	setNonBlocking(newServer._serverSocket->getFdSocket());
+	
+	newServer._serverSocket->Bind();
+	newServer._serverSocket->Listen();
+	newServer._locations = locations;
 	ip = getsockname(newServer._serverSocket->getFdSocket(), \
 	(struct sockaddr *)&newServer._serverSocket->getAddress(), &addrLen);
 	if (ip == -1)
 		throw std::runtime_error("Error getting host IP.");
-	
+	// std::cout << "Socket ip " << ip << std::endl;
 	_servers.push_back(newServer);
 	_servers.back()._ipAddress = ip;
-	newServer._serverSocket->Bind();
-	newServer._serverSocket->Listen();
-	newServer._locations = locations;
+	std::cout << "Server is listening on port " << newServer._port << std::endl;
 }
 
 void ManagementServer::handleRequest()
@@ -88,6 +91,7 @@ void ManagementServer::handleRequest()
 	while (true)
 	{
 		prepareFdSets(readFds, clientFds, maxFd);
+		// std::cout << "servers size " << _servers.size() << std::endl;
 
 		// Attendre 5 secondes (et 0microscd) pour un événement sur les 
 		//sockets surveillés avant de retourner.
@@ -96,18 +100,19 @@ void ManagementServer::handleRequest()
 		//en attente d'activité
 		struct timeval tv = {5, 0};
 		int selectRes = select(maxFd + 1, &readFds, NULL, NULL, &tv);
-
-		if (selectRes == -1)
+		if (selectRes > 0)
+		{
+			acceptNewClients(clientFds, readFds);
+    		handleActiveClients(readFds, clientFds);
+		}
+		else if (selectRes == -1)
 			throw std::runtime_error("Select error");
 		else if (selectRes == 0)
 		{
 			std::cout << "Timeout occurred, performing routine checks." << std::endl;
 			continue;
 		}
-		//FD_ISSET() returns true if the file descriptor fd is a 
-		//member of the set pointed to by fdset. (int FD_ISSET(int fd, fd_set *fdset))
-		acceptNewClients(clientFds, readFds);
-		handleActiveClients(readFds, clientFds);
+		std::cout << "select() returned: " << selectRes << std::endl;
 	}
 
 }
@@ -124,30 +129,52 @@ const std::vector<int> &clientFds, int &maxFd)
 		FD_SET(serverFd, &readFds);
 		if (serverFd > maxFd)
 			maxFd = serverFd;
+		std::cout << "server Maxfd " << maxFd << std::endl;
 	}
 	for (size_t i = 0; i < clientFds.size(); ++i)
 	{
 		FD_SET(clientFds[i], &readFds);
 		if (clientFds[i] > maxFd)
 			maxFd = clientFds[i];
+		std::cout << "client Maxfd " << maxFd << std::endl;
 	}
 }
 void ManagementServer::acceptNewClients(std::vector<int> &clientFds, fd_set &readFds)
 {
+	std::cout << "accept " << std::endl;
 	for (size_t i = 0; i < _servers.size(); i++)
 	{
-		// Si un serveur a un nouveau client
+		//FD_ISSET() returns true if the file descriptor fd is a 
+		//member of the set pointed to by fdset. (int FD_ISSET(int fd, fd_set *fdset))
 		if (FD_ISSET(_servers[i]._serverSocket->getFdSocket(), &readFds))
 		{
+			std::cout << "Connection detected on server " << _servers[i]._name << std::endl;
 			int clientFd = _servers[i]._serverSocket->Accept();
 			if (clientFd != -1)
 			{
+				setNonBlocking(clientFd);
 				clientFds.push_back(clientFd);
 				std::cout << "New client connected on server " << _servers[i]._name << ": " << clientFd << std::endl;
 			}
 		}
+		else
+			 std::cerr << "Error accepting client connection: " << strerror(errno) << std::endl;
 	}
 }
+
+void ManagementServer::setNonBlocking(int fd)
+{
+	if (fcntl(fd, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1) 
+		throw std::runtime_error("Failed to configure socket as non-blocking");
+}
+
+/* void setNonBlocking(int fd)
+{
+	int flags = O_NONBLOCK | FD_CLOEXEC;
+	if (flags == -1) throw std::runtime_error("Error getting socket flags");
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+		throw std::runtime_error("Error setting socket to non-blocking mode");
+} */
 void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
 {
 	for (size_t i = 0; i < clientFds.size(); ++i)
