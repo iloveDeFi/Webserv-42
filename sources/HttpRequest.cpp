@@ -15,11 +15,11 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& src) {
         _uri = src._uri;
         _version = src._version;
         _headers = src._headers;
-        _allowedMethods = src._allowedMethods;
         _body = src._body;
         _queryParameters = src._queryParameters;
-        _cookies = src._cookies;
-        _isChunked = src._isChunked;
+        _allowedMethods = src._allowedMethods;
+        // BONUS :
+        // _cookies = src._cookies;
     }
     return *this;
 }
@@ -41,8 +41,8 @@ std::string HttpRequest::getHeader(const std::string& name) const {
         return "";
     }
 }
-std::string HttpRequest::getContentType(std::string contentType) const { return _contentType; }
-int HttpRequest::getContentLength(int contentLength) const { return _contentLength; }
+
+// TO DO LATER ALIGATOR
 // accept
 // accept-language
 // accept-encoding
@@ -54,8 +54,8 @@ int HttpRequest::getContentLength(int contentLength) const { return _contentLeng
 // 3) BODY
 std::string HttpRequest::getBody() const { return _body; }
 std::string HttpRequest::getQueryParameters() const { return _queryParameters; }
-std::string HttpRequest::getCookies() const { return _cookies; }
-bool HttpRequest::isChunked() const { return _isChunked; }
+// BONUS :
+// std::string HttpRequest::getCookies() const { return _cookies; }
 
  // OTHER
 const std::set<std::string> HttpRequest::initMethods() {
@@ -64,6 +64,15 @@ const std::set<std::string> HttpRequest::initMethods() {
 
 bool HttpRequest::isMethodAllowed(const std::string& method) const {
     return _allowedMethods.find(method) != _allowedMethods.end();
+}
+
+bool HttpRequest::isSupportedContentType(const std::string& contentType) const {
+    static const std::set<std::string> supportedTypes = {
+        "application/json", 
+        "text/html", 
+        "text/plain"
+    };
+    return supportedTypes.find(contentType) != supportedTypes.end();
 }
 
 // PRINT DATA

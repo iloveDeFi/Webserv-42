@@ -22,11 +22,9 @@ class HttpRequest {
         std::string _version;
 
         // 2) HEADERS
-        std::string _name;
-        std::string _value;
         std::map<std::string, std::string> _headers;
-        std::string _contentType;
-        int _contentLength;
+
+        // TO DO MAYBE LATER ALIGATOR :
         // accept
         // accept-language
         // accept-encoding
@@ -38,14 +36,16 @@ class HttpRequest {
         // 3) BODY
         std::string _body;
         std::string _queryParameters;
-        std::string _cookies;
-        bool _isChunked;
+        // TO DO IF BONUS :
+        // std::string _cookies;
 
         // OTHER
         static const std::set<std::string> initMethods();
         std::set<std::string> _allowedMethods;
         // TO DO : add following in server class i guess
         // std::map<std::string, std::string>& resourceDatabase;
+
+        // TO DO LATER ALIGATOR : MULTI ?
         
     public:
         HttpRequest();
@@ -62,8 +62,6 @@ class HttpRequest {
         // 2) HEADERS
         std::map<std::string, std::string> getHeaders() const;
         std::string getHeader(const std::string& name) const;
-        std::string getContentType(std::string contentType) const;
-        int getContentLength(int contentLength) const;
 
         // 3) BODY
         std::string getBody() const;
@@ -73,6 +71,7 @@ class HttpRequest {
 
         // OTHER
         bool isMethodAllowed(const std::string& method) const;
+        bool isSupportedContentType(const std::string& contentType) const;
 };
 
 // PRINT DATA

@@ -1,5 +1,14 @@
 #include "HttpController.hpp"
 
+// TO DO : need coplien's form if memory management needed ex. dynamic
+// RequestController::RequestController() {}
+
+// RequestController::~RequestController() {}
+
+// RequestController::RequestController(const RequestController& src) {}
+
+// RequestController& RequestController::operator=(const RequestController& src) {}
+
 void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();

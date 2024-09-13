@@ -10,8 +10,9 @@ HttpResponse::HttpResponse(const HttpResponse& src)
 
 HttpResponse& HttpResponse::operator=(const HttpResponse& src) {
     if (this != &src) {
-        _statusCode = src._statusCode;
         _httpVersion = src._httpVersion;
+        _statusCode = src._statusCode;
+        _reasonMessage = src._reasonMessage;
         _headers = src._headers;
         _body = src._body;
         _isChunked = src._isChunked;
@@ -28,9 +29,6 @@ void HttpResponse::setReasonMessage(const std::string& reasonMessage) { _reasonM
 // 2) HEADERS
 void HttpResponse::setHeader(const std::string& name, const std::string& value) { _headers[name] = value; }
 void HttpResponse::setHeaders(const std::map<std::string, std::string>& headers) { _headers = headers; }
-// std::string addHeader(std::string allow, std::string method) const {};
-void HttpResponse::setContentType(std::string contentType) { _contentType = contentType; }
-void HttpResponse::setContentLength(int contentLength) { _contentLength = contentLength; }
 
 // 3) BODY
 void HttpResponse::setBody(const std::string& body) { _body = body; }
@@ -72,8 +70,6 @@ std::ostream& HttpResponse::print(std::ostream& os) const {
     os << "httpVersion is: " <<  _httpVersion << " Status code is: " << _statusCode << " Reason Message is: " << _reasonMessage << "\n\n";
 
     os << "--- HEADER INFOS: ---" << std::endl;
-    os << "Headers name: " << _name << std::endl;
-    os << "Headers value: " << _value << std::endl;
     os << "Headers are: " << _headers << std::endl;
 
     os << "--- BODY INFOS: ---" << std::endl;

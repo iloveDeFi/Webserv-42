@@ -17,11 +17,7 @@ class HttpResponse {
         int _statusCode;
         std::string _reasonMessage;
         // HEADERS
-        std::string _name;
-        std::string _value;
-        std::string _contentType;
-        int _contentLength;
-        std::map<std::string, std::string> _headers;
+        std::map<std::string, std::string> _headers; // content-type, content-length
         // cache-control
         // expires
         // location

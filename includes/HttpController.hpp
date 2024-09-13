@@ -7,6 +7,11 @@
 #include <map>
 class RequestController {
     public:
+        // TO DO : need coplien's form if memory management needed ex. dynamic
+        // RequestController();
+        // ~RequestController();
+        // RequestController(const RequestController& src);
+        // RequestController& operator=(const RequestController& src);
         virtual void handle(const HttpRequest& req, HttpResponse& res) = 0;
         virtual ~RequestController() {}
 };
