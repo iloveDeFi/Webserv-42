@@ -30,8 +30,6 @@ std::string HttpRequest::getURI() const { return _uri; }
 std::string HttpRequest::getHTTPVersion() const { return _version; }
 
 // 2) HEADERS
-// std::string _name;
-// std::string _value;
 std::map<std::string, std::string> HttpRequest::getHeaders() const { return _headers; }
 std::string HttpRequest::getHeader(const std::string& name) const {
     std::map<std::string, std::string>::const_iterator it = _headers.find(name);

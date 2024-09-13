@@ -13,9 +13,9 @@ void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
     std::string queryParams = req.getQueryParameters();
-    std::string cookies = req.getCookies();
-
-    std::string responseBody = "You requested: " + uri + "\nQuery Params: " + queryParams + "\nCookies: " + cookies;
+    // std::string cookies = req.getCookies(); BONUS
+ 
+    std::string responseBody = "You requested: " + uri + "\nQuery Params: " + queryParams + "\nCookies: "; // + cookies;
 
     res.setHTTPVersion(version);
     res.setStatusCode(200);
