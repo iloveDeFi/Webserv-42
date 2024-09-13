@@ -34,25 +34,10 @@ class Socket
 		ssize_t Send(int client_socket, const char* buffer, size_t buffer_length, int flags);
 		ssize_t Receive(int client_socket, char* buffer, size_t buffer_length, int flags);
 
-		//void setNonBlocking(bool is_non_blocking);
-
 		int getFdSocket();
 		struct sockaddr_in& getAddress();
 		socklen_t getLen();
 
-
-		/* class ErrorSocket: public std::exception
-		{
-			virtual const char* what() const throw();
-		};
-		class ErrorSendingSocket: public std::exception
-		{
-			virtual const char* what() const throw();
-		};
-		class ErrorReceivingSocket: public std::exception
-		{
-			virtual const char* what() const throw();
-		}; */
 };
 
 #endif

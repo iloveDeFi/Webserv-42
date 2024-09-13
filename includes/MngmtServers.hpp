@@ -15,15 +15,6 @@
 # include <string>
 # include <poll.h>
 
-/* struct LocationConfig
-{
-	std::string root = "/html";
-	std::vector<std::string> index;
-	std::map<int, std::string> errorPages;
-	bool allowListing;
-
-	LocationConfig(std::string r = "", bool listing = false) : root(r), allowListing(listing) {}
-}; */
 
 class ManagementServer
 {
@@ -31,8 +22,6 @@ class ManagementServer
 		struct _server
 		{
 			Socket* _serverSocket;
-			/* std::vector<std::string> parseIndex(const std::string& value);
-			std::pair<int, std::string> parseError(const std::string& value); */
 			std::string _name;
 			int	_ipAddress;
 			int	_port;

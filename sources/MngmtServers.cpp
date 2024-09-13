@@ -1,11 +1,21 @@
 #include "MngmtServers.hpp"
 
-//fichier fdConfig imaginé sans retour à la ligne:
+//fichier fdConfig imaginé sans retour à la ligne à part pour différents serveurs:
 //server1: root:/html index:index.html,index.htm error:404,not_found.html
 //error:500,error.html listing:true name:mywebserv listen:8888
 //Limitations:client_max_body_size 8M; ??
 //server2:root:/html index:index.html etc.
 
+//note il faut qu'on trouve un moyen pour pouvoir passer 
+//la valeur de la taille des fichiers ()
+// • k or K: Kilobytes
+// • m or M: Megabytes
+// • g or G: Gigabytes
+
+
+//constructeur du gestionnaire de serveurs
+//il va découper le fichier en ligne (chacune représentant un serveur)
+//et ajouter un serveur au veteur de _servers
 ManagementServer::ManagementServer(std::ifstream& fdConfig, \
 std::vector<std::map<std::string, Location> > serversLocations)
 {
@@ -36,6 +46,14 @@ ManagementServer::~ManagementServer()
 	}
 }
 
+//suite du constructeur
+// cette fonction remplie en gros toute la struct du serveur
+// et active l'écoute passive du port
+// En détail:
+//parse la ligne entre key et value pour récupérer les infos
+//de config importantes
+// crée une Socket (classe), la définie comme non-bloquante
+// la lie avec le port d'écoute (bind) et écoute les requests (listen)
 void ManagementServer::addNewServer(std::istringstream &configLine, \
 std::map<std::string, Location>& locations)
 {
@@ -64,7 +82,6 @@ std::map<std::string, Location>& locations)
 			newServer._maxSize = stoi(value);
 		}
 	}
-	// std::cout << "port1 " << newServer._port << std::endl;
 	newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
 	addrLen = sizeof(newServer._serverSocket->getAddress());
 	setNonBlocking(newServer._serverSocket->getFdSocket());
@@ -76,12 +93,20 @@ std::map<std::string, Location>& locations)
 	(struct sockaddr *)&newServer._serverSocket->getAddress(), &addrLen);
 	if (ip == -1)
 		throw std::runtime_error("Error getting host IP.");
-	// std::cout << "Socket ip " << ip << std::endl;
 	_servers.push_back(newServer);
 	_servers.back()._ipAddress = ip;
 	std::cout << "Server is listening on port " << newServer._port << std::endl;
 }
 
+//La boucle principale d'écoute des différents serveur lancés
+//prépare les FD des serveurs et des potentiels clients
+//en modifiant la valeur max du nombre d'FD actif
+//commence par 4 (1, 2 et 3 étant les fd réservés) + 1 pour
+//le fd(socket) du serveur
+//select() (similaire à poll) permet de faire le I/O multiplexing
+//en récupéreant les fd préalablement préparés
+//si des nouvelles connections sont repérées, elles sont
+//acceptées puis gérées
 void ManagementServer::handleRequest()
 {
 	fd_set readFds;
@@ -91,7 +116,6 @@ void ManagementServer::handleRequest()
 	while (true)
 	{
 		prepareFdSets(readFds, clientFds, maxFd);
-		// std::cout << "servers size " << _servers.size() << std::endl;
 
 		// Attendre 5 secondes (et 0microscd) pour un événement sur les 
 		//sockets surveillés avant de retourner.
@@ -117,11 +141,17 @@ void ManagementServer::handleRequest()
 
 }
 
+//fonction permettant de préparer et initialiser les fd
+// Typically, the fd_set data type is implemented as a bit mask. 
+//However, we don’t need to know the details, since all manipulation
+// of file descriptor sets is done via four macros: 
+//FD_ZERO(), FD_SET(), FD_CLR(), and FD_ISSET().
+//FD_ZERO() initializes the set pointed to by fdset to be empty.
+//FD_SET() adds the file descriptor fd to the set pointed to by fdset.
 void ManagementServer::prepareFdSets(fd_set &readFds, \
 const std::vector<int> &clientFds, int &maxFd)
 {
-	//FD_ZERO() initializes the set pointed to by fdset to be empty.
-	//FD_SET() adds the file descriptor fd to the set pointed to by fdset.
+
 	FD_ZERO(&readFds);
 	for (size_t i = 0; i < _servers.size(); i++)
 	{
@@ -139,13 +169,16 @@ const std::vector<int> &clientFds, int &maxFd)
 		std::cout << "client Maxfd " << maxFd << std::endl;
 	}
 }
+
+//Si une connexion est repérée, elle doit être acceptée avant de pourvoir
+//être traiter. accept() créé un socket() chez le client,
+//afin de pouvoir être non bloquant cette socket aussi doit être en non bloquant
+//FD_ISSET() returns true if the file descFD_CLOEXECriptor fd is a 
+//member of the set pointed to by fdset. (int FD_ISSET(int fd, fd_set *fdset))
 void ManagementServer::acceptNewClients(std::vector<int> &clientFds, fd_set &readFds)
 {
-	std::cout << "accept " << std::endl;
 	for (size_t i = 0; i < _servers.size(); i++)
 	{
-		//FD_ISSET() returns true if the file descriptor fd is a 
-		//member of the set pointed to by fdset. (int FD_ISSET(int fd, fd_set *fdset))
 		if (FD_ISSET(_servers[i]._serverSocket->getFdSocket(), &readFds))
 		{
 			std::cout << "Connection detected on server " << _servers[i]._name << std::endl;
@@ -162,19 +195,23 @@ void ManagementServer::acceptNewClients(std::vector<int> &clientFds, fd_set &rea
 	}
 }
 
+//Configure la socket en non bloquant
+// FD_CLOEXEC : Ce flag est utilisé pour indiquer que 
+//le descripteur de fichier doit être automatiquement fermé 
+//lors de l'exécution de la fonction exec(), 
+//qui est utilisée pour lancer une nouvelle image de programme. 
+//Cela empêche les nouveaux programmes exécutés de hériter ce descripteur de fichier.
+// F_SETFL: est une commande utilisée avec fcntl 
+//pour définir les flags du descripteur de fichier.
+// Permet la modification dynamique des propriétés de descripteurs de fichiers. 
 void ManagementServer::setNonBlocking(int fd)
 {
 	if (fcntl(fd, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1) 
 		throw std::runtime_error("Failed to configure socket as non-blocking");
 }
 
-/* void setNonBlocking(int fd)
-{
-	int flags = O_NONBLOCK | FD_CLOEXEC;
-	if (flags == -1) throw std::runtime_error("Error getting socket flags");
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-		throw std::runtime_error("Error setting socket to non-blocking mode");
-} */
+//Loop sur tout les fd actifs pour les gérer individuellement
+//si une erreur arrive, le client est supprimé des clients actifs
 void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
 {
 	for (size_t i = 0; i < clientFds.size(); ++i)
@@ -199,6 +236,10 @@ void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<int> &cl
 	}
 }
 
+// getpeername() et getsockname() ne servent qu'à 
+//construire la classe Client, à partir de laquelle 
+//on appelle le parsing de la request puis son traitement
+//avant de renvoyer la response au client
 void ManagementServer::handleClient(int clientSocket)
 {
 	struct sockaddr_in clientAddr;
@@ -272,24 +313,3 @@ void ManagementServer::setIpAddress(std::vector<_server>::iterator it, int ip)
 	it->_ipAddress = ip;
 }
 
-/* std::pair<int, std::string> server::parseError(const std::string& value)
-{
-	std::istringstream valueStream(value);
-	std::string errorCodeStr, errorFile;
-	
-	getline(valueStream, errorCodeStr, ',');
-	getline(valueStream, errorFile);
-	int errorCode = stoi(errorCodeStr);
-	return std::make_pair(errorCode, errorFile);
-}
-
-std::vector<std::string> server::parseIndex(const std::string& value)
-{
-	std::vector<std::string> indices;
-	std::istringstream valueStream(value);
-	std::string index;
-	
-	while (std::getline(valueStream, index, ','))
-		indices.push_back(index);
-	return indices;
-} */

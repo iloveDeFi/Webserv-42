@@ -73,18 +73,6 @@ ssize_t Socket::Receive(int client_socket, char* buffer, size_t buffer_length, i
 	return (tmp);
 }
 
-// FD_CLOEXEC : Ce flag est utilisé pour indiquer que 
-//le descripteur de fichier doit être automatiquement fermé 
-//lors de l'exécution de la fonction exec(), 
-//qui est utilisée pour lancer une nouvelle image de programme. 
-//Cela empêche les nouveaux programmes exécutés de hériter ce descripteur de fichier.
-
-// F_SETFL: est une commande utilisée avec fcntl 
-//pour définir les flags du descripteur de fichier.
-// Permet la modification dynamique des propriétés de descripteurs de fichiers. 
-
-
-
 int Socket::getFdSocket()
 {
 	return(_fdSocket);
@@ -98,18 +86,5 @@ socklen_t Socket::getLen()
 	return(_len);
 }
 
-/* const char *Socket::ErrorSocket::what() const throw()
-{
-	return "Error creating socket.";
-}
 
-const char *Socket::ErrorSendingSocket::what() const throw()
-{
-	return "Error sending data.";
-}
-
-const char *Socket::ErrorReceivingSocket::what() const throw()
-{
-	return "Error receiving data.";
-} */
 
