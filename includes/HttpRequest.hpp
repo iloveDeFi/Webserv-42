@@ -5,17 +5,47 @@
 #include <map>
 #include <vector>
 #include <set>
+#include "HttpResponse.hpp"
+#include "HttpController.hpp"
 
-// Gère l'analyse et la représentation d'une requête HTTP.
+/// My request format is:
+// 1) HTTP Request Line : METHOD_VERB/CHEMIN_RESSOURCE/PROTOCOL_HTPP
+// 2) HTTP Request Headers : NAME OR VALUE
+// X) (empty line)
+// 3) HTTP Request Body
+
 class HttpRequest {
     private:
+        // 1) REQUEST LINE
         std::string _method;
         std::string _uri;
         std::string _version;
+
+        // 2) HEADERS
         std::map<std::string, std::string> _headers;
-        std::set<std::string> _allowedMethods;
+
+        // TO DO MAYBE LATER ALIGATOR :
+        // accept
+        // accept-language
+        // accept-encoding
+        // connection
+        // cookie
+        // host
+        // user-agent
+
+        // 3) BODY
         std::string _body;
-        bool _is_chunked;
+        std::string _queryParameters;
+        // TO DO IF BONUS :
+        // std::string _cookies;
+
+        // OTHER
+        static const std::set<std::string> initMethods();
+        std::set<std::string> _allowedMethods;
+        // TO DO : add following in server class i guess
+        // std::map<std::string, std::string>& resourceDatabase;
+
+        // TO DO LATER ALIGATOR : MULTI ?
         
     public:
         HttpRequest();
@@ -23,29 +53,28 @@ class HttpRequest {
         HttpRequest(const HttpRequest& src);
         HttpRequest& operator=(const HttpRequest& src);
 
-         // Getters
+        // Getters
+        // 1) REQUEST LINE
         std::string getMethod() const;
         std::string getURI() const;
         std::string getHTTPVersion() const;
+
+        // 2) HEADERS
         std::map<std::string, std::string> getHeaders() const;
-        std::string getHeader(const std::string& name) const; // check here
+        std::string getHeader(const std::string& name) const;
+
+        // 3) BODY
         std::string getBody() const;
+        std::string getQueryParameters() const;
+        std::string getCookies() const;
         bool isChunked() const;
 
-        // Setter (si nécessaire pour simuler des données)
-        void setMethod(const std::string& method);
-        void setURI(const std::string& uri);
-        void setHTTPVersion(const std::string& version);
-        void setHeaders(const std::map<std::string, std::string>& headers);
-        void setBody(const std::string& body);
-        void setIsChunked(bool is_chunked);
-
-        // Other Methods
-        // void parse(const std::string& rawRequest);
-        std::set<std::string> initMethods();
+        // OTHER
         bool isMethodAllowed(const std::string& method) const;
+        bool isSupportedContentType(const std::string& contentType) const;
 };
 
+// PRINT DATA
 std::ostream&	operator<<(std::ostream& os, const HttpRequest& re);
 
 #endif

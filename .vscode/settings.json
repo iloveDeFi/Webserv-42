@@ -122,6 +122,10 @@
         "system_error": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp",
+        "deque": "cpp",
+        "stack": "cpp"
     }
 }

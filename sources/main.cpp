@@ -14,8 +14,19 @@ int main(int ac, char **av)
         std::cout << "Binary must be: ./webserv [configuration file]" << std::endl;
         return (1);
     }
-<<<<<<< HEAD
-=======
+
+    // TO DO : Table des types MIME to add in SERVER CLASS
+    std::map<std::string, std::string> mimeTypes = {
+        {".html", "text/html"},
+        {".htm", "text/html"},
+        {".css", "text/css"},
+        {".js", "application/javascript"},
+        {".json", "application/json"},
+        {".png", "image/png"},
+        {".jpg", "image/jpeg"},
+        {".gif", "image/gif"}
+    };
+
 	const size_t buffer_size = 1024;
 	ifstream settings(argv[1].c_str());
 	Config config(settings);
