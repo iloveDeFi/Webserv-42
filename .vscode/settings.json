@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
 	"files.associations": {
 		"*.tpp": "cpp",
 		"__bit_reference": "cpp",
@@ -54,7 +53,6 @@
 		"vector": "cpp",
 		"algorithm": "cpp"
 	}
-=======
     "files.associations": {
         "memory_resource": "cpp",
         "ios": "cpp",
@@ -126,5 +124,4 @@
         "utility": "cpp",
         "set": "cpp"
     }
->>>>>>> feature/http-request
 }
