@@ -1,7 +1,8 @@
 #ifndef CLIENT_HPP
 # define CLIENT_HPP
-# include "HttpRequest.hpp"
-# include "HttpResponse.hpp"
+#include "HttpController.hpp"
+#include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 # include "Location.hpp"
 # include <fstream>
 # include <unistd.h>

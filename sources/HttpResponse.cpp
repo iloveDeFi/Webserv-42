@@ -1,12 +1,12 @@
 #include "HttpResponse.hpp"
 
 HttpResponse::HttpResponse() 
-    : _statusCode(200), _httpVersion("HTTP/1.1"), _headers(), _body(""), _isChunked(false) {}
+    : _httpVersion("HTTP/1.1"), _statusCode(200), _headers(), _body(""), _isChunked(false) {}
 
 HttpResponse::~HttpResponse() {}
 
 HttpResponse::HttpResponse(const HttpResponse& src)
-    : _statusCode(src._statusCode), _httpVersion(src._httpVersion), _headers(src._headers), _body(src._body), _isChunked(src._isChunked) {}
+    : _httpVersion(src._httpVersion), _statusCode(src._statusCode), _headers(src._headers), _body(src._body), _isChunked(src._isChunked) {}
 
 HttpResponse& HttpResponse::operator=(const HttpResponse& src) {
     if (this != &src) {
@@ -70,11 +70,14 @@ std::ostream& HttpResponse::print(std::ostream& os) const {
     os << "httpVersion is: " <<  _httpVersion << " Status code is: " << _statusCode << " Reason Message is: " << _reasonMessage << "\n\n";
 
     os << "--- HEADER INFOS: ---" << std::endl;
-    os << "Headers are: " << _headers << std::endl;
+    os << "Headers are: " << std::endl;
+    for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+        os << it->first << ": " << it->second << std::endl;
+    }
 
     os << "--- BODY INFOS: ---" << std::endl;
     os << "Content-Length: " << _body.size() << "\n\n";
     os << "Body is: " << _body << "\n";
-    os << "Body chunked: "<< _isChunked << "\n";
+    os << "Body chunked: " << _isChunked << "\n";
     return os;
 }

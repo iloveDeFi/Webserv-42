@@ -14,6 +14,9 @@
 # include <utility>
 # include <string>
 # include <poll.h>
+#include "HttpController.hpp"
+#include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 
 
 class ManagementServer

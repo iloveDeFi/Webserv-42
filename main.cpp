@@ -7,6 +7,9 @@
 #include "Socket.hpp"
 #include "Client.hpp"
 #include "Utils.hpp"
+#include "HttpController.hpp"
+#include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 
 int main(int ac, char **av)
 {

@@ -1,6 +1,9 @@
 #ifndef HTTPREQUEST_HPP
 # define HTTPREQUEST_HPP
 
+class HttpRequest;
+class HttpResponse;
+
 #include <iostream>
 #include <map>
 #include <vector>
@@ -37,10 +40,10 @@ class HttpRequest {
         std::string _body;
         std::string _queryParameters;
         // TO DO IF BONUS :
-        // std::string _cookies;
+       // std::string _cookies;
 
         // OTHER
-        static const std::set<std::string> initMethods();
+        /* static const  */std::set<std::string> initMethods();
         std::set<std::string> _allowedMethods;
         // TO DO : add following in server class i guess
         // std::map<std::string, std::string>& resourceDatabase;
@@ -66,12 +69,14 @@ class HttpRequest {
         // 3) BODY
         std::string getBody() const;
         std::string getQueryParameters() const;
-        std::string getCookies() const;
+        //std::string getCookies() /* const */;
         bool isChunked() const;
 
         // OTHER
         bool isMethodAllowed(const std::string& method) const;
         bool isSupportedContentType(const std::string& contentType) const;
+
+		void requestController(HttpResponse& response, std::map<std::string, std::string>& resourceDatabase);
 };
 
 // PRINT DATA

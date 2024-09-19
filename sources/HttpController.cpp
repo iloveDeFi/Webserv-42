@@ -1,19 +1,43 @@
 #include "HttpController.hpp"
 
 // TO DO : need coplien's form if memory management needed ex. dynamic
-// RequestController::RequestController() {}
+static std::map<std::string, std::string> defaultResourceDatabase;
 
-// RequestController::~RequestController() {}
+// Constructeur par défaut, utilise une référence vers la base de données statique par défaut
+RequestController::RequestController()
+: _resourceDatabase(defaultResourceDatabase)  // Liaison de la référence à une map statique
+{
+    _resourceDatabase[""] = "";  // Exemple de modification de la map statique
+}
 
-// RequestController::RequestController(const RequestController& src) {}
+// Constructeur prenant une référence valide
+/* RequestController::RequestController(std::map<std::string, std::string>& RsrDatabase)
+: _resourceDatabase(RsrDatabase)  // Liaison à une référence valide passée par l'appelant
+{
+} */
 
-// RequestController& RequestController::operator=(const RequestController& src) {}
+// Destructeur (pas de gestion spéciale nécessaire ici)
+RequestController::~RequestController() {}
+
+
+RequestController::RequestController(const RequestController& src)
+: _resourceDatabase(src._resourceDatabase)
+{
+		(void)src;
+}
+
+RequestController& RequestController::operator=(const RequestController& src)
+{
+	(void)src;
+
+	return (*this);
+}
 
 void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
     std::string queryParams = req.getQueryParameters();
-    // std::string cookies = req.getCookies(); BONUS
+    //std::string cookies = req.getCookies(); //BONUS
  
     std::string responseBody = "You requested: " + uri + "\nQuery Params: " + queryParams + "\nCookies: "; // + cookies;
 
@@ -30,10 +54,10 @@ void PostRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
     std::string body = req.getBody();
-    std::string cookies = req.getCookies();
+    //std::string cookies = req.getCookies();
     std::string queryParams = req.getQueryParameters(); 
 
-    std::string responseBody = "Received POST data for: " + uri + "\nBody: " + body + "\nCookies: " + cookies;
+    std::string responseBody = "Received POST data for: " + uri + "\nBody: " + body + "\nCookies: " /* + cookies */;
 
     res.setStatusCode(201);
     res.setBody(responseBody);
@@ -59,11 +83,11 @@ void DeleteRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
 
-    bool resourceExists = checkResourceExists(uri, _resourceDatabase);
+    bool resourceExists = checkResourceExists(uri, getResourceDatabase());
     std::string responseBody;
 
     if (resourceExists) {
-        deleteResource(uri, _resourceDatabase);
+        deleteResource(uri, getResourceDatabase());
         responseBody = "Resource deleted: " + uri;
         res.setStatusCode(200);
     } else {
@@ -77,34 +101,29 @@ void DeleteRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
     res.ensureContentLength();
 }
 
-void HttpRequest::requestController(HttpResponse& response, std::map<std::string, std::string>& resourceDatabase) {
-
-    // Pointeur de fonction membre pour handle()
-    typedef void (RequestController::*HandlerFunction)(const HttpRequest& req, HttpResponse& res);
-
-    // Création des handlers
-    GetRequestHandler getHandler(resourceDatabase);
-    PostRequestHandler postHandler(resourceDatabase);
-    DeleteRequestHandler deleteHandler(resourceDatabase);
-
-    // Map associant les méthodes HTTP avec les handlers
-    std::map<std::string, RequestController*> handlerMap;
-    handlerMap["GET"] = &getHandler;
-    handlerMap["POST"] = &postHandler;
-    handlerMap["DELETE"] = &deleteHandler;
-
-    // Trouver le bon handler en fonction de la méthode HTTP
-    std::string method = getMethod();
-    std::map<std::string, RequestController*>::iterator it = handlerMap.find(method);
-    
-    if (it != handlerMap.end()) {
-        RequestController* handler = it->second;
-        handler->handle(*this, response);
-    } else {
-        response.setStatusCode(405);
-        response.setBody("405 Method Not Allowed");
-        response.setHeader("Content-Type", "text/plain");
-        response.ensureContentLength();
-    }
+GetRequestHandler::GetRequestHandler() {
+    // Constructeur par défaut
 }
+
+PostRequestHandler::PostRequestHandler() {
+    // Constructeur par défaut
+}
+
+DeleteRequestHandler::DeleteRequestHandler() {
+    // Constructeur par défaut
+}
+
+GetRequestHandler::~GetRequestHandler() {
+    // Implémentation vide ou nécessaire selon les besoins
+}
+
+PostRequestHandler::~PostRequestHandler() {
+    // Implémentation vide ou nécessaire selon les besoins
+}
+
+DeleteRequestHandler::~DeleteRequestHandler() {
+    // Implémentation vide ou nécessaire selon les besoins
+}
+
+
 
