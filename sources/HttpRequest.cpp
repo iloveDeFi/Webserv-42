@@ -1,4 +1,5 @@
-#include "HttpRequest.hpp"
+#include "../includes/HttpRequest.hpp"
+#include "../includes/HttpException.hpp"
 #include <sstream>
 
 HttpRequest::HttpRequest() : AHttpMessage(), _method(""), _uri(""), _queryParameters(), _allowedMethods(initMethods()) {}
@@ -47,6 +48,25 @@ void HttpRequest::parse(const std::string& raw_request) {
     }
 }
 
+std::string HttpRequest::toString() const {
+	std::stringstream ss;
+	ss << "Method: " << _method << "\n";
+	ss << "URI: " << _uri << "\n";
+	ss << "Version: " << getVersion() << "\n";
+	ss << "Headers: \n";
+	std::map<std::string, std::string> headers = getHeaders();
+	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+		ss << "  " << it->first << ": " << it->second << "\n";
+	}
+	ss << "Body: " << getBody() << "\n";
+	ss << "Query Parameters: \n";
+	std::map<std::string, std::string> params = getQueryParameters();
+	for (std::map<std::string, std::string>::const_iterator it = params.begin(); it != params.end(); ++it) {
+		ss << "  " << it->first << " = " << it->second << "\n";
+	}
+	return ss.str();
+}
+
 const std::set<std::string> HttpRequest::initMethods() {
     std::set<std::string> methods;
     methods.insert("GET");
@@ -59,6 +79,16 @@ std::string HttpRequest::extractMethod(const std::string& raw_request) {
     size_t method_end = raw_request.find(' ');
     if (method_end == std::string::npos) throw HttpException("Missing method.");
     return raw_request.substr(0, method_end);
+}
+
+std::string HttpRequest::extractVersion(const std::string& raw_request) {
+	size_t uri_end = raw_request.find(' ');
+	if (uri_end == std::string::npos) throw HttpException("Missing URI.");
+
+	size_t version_end = raw_request.find("\r\n", uri_end + 1);
+	if (version_end == std::string::npos) throw HttpException("Missing HTTP version.");
+
+	return safe_substr(raw_request, uri_end + 1, version_end - uri_end - 1);
 }
 
 std::string HttpRequest::extractURI(const std::string& raw_request) {

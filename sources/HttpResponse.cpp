@@ -1,4 +1,4 @@
-#include "HttpResponse.hpp"
+#include "../includes/HttpResponse.hpp"
 #include <sstream>
 
 HttpResponse::HttpResponse() : AHttpMessage(), _statusCode(200), _statusMessage("OK") {
@@ -19,16 +19,58 @@ HttpResponse& HttpResponse::operator=(const HttpResponse& src) {
     return *this;
 }
 
+void HttpResponse::parse(const std::string& raw_response) {
+	size_t status_code_end = raw_response.find(' ');
+	if (status_code_end == std::string::npos) throw HttpException("Missing status code.");
+
+	std::string status_code_str = raw_response.substr(0, status_code_end);
+	try {
+		_statusCode = std::stoi(status_code_str);
+	} catch (const std::invalid_argument& e) {
+		throw HttpException("Invalid status code.");
+	}
+
+	size_t status_message_end = raw_response.find("\r\n", status_code_end + 1);
+	if (status_message_end == std::string::npos) throw HttpException("Missing status message.");
+
+	_statusMessage = raw_response.substr(status_code_end + 1, status_message_end - status_code_end - 1);
+	if (_statusMessage.empty()) throw HttpException("Missing status message.");
+
+	size_t headers_end = raw_response.find("\r\n\r\n", status_message_end + 1);
+	if (headers_end == std::string::npos) throw HttpException("Missing end of headers.");
+
+	std::string headers_str = raw_response.substr(status_message_end + 2, headers_end - status_message_end - 1);
+	setHeaders(extractHeaders(headers_str));
+
+	std::string body = raw_response.substr(headers_end + 4);
+	setBody(body);
+	setIsChunked(checkIfChunked(body));
+}
+
+std::string HttpResponse::toString() const {
+	std::stringstream ss;
+	ss << "HTTP Version: " << getVersion() << "\n";
+	ss << "Status Code: " << _statusCode << "\n";
+	ss << "Status Message: " << _statusMessage << "\n";
+	ss << "Headers: \n";
+	std::map<std::string, std::string> headers = getHeaders();
+	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+		ss << "  " << it->first << ": " << it->second << "\n";
+	}
+	ss << "Body: " << getBody() << "\n";
+	return ss.str();
+}
+
 void HttpResponse::setHeader(const std::string& name, const std::string& value) {
     _headers[name] = value;
 }
 
 void HttpResponse::setStatusCode(int statusCode) {
     _statusCode = statusCode;
-    _statusMessage = getStatusMessage(_statusCode);
+    _statusMessage = getStatusMessage();
 }
 
-std::string HttpResponse::getStatusMessage(int statusCode) const {
+std::string HttpResponse::getStatusMessage(int statusCode) {
     switch (statusCode) {
         case 200: return "OK";
         case 301: return "Moved Permanently";
@@ -90,7 +132,7 @@ int HttpResponse::getStatusCode() const {
 }
 
 std::string HttpResponse::getStatusMessage() const {
-    return _statusMessage;
+    return getStatusMessage(_statusCode);
 }
 
 std::ostream& operator<<(std::ostream& os, const HttpResponse& res) {

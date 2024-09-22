@@ -1,47 +1,54 @@
-#ifndef HTTPRESPONSE_HPP
-# define HTTPRESPONSE_HPP
+#pragma once
 
-#include "HttpRequest.hpp"
+#include "AHttpMessage.hpp"
 #include <iostream>
 #include <map>
 #include <string>
-class HttpResponse {
-    private:
-        std::string _httpVersion;
-        int _statusCode;
-        std::string _statusMessage;
-        std::string _body;
-        std::string _version;
-        std::map<std::string, std::string> _headers;
-        std::string _body;
+#include <set>
 
-    public:
-        HttpResponse();
-        ~HttpResponse();
-        HttpResponse(const HttpResponse& src);
-        HttpResponse& operator=(const HttpResponse& src);
-        
-        // 1) RESPONSE LINE
-        std::set<std::string> initMethods() const;
-        // void setMethod(const std::string& method);
-        // bool isMethodAllowed(const std::string& method) const;
-        // void setURI(const std::string& uri);
-        void setHTTPVersion(const std::string& _httpVersion);
-        void setStatusCode(int _statusCode);
-        std::string setStatusMessage();
-        // 2) HEADERS
-        void setHeader(const std::string& name, const std::string& value);
-        void setHeaders(const std::map<std::string, std::string>& headers);
-        void addHeader(std::string, std::string);
-        // 3) BODY
-        void setBody(const std::string& body);
-        void setIsChunked(bool is_chunked);
-        void ensureContentLength();
-        // 4) TEMPLATE
-        std::string generate404Error(const std::string& uri);
-        std::string generateRedirection(const std::string& newUri);
-        // 5) OTHERS
-        std::string responseToString() const;
-};      
+class HttpResponse : public AHttpMessage {
+private:
+    int _statusCode;
+    std::string _statusMessage;
+    bool _isChunked;
 
-#endif
+public:
+    HttpResponse();
+    virtual ~HttpResponse();
+    HttpResponse(const HttpResponse& src);
+    HttpResponse& operator=(const HttpResponse& src);
+
+    // Méthode héritée de AHttpMessage
+    virtual void parse(const std::string& raw_response);
+	virtual std::string toString() const;
+
+    // 1) RESPONSE LINE
+    std::set<std::string> initMethods() const;
+    void setHTTPVersion(const std::string& httpVersion);
+    void setStatusCode(int statusCode);
+
+    // 2) HEADERS
+    void setHeader(const std::string& name, const std::string& value);
+    void addHeader(const std::string& name, const std::string& value);
+
+    // 3) BODY
+    void setBody(const std::string& body);
+    void setIsChunked(bool isChunked);
+    void ensureContentLength();
+
+    // 4) TEMPLATE
+    std::string generate404Error(const std::string& uri);
+    std::string generateRedirection(const std::string& newUri);
+
+    // 5) OTHERS
+    std::string responseToString() const;
+
+    // Getters
+    int getStatusCode() const;
+    std::string getStatusMessage() const;
+	static std::string getStatusMessage(int statusCode);
+    bool isChunked() const;
+};
+
+// Fonction pour imprimer les détails de la réponse
+std::ostream& operator<<(std::ostream& os, const HttpResponse& res);

@@ -13,6 +13,7 @@ private:
     static const std::set<std::string> initMethods();
     std::string extractMethod(const std::string& raw_request);
     std::string extractURI(const std::string& raw_request);
+	std::string extractVersion(const std::string& raw_request);
     std::map<std::string, std::string> extractQueryParameters(const std::string& uri);
     bool isValidRequest(const std::string& raw_request);
 
@@ -23,6 +24,7 @@ public:
     HttpRequest& operator=(const HttpRequest& src);
 
     void parse(const std::string& raw_request);
+	std::string toString() const;
 
     // Getters
     std::string getMethod() const;
