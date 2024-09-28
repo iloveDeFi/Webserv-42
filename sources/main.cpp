@@ -1,82 +1,52 @@
+#include "../includes/HttpConfig.hpp"
 #include <iostream>
-#include <string>
-#include "../includes/HttpRequest.hpp"
+#include <stdexcept>
 
-void testRequest(const std::string& raw_request);
+// Fonction pour afficher les détails d'un serveur
+void printServerDetails(const HttpConfig::ServerConfig& server) {
+    std::cout << "Server Name: " << server.serverName << std::endl;
+    std::cout << "Port: " << server.port << std::endl;
+    std::cout << "Max Body Size: " << server.clientMaxBodySize << " bytes" << std::endl;
+    
+    std::cout << "Error Pages:" << std::endl;
+    for (std::map<int, std::string>::const_iterator it = server.errorPages.begin(); 
+         it != server.errorPages.end(); ++it) {
+        std::cout << "  " << it->first << ": " << it->second << std::endl;
+    }
+    
+    std::cout << "Routes:" << std::endl;
+    for (std::map<std::string, std::map<std::string, std::string> >::const_iterator it = server.routes.begin(); 
+         it != server.routes.end(); ++it) {
+        std::cout << "  " << it->first << std::endl;
+        for (std::map<std::string, std::string>::const_iterator innerIt = it->second.begin(); 
+             innerIt != it->second.end(); ++innerIt) {
+            std::cout << "    " << innerIt->first << ": " << innerIt->second << std::endl;
+        }
+    }
+    std::cout << std::endl;
+}
 
 int main() {
-    // Test des requêtes
-    std::string raw_request_1 = "POST /api/v1/upload HTTP/1.1\r\n"
-                                 "Host: www.example.com\r\n"
-                                 "Content-Type: application/json\r\n"
-                                 "Content-Length: 27\r\n"
-                                 "Authorization: Bearer your_access_token_here\r\n"
-                                 "User-Agent: Mozilla/5.0\r\n"
-                                 "\r\n"
-                                 "{\"name\": \"example\", \"type\": \"test\"}\r\n";
-
-    std::string raw_request_2 = "POST /upload HTTP/1.1\r\n"
-                                 "Host: upload.example.com\r\n"
-                                 "Transfer-Encoding: chunked\r\n"
-                                 "Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
-                                 "User-Agent: Mozilla/5.0\r\n"
-                                 "\r\n"
-                                 "7\r\n"
-                                 "file1=\r\n"
-                                 "----WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
-                                 "Content-Disposition: form-data; name=\"file1\"; filename=\"example.txt\"\r\n"
-                                 "Content-Type: text/plain\r\n"
-                                 "\r\n"
-                                 "This is the content of the file.\r\n"
-                                 "----WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
-                                 "Content-Disposition: form-data; name=\"file2\"; filename=\"example2.txt\"\r\n"
-                                 "Content-Type: text/plain\r\n"
-                                 "\r\n"
-                                 "Another file content.\r\n"
-                                 "0\r\n"
-                                 "\r\n";
-
-    std::string raw_request_3 = "POST /api/v1/upload\r\n"
-                                 "Host: www.example.com\r\n"
-                                 "Content-Type: application/json\r\n"
-                                 "Content-Length: 27\r\n"
-                                 "Authorization: Bearer your_access_token_here\r\n"
-                                 "User-Agent: Mozilla/5.0\r\n"
-                                 "\r\n"
-                                 "{\"name\": \"example\", \"type\": \"test\"}\r\n";
-
-    std::string raw_request_4 = "POST /upload HTTP/1.1\r\n"
-                                 "Host: upload.example.com\r\n"
-                                 "Transfer-Encoding chunked\r\n"  // Erreur: manque les deux-points
-                                 "Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
-                                 "User-Agent: Mozilla/5.0\r\n"
-                                 "\r\n"
-                                 "7\r\n"
-                                 "file1=\r\n"
-                                 "----WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
-                                 "Content-Disposition: form-data; name=\"file1\"; filename=\"example.txt\"\r\n"
-                                 "Content-Type: text/plain\r\n"
-                                 "\r\n"
-                                 "This is the content of the file.\r\n"
-                                 "----WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
-                                 "Content-Disposition: form-data; name=\"file2\"; filename=\"example2.txt\"\r\n"
-                                 "Content-Type: text/plain\r\n"
-                                 "\r\n"
-                                 "Another file content.\r\n"
-                                 "0\r\n"
-                                 "\r\n";
-
-    std::cout << "Testing raw_request_1:\n";
-    testRequest(raw_request_1);
-
-    std::cout << "\nTesting raw_request_2:\n";
-    testRequest(raw_request_2);
-
-    std::cout << "\nTesting raw_request_3:\n";
-    testRequest(raw_request_3);
-
-    std::cout << "\nTesting raw_request_4:\n";
-    testRequest(raw_request_4);
-
+    const std::string configFilename = "config.yaml";
+    
+    try {
+        // Charger et parser la configuration
+        HttpConfig config(configFilename);
+        
+        // Récupérer les configurations de serveurs parsées
+        const std::vector<HttpConfig::ServerConfig>& servers = config.getParsedServers();
+        
+        // Afficher les détails de chaque serveur
+        std::cout << "Parsed " << servers.size() << " server configurations:" << std::endl << std::endl;
+        for (size_t i = 0; i < servers.size(); ++i) {
+            std::cout << "Server " << (i + 1) << ":" << std::endl;
+            printServerDetails(servers[i]);
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+    
     return 0;
 }

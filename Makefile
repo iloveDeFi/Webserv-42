@@ -1,6 +1,6 @@
-NAME            = webserv
+NAME            = configParser
 
-SRCS_LIST       = main.cpp HttpRequest.cpp
+SRCS_LIST       = main.cpp HttpConfig.cpp
 
 SRCS_FOLDER     = sources
 
