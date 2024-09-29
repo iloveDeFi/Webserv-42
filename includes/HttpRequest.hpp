@@ -5,12 +5,11 @@
 #include <map>
 #include <vector>
 #include <set>
-#include "HttpRequestException.hpp"
-#include "HttpMessage.hpp"
+#include "HttpException.hpp"
 
 const size_t MAX_BODY_SIZE = 2 * 1024 * 1024; // 2 MB
 
-class HttpRequest : public HttpMessage {
+class HttpRequest {
     private:
         std::string _method;
         std::string _uri;

@@ -1,5 +1,5 @@
 #include "../includes/HttpResponse.hpp"
-#include "../includes/HttpResponseException.hpp"
+#include "../includes/HttpException.hpp"
 
 
 // Constructeur par défaut
@@ -39,21 +39,24 @@ bool HttpResponse::isChunked() const { return _isChunked; }
 // Setters
 void HttpResponse::setHTTPVersion(const std::string& version) {
     if (version != "HTTP/1.1" && version != "HTTP/1.0") {
-        throw HttpResponseException("Invalid HTTP version: " + version);
+        throw HttpException("Invalid HTTP version: " + version);
     }
     _version = version;
 }
 
 void HttpResponse::setStatusCode(int statusCode) {
     if (statusCode < 100 || statusCode > 599) {
-        throw HttpResponseException("Invalid status code: " + std::to_string(statusCode));
+        std::stringstream ss;
+        ss << statusCode;  // Convertir statusCode en chaîne
+        throw HttpException("Invalid status code: " + ss.str());
     }
-    _statusCode = statusCode;
+    _statusCode = statusCode;  // Assignation de statusCode valide
 }
+
 
 void HttpResponse::setStatusMessage(const std::string& statusMessage) {
     if (statusMessage.empty()) {
-        throw HttpResponseException("Status message cannot be empty");
+        throw HttpException("Status message cannot be empty");
     }
     _statusMessage = statusMessage;
 }
@@ -65,7 +68,7 @@ void HttpResponse::setIsChunked(bool isChunked) { _isChunked = isChunked; }
 // Parsing principal
 void HttpResponse::parse(const std::string& raw_response) {
     if (!isValidResponse(raw_response)) {
-        throw HttpResponseException("Invalid response format: response is not properly formatted.");
+        throw HttpException("Invalid response format: response is not properly formatted.");
     }
 
     try {
@@ -75,7 +78,7 @@ void HttpResponse::parse(const std::string& raw_response) {
         setHeaders(extractHeaders(raw_response));
         setBody(extractBody(raw_response));
         setIsChunked(checkIfChunked(_headers));
-    } catch (const HttpResponseException& e) {
+    } catch (const HttpException& e) {
         std::cerr << "Error during response parsing: " << e.what() << std::endl;
         clearResponseData();
     }
@@ -83,8 +86,8 @@ void HttpResponse::parse(const std::string& raw_response) {
 
 // Fonctions auxiliaires
 std::string HttpResponse::safe_substr(const std::string& str, size_t start, size_t length) {
-    if (start >= str.size()) throw HttpResponseException("Substring extraction failed: start index out of bounds.");
-    if (start + length > str.size()) throw HttpResponseException("Substring extraction failed: length out of bounds.");
+    if (start >= str.size()) throw HttpException("Substring extraction failed: start index out of bounds.");
+    if (start + length > str.size()) throw HttpException("Substring extraction failed: length out of bounds.");
     return str.substr(start, length);
 }
 
@@ -115,14 +118,14 @@ std::string HttpResponse::extractHTTPVersion(const std::string& raw_response) {
 int HttpResponse::extractStatusCode(const std::string& raw_response) {
     size_t version_end = raw_response.find(' ');
     size_t status_end = raw_response.find(' ', version_end + 1);
-    if (status_end == std::string::npos) throw HttpResponseException("Missing status code.");
+    if (status_end == std::string::npos) throw HttpException("Missing status code.");
     return atoi(raw_response.substr(version_end + 1, status_end - version_end - 1).c_str());
 }
 
 std::string HttpResponse::extractStatusMessage(const std::string& raw_response) {
     size_t status_end = raw_response.find(' ', raw_response.find(' ') + 1);
     size_t message_end = raw_response.find("\r\n", status_end + 1);
-    if (message_end == std::string::npos) throw HttpResponseException("Missing status message.");
+    if (message_end == std::string::npos) throw HttpException("Missing status message.");
     return safe_substr(raw_response, status_end + 1, message_end - status_end - 1);
 }
 
@@ -130,7 +133,7 @@ std::map<std::string, std::string> HttpResponse::extractHeaders(const std::strin
     std::map<std::string, std::string> headers;
     size_t headers_start = raw_response.find("\r\n") + 2;
     size_t headers_end = raw_response.find("\r\n\r\n", headers_start);
-    if (headers_end == std::string::npos) throw HttpResponseException("Missing end of headers.");
+    if (headers_end == std::string::npos) throw HttpException("Missing end of headers.");
 
     size_t current = headers_start;
     while (current < headers_end) {
@@ -139,7 +142,7 @@ std::map<std::string, std::string> HttpResponse::extractHeaders(const std::strin
 
         size_t colon_pos = raw_response.find(':', current);
         if (colon_pos == std::string::npos || colon_pos > line_end) {
-            throw HttpResponseException("Invalid header format: missing ':' in header.");
+            throw HttpException("Invalid header format: missing ':' in header.");
         }
 
         std::string key = safe_substr(raw_response, current, colon_pos - current);

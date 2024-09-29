@@ -1,6 +1,6 @@
 NAME			= webserv
 
-SRCS_LIST	= 	main.cpp HttpMessage.cpp HttpRequest.cpp HttpResponse.cpp 
+SRCS_LIST	= 	main.cpp HttpRequest.cpp HttpResponse.cpp 
 
 SRCS_FOLDER		= sources
 

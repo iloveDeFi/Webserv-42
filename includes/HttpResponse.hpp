@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include <cstdlib>
 
 class HttpResponse {
 private:
