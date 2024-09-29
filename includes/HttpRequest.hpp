@@ -46,6 +46,7 @@ class HttpRequest {
 
         // Méthode de parsing principale
         void parse(const std::string& raw_request);
+		// Méthode pour tester le parsing de la requête
 		void testRequest(const std::string& raw_request);
 
         // Getters

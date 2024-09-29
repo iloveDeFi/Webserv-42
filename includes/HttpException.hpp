@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-// --- Exceptions liées à HttpRequest ---
+// --- Exceptions HttpRequest ---
 
 class HttpException : public std::runtime_error {
 public:
@@ -64,7 +64,7 @@ public:
     BodyTooLargeException() : HttpException("Request body is too large.") {}
 };
 
-// --- Exceptions liées à HttpResponse ---
+// --- Exceptions HttpResponse ---
 
 class HttpResponseException : public std::runtime_error {
 public:

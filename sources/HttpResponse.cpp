@@ -176,3 +176,5 @@ void HttpResponse::clearResponseData() {
     _body = "";
     _isChunked = false;
 }
+
+//N'inclut pas de logique pour créer des réponses spécifiques (comme les listings de répertoires ou les erreurs).
