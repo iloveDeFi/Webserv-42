@@ -1,8 +1,8 @@
 NAME			= webserv
 
-SRCS_LIST	= 	main.cpp \
+SRCS_LIST	= 	main.cpp HttpMessage.cpp HttpRequest.cpp HttpResponse.cpp 
 
-SRCS_FOLDER		= srcs
+SRCS_FOLDER		= sources
 
 SRCS			= $(addprefix ${SRCS_FOLDER}/, ${SRCS_LIST})
 

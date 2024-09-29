@@ -3,63 +3,107 @@
 #include <stdexcept>
 #include <string>
 
+// --- Exceptions liées à HttpRequest ---
 
-class HttpException : public std::runtime_error {
+class HttpRequestException : public std::runtime_error {
 public:
-    explicit HttpException(const std::string& message)
+    explicit HttpRequestException(const std::string& message)
         : std::runtime_error(message) {}
 };
 
-class MissingBodyException : public HttpException {
+class MissingBodyException : public HttpRequestException {
 public:
     MissingBodyException()
-        : HttpException("Invalid request format: missing body.") {}
+        : HttpRequestException("Invalid request format: missing body.") {}
 };
 
-class InvalidQueryStringException : public HttpException {
+class InvalidQueryStringException : public HttpRequestException {
 public:
     InvalidQueryStringException()
-        : HttpException("Invalid request format: invalid query string.") {}
+        : HttpRequestException("Invalid request format: invalid query string.") {}
 };
 
-
-class MissingMethodException : public HttpException {
+class MissingMethodException : public HttpRequestException {
 public:
     MissingMethodException()
-        : HttpException("Invalid request format: missing method.") {}
+        : HttpRequestException("Invalid request format: missing method.") {}
 };
 
-class MissingURIException : public HttpException {
+class MissingURIException : public HttpRequestException {
 public:
     MissingURIException()
-        : HttpException("Invalid request format: missing URI.") {}
+        : HttpRequestException("Invalid request format: missing URI.") {}
 };
 
-class MissingHTTPVersionException : public HttpException {
+class MissingHTTPVersionException : public HttpRequestException {
 public:
     MissingHTTPVersionException()
-        : HttpException("Invalid request format: missing HTTP version.") {}
+        : HttpRequestException("Invalid request format: missing HTTP version.") {}
 };
 
-class MissingHeadersException : public HttpException {
+class MissingHeadersException : public HttpRequestException {
 public:
     MissingHeadersException()
-        : HttpException("Invalid request format: missing headers.") {}
+        : HttpRequestException("Invalid request format: missing headers.") {}
 };
 
-class MissingEndOfHeadersException : public HttpException {
+class MissingEndOfHeadersException : public HttpRequestException {
 public:
     MissingEndOfHeadersException()
-        : HttpException("Invalid request format: missing end of headers.") {}
+        : HttpRequestException("Invalid request format: missing end of headers.") {}
 };
 
-class InvalidHeaderFormatException : public HttpException {
+class InvalidHeaderFormatException : public HttpRequestException {
 public:
     InvalidHeaderFormatException()
-        : HttpException("Invalid header format: missing colon or invalid header.") {}
+        : HttpRequestException("Invalid header format: missing colon or invalid header.") {}
 };
 
-class BodyTooLargeException : public HttpException {
+class BodyTooLargeException : public HttpRequestException {
 public:
-    BodyTooLargeException() : HttpException("Request body is too large.") {}
+    BodyTooLargeException() : HttpRequestException("Request body is too large.") {}
+};
+
+// --- Exceptions liées à HttpResponse ---
+
+class HttpResponseException : public std::runtime_error {
+public:
+    explicit HttpResponseException(const std::string& message)
+        : std::runtime_error(message) {}
+};
+
+class InvalidHTTPVersionException : public HttpResponseException {
+public:
+    InvalidHTTPVersionException()
+        : HttpResponseException("Invalid response format: invalid HTTP version.") {}
+};
+
+class InvalidStatusCodeException : public HttpResponseException {
+public:
+    InvalidStatusCodeException()
+        : HttpResponseException("Invalid response format: invalid status code.") {}
+};
+
+class InvalidStatusMessageException : public HttpResponseException {
+public:
+    InvalidStatusMessageException()
+        : HttpResponseException("Invalid response format: invalid status message.") {}
+};
+
+class MissingResponseHeadersException : public HttpResponseException {
+public:
+    MissingResponseHeadersException()
+        : HttpResponseException("Invalid response format: missing headers.") {}
+};
+
+class MissingResponseBodyException : public HttpResponseException {
+public:
+    MissingResponseBodyException()
+        : HttpResponseException("Invalid response format: missing body.") {}
+};
+
+class InvalidChunkedEncodingException : public HttpResponseException {
+public:
+    InvalidChunkedEncodingException()
+        : HttpResponseException("Invalid response format: chunked transfer encoding error.") {}
 };
