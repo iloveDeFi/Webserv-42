@@ -78,6 +78,10 @@ void HttpResponse::parse(const std::string& raw_response) {
         setHeaders(extractHeaders(raw_response));
         setBody(extractBody(raw_response));
         setIsChunked(checkIfChunked(_headers));
+
+		if (isChunked()) {
+			setBody(decodeChunkedBody(getBody()));
+        }
     } catch (const HttpException& e) {
         std::cerr << "Error during response parsing: " << e.what() << std::endl;
         clearResponseData();
@@ -166,6 +170,55 @@ bool HttpResponse::checkIfChunked(const std::map<std::string, std::string>& head
         return true;
     }
     return false;
+}
+
+// Gestion du transfert chunked
+std::string HttpResponse::decodeChunkedBody(const std::string& rawBody) {
+    std::string decodedBody;
+    std::istringstream iss(rawBody);
+    std::string line;
+    size_t totalSize = 0;
+
+    while (std::getline(iss, line)) {
+        if (!line.empty() && line[line.length()-1] == '\r') {
+            line.erase(line.length()-1);
+        }
+
+        std::string::size_type semicolonPos = line.find(';');
+        if (semicolonPos != std::string::npos) {
+            line = line.substr(0, semicolonPos);
+        }
+
+        unsigned long chunkSize;
+        char* endPtr;
+        chunkSize = strtoul(line.c_str(), &endPtr, 16);
+        if (*endPtr != '\0') {
+            throw HttpException("Invalid chunk size");
+        }
+
+        if (chunkSize == 0) break;
+
+        if (totalSize + chunkSize > MAX_BODY_SIZE) {
+            throw HttpException("Body size exceeds limit");
+        }
+
+        char* chunk = new char[chunkSize];
+        iss.read(chunk, static_cast<std::streamsize>(chunkSize));
+        if (iss.gcount() != static_cast<std::streamsize>(chunkSize)) {
+            delete[] chunk;
+            throw HttpException("Unexpected end of chunk");
+        }
+
+        decodedBody.append(chunk, chunkSize);
+        delete[] chunk;
+        totalSize += chunkSize;
+
+        iss.ignore(2);
+    }
+
+    // Traiter les trailers si nécessaire
+
+    return decodedBody;
 }
 
 void HttpResponse::clearResponseData() {

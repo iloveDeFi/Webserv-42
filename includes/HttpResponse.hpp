@@ -6,6 +6,9 @@
 #include <sstream>
 #include <cstdlib>
 
+const size_t MAX_BODY_SIZE = 1024 * 1024 * 2;
+
+
 class HttpResponse {
 private:
     std::string _version;
@@ -55,6 +58,7 @@ public:
 
     // Gestion du chunked transfer-encoding
     static bool checkIfChunked(const std::map<std::string, std::string>& headers);
+	std::string decodeChunkedBody(const std::string& rawBody);
 
     // Effacer les données de la réponse en cas d'erreur
     void clearResponseData();

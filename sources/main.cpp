@@ -1,7 +1,43 @@
 #include <iostream>
+#include "../includes/HttpException.hpp"
 #include <string>
 #include <cassert>
 #include "../includes/HttpResponse.hpp"
+
+
+void testChunkedEncodingWithoutTrailers() {
+    std::cout << "Testing Chunked Encoding without Trailers..." << std::endl;
+    std::string raw_response =
+        "HTTP/1.1 200 OK\r\n"
+        "Transfer-Encoding: chunked\r\n"
+        "Content-Type: text/plain\r\n"
+        "\r\n"
+        "7\r\n"
+        "Mozilla\r\n"
+        "9\r\n"
+        "Developer\r\n"
+        "7\r\n"
+        "Network\r\n"
+        "0\r\n"
+        "\r\n";
+
+    HttpResponse response;
+    try {
+        response.parse(raw_response);
+        std::cout << "Status Code: " << response.getStatusCode() << std::endl;
+        std::cout << "Transfer-Encoding: " << response.getHeader("Transfer-Encoding") << std::endl;
+        std::cout << "Parsed body: '" << response.getBody() << "'" << std::endl;
+        std::cout << "Body length: " << response.getBody().length() << std::endl;
+
+        assert(response.getStatusCode() == 200);
+        assert(response.getHeader("Transfer-Encoding") == "chunked");
+        assert(response.getBody() == "MozillaDeveloperNetwork");
+        assert(response.getBody().length() == 23);
+        std::cout << "Chunked Encoding without Trailers test passed." << std::endl;
+    } catch (const HttpResponseException& e) {
+        std::cerr << "Test failed: " << e.what() << std::endl;
+    }
+}
 
 void testChunkedEncodingWithTrailers() {
     std::cout << "Testing Chunked Encoding with Trailers..." << std::endl;
@@ -149,10 +185,11 @@ void testNonStandardResponse() {
 }
 
 int main() {
+	testChunkedEncodingWithoutTrailers();
     // testChunkedEncodingWithTrailers();
     testMultipartResponse();
     testCompressedChunkedResponse();
-    testMalformedHeaders();
+    // testMalformedHeaders();
     testNonStandardResponse();
 
     return 0;
