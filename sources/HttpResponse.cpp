@@ -37,19 +37,26 @@ void HttpResponse::setIsChunked(bool isChunked) { _isChunked = isChunked; }
 // OTHER
 void HttpResponse::ensureContentLength() {
     if (_headers.find("Content-Length") == _headers.end()) {
-        _headers["Content-Length"] = std::to_string(_body.size());
+        _headers["Content-Length"] = toString(_body.size());
     }
 }
 
-std::string HttpResponse::toString() const {
-    std::string response = _httpVersion + " " + std::to_string(_statusCode) + " " + _reasonMessage + "\r\n";
-    
+std::string HttpResponse::responseToString() const {
+    std::ostringstream oss;
+    oss << _httpVersion << " " << _statusCode << " " << _reasonMessage << "\r\n";
+
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
-        response += it->first + ": " + it->second + "\r\n";
+        oss << it->first << ": " << it->second << "\r\n";
     }
-    
-    response += "\r\n" + _body;
-    return response;
+
+    oss << "\r\n" << _body;
+    return oss.str();
+}
+
+std::string HttpResponse::toString(int value) {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
 }
 
 // SPECIAL RESPONSES 
@@ -78,3 +85,4 @@ std::ostream& HttpResponse::print(std::ostream& os) const {
     os << "Body chunked: "<< _isChunked << "\n";
     return os;
 }
+
