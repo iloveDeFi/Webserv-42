@@ -76,6 +76,10 @@ void printLocationDetails(const HttpConfig::Location& location) {
     if (!location.include.empty()) {
         std::cout << "    Include: " << location.include << std::endl;
     }
+
+	if (!location.defaultFile.empty()) {
+        std::cout << "    Default File: " << location.defaultFile << std::endl;
+    }
 }
 
 void printServerDetails(const HttpConfig::ServerConfig& server) {
@@ -109,6 +113,14 @@ int main() {
         for (size_t i = 0; i < servers.size(); ++i) {
             std::cout << "Server " << (i + 1) << ":" << std::endl;
             printServerDetails(servers[i]);
+            
+            // Test des nouvelles fonctionnalités
+            for (std::vector<HttpConfig::Location>::const_iterator it = servers[i].locations.begin(); 
+                 it != servers[i].locations.end(); ++it) {
+                std::cout << "  Testing location: " << it->path << std::endl;
+                std::cout << "    Is CGI script: " << HttpConfig::isCgiScript(*it, "test.php") << std::endl;
+                std::cout << "    Should list directory: " << HttpConfig::shouldListDirectory(*it, it->root) << std::endl;
+            }
         }
         
     } catch (const std::exception& e) {

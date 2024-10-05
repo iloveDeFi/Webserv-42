@@ -8,6 +8,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <cctype>
 
 class HttpConfig {
 public:
@@ -31,6 +32,8 @@ public:
         std::string fastcgiPass;
         std::string fastcgiIndex;
         std::string include;
+		std::string defaultFile;
+
     };
 
     struct ServerConfig {
@@ -48,6 +51,8 @@ public:
 
     void loadConfigFromFile(const std::string& configPath);
     const std::vector<ServerConfig>& getParsedServers() const;
+	static bool isCgiScript(const Location& location, const std::string& filename);
+    static bool shouldListDirectory(const Location& location, const std::string& path);
 
 private:
     std::vector<ServerConfig> parsedServers;
@@ -57,12 +62,18 @@ private:
     void parseConfigurationFile();
     std::vector<std::string> splitServerConfigurations();
     void parseServerConfiguration(const std::string& serverConfig);
-    void parseServerAttribute(const std::string& attributeLine, ServerConfig& serverData);
+    void parseServerAttribute(const std::string& attributeLine, ServerConfig& serverData, std::set<std::string>& definedAttributes);
     int parsePortNumber(const std::string& portString);
     size_t parseBodySizeLimit(const std::string& sizeString);
     void parseErrorPageConfig(const std::string& errorPageLine, ServerConfig& serverData);
     void parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData);
+    void parseLocationAttribute(const std::string& key, const std::string& value, Location& location, const ServerConfig& serverData);
+    void parseRedirect(std::istringstream& configStream, Location& location);
     void validateServerConfiguration(const ServerConfig& serverData);
+    void validateLocation(const Location& location, const ServerConfig& serverData);
+    static bool directoryExists(const std::string& path);
+    static bool fileExists(const std::string& path);
+    static std::string toUpperCase(const std::string& str);
     static void trimWhitespace(std::string& str);
     static bool isAllDigits(const std::string& str);
     static std::vector<std::string> split(const std::string& s, char delimiter);
