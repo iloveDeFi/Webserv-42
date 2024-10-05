@@ -11,11 +11,11 @@ HttpConfig::HttpConfig(const std::string& configPath) {
 }
 
 const std::vector<HttpConfig::ServerConfig>& HttpConfig::getParsedServers() const {
-    return _parsedServers;
+    return parsedServers;
 }
 
 void HttpConfig::loadConfigFromFile(const std::string& configPath) {
-    _configContent = readConfigFile(configPath);
+    configContent = readConfigFile(configPath);
     parseConfigurationFile();
 }
 
@@ -53,15 +53,15 @@ std::vector<std::string> HttpConfig::splitServerConfigurations() {
     const std::string serverDelimiter = "- server:";
     size_t currentPosition = 0, nextServerPosition;
 
-    while ((nextServerPosition = _configContent.find(serverDelimiter, currentPosition)) != std::string::npos) {
+    while ((nextServerPosition = configContent.find(serverDelimiter, currentPosition)) != std::string::npos) {
         if (currentPosition != 0) {
-            rawServerConfigs.push_back(_configContent.substr(currentPosition, nextServerPosition - currentPosition));
+            rawServerConfigs.push_back(configContent.substr(currentPosition, nextServerPosition - currentPosition));
         }
         currentPosition = nextServerPosition + serverDelimiter.length();
     }
 
-    if (currentPosition < _configContent.length()) {
-        rawServerConfigs.push_back(_configContent.substr(currentPosition));
+    if (currentPosition < configContent.length()) {
+        rawServerConfigs.push_back(configContent.substr(currentPosition));
     }
 
     if (rawServerConfigs.empty()) {
@@ -85,11 +85,11 @@ void HttpConfig::parseServerConfiguration(const std::string& serverConfig) {
         std::cout << "Ligne en cours de traitement: " << configLine << std::endl;
 
         if (configLine == "error_pages:") {
-            currentSection = "error_pages";
+            currentSection = "errorPages";
         } else if (configLine == "locations:") {
             currentSection = "locations";
             std::cout << "Début de la section locations" << std::endl;
-        } else if (currentSection == "error_pages") {
+        } else if (currentSection == "errorPages") {
             parseErrorPageConfig(configLine, serverData);
         } else if (currentSection == "locations") {
             parseLocationConfig(configStream, serverData);
@@ -101,7 +101,7 @@ void HttpConfig::parseServerConfiguration(const std::string& serverConfig) {
     std::cout << "Fin du parsing du serveur. Nombre de locations: " << serverData.locations.size() << std::endl;
 
     validateServerConfiguration(serverData);
-    _parsedServers.push_back(serverData);
+    parsedServers.push_back(serverData);
 }
 
 void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerConfig& serverData) {
@@ -114,11 +114,11 @@ void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerCo
     const std::string attributeValue = attributeLine.substr(separatorPosition + 2);
 
     if (attributeKey == "server_name") {
-        serverData.server_name = attributeValue;
+        serverData.serverName = attributeValue;
     } else if (attributeKey == "port") {
         serverData.port = parsePortNumber(attributeValue);
     } else if (attributeKey == "client_max_body_size") {
-        serverData.client_max_body_size = parseBodySizeLimit(attributeValue);
+        serverData.clientMaxBodySize = parseBodySizeLimit(attributeValue);
     } else if (attributeKey == "root") {
         serverData.root = attributeValue;
     }
@@ -175,7 +175,7 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
 
     int errorCode = std::atoi(errorCodeString.c_str());
 
-    serverData.error_pages[errorCode] = errorPagePath;
+    serverData.errorPages[errorCode] = errorPagePath;
 }
 
 void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
@@ -236,35 +236,35 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
             std::string key = configLine.substr(0, separatorPosition);
             std::string value = configLine.substr(separatorPosition + 2);
 
-			if (key == "methods") {
-				location.methods = split(value.substr(1, value.length() - 2), ',');
-				for (size_t i = 0; i < location.methods.size(); ++i) {
-					trimWhitespace(location.methods[i]);
-				}
-			} else if (key == "root") {
+            if (key == "methods") {
+                location.methods = split(value.substr(1, value.length() - 2), ',');
+                for (size_t i = 0; i < location.methods.size(); ++i) {
+                    trimWhitespace(location.methods[i]);
+                }
+            } else if (key == "root") {
                 location.root = value;
             } else if (key == "index") {
                 location.index = value;
             } else if (key == "autoindex") {
                 location.autoindex = (value == "on");
             } else if (key == "cgi_extensions") {
-                location.cgi_extensions = split(value.substr(1, value.length() - 2), ',');
+                location.cgiExtensions = split(value.substr(1, value.length() - 2), ',');
             } else if (key == "allow_uploads") {
-                location.allow_uploads = (value == "true");
+                location.allowUploads = (value == "true");
             } else if (key == "upload_store") {
-                location.upload_store = value;
+                location.uploadStore = value;
             } else if (key == "client_max_body_size") {
-                location.client_max_body_size = parseBodySizeLimit(value);
+                location.clientMaxBodySize = parseBodySizeLimit(value);
             } else if (key == "handler") {
                 location.handler = value;
             } else if (key == "requires_auth") {
-                location.requires_auth = (value == "true");
+                location.requiresAuth = (value == "true");
             } else if (key == "content_type") {
-                location.content_type = value;
+                location.contentType = value;
             } else if (key == "fastcgi_pass") {
-                location.fastcgi_pass = value;
+                location.fastcgiPass = value;
             } else if (key == "fastcgi_index") {
-                location.fastcgi_index = value;
+                location.fastcgiIndex = value;
             } else if (key == "include") {
                 location.include = value;
             }
@@ -279,19 +279,18 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
     std::cout << "Fin du parsing des locations. Nombre total: " << serverData.locations.size() << std::endl;
 }
 
-
 void HttpConfig::validateServerConfiguration(const ServerConfig& serverData) {
-    if (serverData.server_name.empty()) {
+    if (serverData.serverName.empty()) {
         throw std::runtime_error("Server name is missing");
     }
     if (serverData.port == 0) {
         throw std::runtime_error("Port is missing or invalid");
     }
-    if (serverData.client_max_body_size == 0) {
+    if (serverData.clientMaxBodySize == 0) {
         throw std::runtime_error("Client max body size is missing or invalid");
     }
     if (serverData.locations.empty()) {
-        std::cout << "Erreur: Aucune location définie pour le serveur " << serverData.server_name << std::endl;
+        std::cout << "Erreur: Aucune location définie pour le serveur " << serverData.serverName << std::endl;
         throw std::runtime_error("No locations defined for server");
     }
 }

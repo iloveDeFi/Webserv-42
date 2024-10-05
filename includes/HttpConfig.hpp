@@ -17,28 +17,28 @@ public:
         std::string root;
         std::string index;
         bool autoindex;
-        std::vector<std::string> cgi_extensions;
-        bool allow_uploads;
-        std::string upload_store;
-        size_t client_max_body_size;
+        std::vector<std::string> cgiExtensions;
+        bool allowUploads;
+        std::string uploadStore;
+        size_t clientMaxBodySize;
         std::string handler;
-        bool requires_auth;
-        std::string content_type;
+        bool requiresAuth;
+        std::string contentType;
         struct {
             std::string url;
             int code;
         } redirect;
-        std::string fastcgi_pass;
-        std::string fastcgi_index;
+        std::string fastcgiPass;
+        std::string fastcgiIndex;
         std::string include;
     };
 
     struct ServerConfig {
-        std::string server_name;
+        std::string serverName;
         int port;
-        size_t client_max_body_size;
+        size_t clientMaxBodySize;
         std::string root;
-        std::map<int, std::string> error_pages;
+        std::map<int, std::string> errorPages;
         std::vector<Location> locations;
     };
 
@@ -50,8 +50,8 @@ public:
     const std::vector<ServerConfig>& getParsedServers() const;
 
 private:
-    std::vector<ServerConfig> _parsedServers;
-    std::string _configContent;
+    std::vector<ServerConfig> parsedServers;
+    std::string configContent;
 
     std::string readConfigFile(const std::string& path);
     void parseConfigurationFile();
