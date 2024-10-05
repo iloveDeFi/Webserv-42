@@ -1,4 +1,6 @@
 #include "HttpConfig.hpp"
+#include <iostream>
+#include <algorithm>
 
 HttpConfig::HttpConfig() {}
 
@@ -48,7 +50,7 @@ void HttpConfig::parseConfigurationFile() {
 
 std::vector<std::string> HttpConfig::splitServerConfigurations() {
     std::vector<std::string> rawServerConfigs;
-    const std::string serverDelimiter = "- server:\n";
+    const std::string serverDelimiter = "- server:";
     size_t currentPosition = 0, nextServerPosition;
 
     while ((nextServerPosition = _configContent.find(serverDelimiter, currentPosition)) != std::string::npos) {
@@ -74,22 +76,29 @@ void HttpConfig::parseServerConfiguration(const std::string& serverConfig) {
     std::istringstream configStream(serverConfig);
     std::string configLine, currentSection;
 
+    std::cout << "Début du parsing d'un nouveau serveur" << std::endl;
+
     while (std::getline(configStream, configLine)) {
         trimWhitespace(configLine);
         if (configLine.empty() || configLine[0] == '#') continue;
 
+        std::cout << "Ligne en cours de traitement: " << configLine << std::endl;
+
         if (configLine == "error_pages:") {
             currentSection = "error_pages";
-        } else if (configLine == "routes:") {
-            currentSection = "routes";
+        } else if (configLine == "locations:") {
+            currentSection = "locations";
+            std::cout << "Début de la section locations" << std::endl;
         } else if (currentSection == "error_pages") {
             parseErrorPageConfig(configLine, serverData);
-        } else if (currentSection == "routes") {
-            parseRouteConfig(configLine, serverData);
+        } else if (currentSection == "locations") {
+            parseLocationConfig(configStream, serverData);
         } else {
             parseServerAttribute(configLine, serverData);
         }
     }
+
+    std::cout << "Fin du parsing du serveur. Nombre de locations: " << serverData.locations.size() << std::endl;
 
     validateServerConfiguration(serverData);
     _parsedServers.push_back(serverData);
@@ -105,11 +114,13 @@ void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerCo
     const std::string attributeValue = attributeLine.substr(separatorPosition + 2);
 
     if (attributeKey == "server_name") {
-        serverData.serverName = attributeValue;
+        serverData.server_name = attributeValue;
     } else if (attributeKey == "port") {
         serverData.port = parsePortNumber(attributeValue);
     } else if (attributeKey == "client_max_body_size") {
-        serverData.clientMaxBodySize = parseBodySizeLimit(attributeValue);
+        serverData.client_max_body_size = parseBodySizeLimit(attributeValue);
+    } else if (attributeKey == "root") {
+        serverData.root = attributeValue;
     }
 }
 
@@ -150,54 +161,138 @@ size_t HttpConfig::parseBodySizeLimit(const std::string& sizeString) {
 }
 
 void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerConfig& serverData) {
-	size_t separatorPosition = errorPageLine.find(": ");
-	if (separatorPosition == std::string::npos) {
-		throw std::runtime_error("Invalid error_page format: " + errorPageLine);
-	}
+    size_t separatorPosition = errorPageLine.find(": ");
+    if (separatorPosition == std::string::npos) {
+        throw std::runtime_error("Invalid error_page format: " + errorPageLine);
+    }
 
-	std::string errorCodeString = errorPageLine.substr(0, separatorPosition);
-	std::string errorPagePath = errorPageLine.substr(separatorPosition + 2);
+    std::string errorCodeString = errorPageLine.substr(0, separatorPosition);
+    std::string errorPagePath = errorPageLine.substr(separatorPosition + 2);
 
-	if (!isAllDigits(errorCodeString)) {
-		throw std::runtime_error("Error code must be a number: " + errorCodeString);
-	}
+    if (!isAllDigits(errorCodeString)) {
+        throw std::runtime_error("Error code must be a number: " + errorCodeString);
+    }
 
-	int errorCode = std::atoi(errorCodeString.c_str());
+    int errorCode = std::atoi(errorCodeString.c_str());
 
-	serverData.errorPages[errorCode] = errorPagePath;
+    serverData.error_pages[errorCode] = errorPagePath;
 }
 
+void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
+    Location location;
+    std::string configLine;
+    bool isFirstLocation = true;
 
-void HttpConfig::parseRouteConfig(const std::string& routeLine, ServerConfig& serverData) {
-    static std::string currentRoutePath;
+    std::cout << "Début du parsing des locations" << std::endl;
 
-    if (routeLine[0] == '-') {
-        currentRoutePath = routeLine.substr(2);
-        serverData.routes[currentRoutePath] = std::map<std::string, std::string>();
-    } else {
-        size_t separatorPosition = routeLine.find(": ");
-        if (separatorPosition == std::string::npos) {
-            throw std::runtime_error("Invalid route attribute format: " + routeLine);
+    while (std::getline(configStream, configLine)) {
+        trimWhitespace(configLine);
+        if (configLine.empty() || configLine[0] == '#') continue;
+        
+        std::cout << "Ligne de location en cours de traitement: " << configLine << std::endl;
+
+        if (configLine.find("- path:") != std::string::npos || isFirstLocation) {
+            if (!isFirstLocation) {
+                std::cout << "Ajout d'une location complète. Path: " << location.path << std::endl;
+                serverData.locations.push_back(location);
+            }
+            location = Location(); // Réinitialiser la location
+            if (configLine.find("- path:") != std::string::npos) {
+                location.path = configLine.substr(configLine.find(":") + 1);
+            } else {
+                location.path = "/"; // Pour la première location si elle n'a pas de "- path:"
+            }
+            trimWhitespace(location.path);
+            std::cout << "Nouvelle location initialisée avec path: " << location.path << std::endl;
+            isFirstLocation = false;
+            continue;
         }
 
-        const std::string routeKey = routeLine.substr(0, separatorPosition);
-        const std::string routeValue = routeLine.substr(separatorPosition + 2);
-        serverData.routes[currentRoutePath].insert(std::make_pair(routeKey, routeValue));
+        size_t separatorPosition = configLine.find(": ");
+        if (separatorPosition == std::string::npos) {
+            if (configLine == "redirect:") {
+                // Traitement de la redirection
+                std::string redirectLine;
+                while (std::getline(configStream, redirectLine)) {
+                    trimWhitespace(redirectLine);
+                    if (redirectLine.empty() || redirectLine[0] == '#') continue;
+                    size_t pos = redirectLine.find(": ");
+                    if (pos != std::string::npos) {
+                        std::string redirectKey = redirectLine.substr(0, pos);
+                        std::string redirectValue = redirectLine.substr(pos + 2);
+                        if (redirectKey == "url") {
+                            location.redirect.url = redirectValue;
+                        } else if (redirectKey == "code") {
+                            location.redirect.code = std::atoi(redirectValue.c_str());
+                        }
+                    }
+                    if (redirectLine.find("code:") != std::string::npos) break;
+                }
+            } else {
+                std::cout << "Erreur: format d'attribut de location invalide: " << configLine << std::endl;
+                throw std::runtime_error("Invalid location attribute format: " + configLine);
+            }
+        } else {
+            std::string key = configLine.substr(0, separatorPosition);
+            std::string value = configLine.substr(separatorPosition + 2);
+
+			if (key == "methods") {
+				location.methods = split(value.substr(1, value.length() - 2), ',');
+				for (size_t i = 0; i < location.methods.size(); ++i) {
+					trimWhitespace(location.methods[i]);
+				}
+			} else if (key == "root") {
+                location.root = value;
+            } else if (key == "index") {
+                location.index = value;
+            } else if (key == "autoindex") {
+                location.autoindex = (value == "on");
+            } else if (key == "cgi_extensions") {
+                location.cgi_extensions = split(value.substr(1, value.length() - 2), ',');
+            } else if (key == "allow_uploads") {
+                location.allow_uploads = (value == "true");
+            } else if (key == "upload_store") {
+                location.upload_store = value;
+            } else if (key == "client_max_body_size") {
+                location.client_max_body_size = parseBodySizeLimit(value);
+            } else if (key == "handler") {
+                location.handler = value;
+            } else if (key == "requires_auth") {
+                location.requires_auth = (value == "true");
+            } else if (key == "content_type") {
+                location.content_type = value;
+            } else if (key == "fastcgi_pass") {
+                location.fastcgi_pass = value;
+            } else if (key == "fastcgi_index") {
+                location.fastcgi_index = value;
+            } else if (key == "include") {
+                location.include = value;
+            }
+        }
     }
+
+    if (!location.path.empty()) {
+        std::cout << "Ajout de la dernière location. Path: " << location.path << std::endl;
+        serverData.locations.push_back(location);
+    }
+
+    std::cout << "Fin du parsing des locations. Nombre total: " << serverData.locations.size() << std::endl;
 }
 
+
 void HttpConfig::validateServerConfiguration(const ServerConfig& serverData) {
-    if (serverData.serverName.empty()) {
+    if (serverData.server_name.empty()) {
         throw std::runtime_error("Server name is missing");
     }
     if (serverData.port == 0) {
         throw std::runtime_error("Port is missing or invalid");
     }
-    if (serverData.clientMaxBodySize == 0) {
+    if (serverData.client_max_body_size == 0) {
         throw std::runtime_error("Client max body size is missing or invalid");
     }
-    if (serverData.routes.empty()) {
-        throw std::runtime_error("No routes defined for server");
+    if (serverData.locations.empty()) {
+        std::cout << "Erreur: Aucune location définie pour le serveur " << serverData.server_name << std::endl;
+        throw std::runtime_error("No locations defined for server");
     }
 }
 
@@ -217,4 +312,17 @@ void HttpConfig::trimWhitespace(std::string& str) {
 
 bool HttpConfig::isAllDigits(const std::string& str) {
     return std::find_if(str.begin(), str.end(), std::not1(std::ptr_fun(isdigit))) == str.end();
+}
+
+std::vector<std::string> HttpConfig::split(const std::string& s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, delimiter)) {
+        trimWhitespace(token);
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+    return tokens;
 }
