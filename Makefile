@@ -4,7 +4,7 @@ SRCS_FOLDER = sources
 INCLUDES_FOLDER = includes
 
 SRCS_LIST = main.cpp \
-            $(addprefix $(SRCS_FOLDER)/, Client.cpp Config.cpp \
+            $(addprefix $(SRCS_FOLDER)/, Client.cpp HttpConfig.cpp \
 			HttpRequest.cpp HttpResponse.cpp HttpController.cpp Location.cpp \
 			MngmtServers.cpp Socket.cpp Utils.cpp)
 
@@ -35,3 +35,4 @@ fclean: clean
 re: fclean all
 
 .PHONY: all clean fclean re
+

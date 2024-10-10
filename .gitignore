@@ -1,5 +1,7 @@
 # Ignore VS Code settings
 .vscode/settings.json
+.vscode/
+*.o
 
 # Autres règles d'ignore
 *.log
