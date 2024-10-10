@@ -191,7 +191,7 @@ void ManagementServer::acceptNewClients(std::vector<int> &clientFds, fd_set &rea
 			}
 		}
 		else
-			 std::cerr << "Error accepting client connection: " << strerror(errno) << std::endl;
+			std::cerr << "Error accepting client connection: " << strerror(errno) << std::endl;
 	}
 }
 
