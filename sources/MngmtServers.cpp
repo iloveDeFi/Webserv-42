@@ -16,21 +16,15 @@
 //constructeur du gestionnaire de serveurs
 //il va découper le fichier en ligne (chacune représentant un serveur)
 //et ajouter un serveur au veteur de _servers
-ManagementServer::ManagementServer(std::ifstream& fdConfig, \
-std::vector<std::map<std::string, Location> > serversLocations)
+ManagementServer::ManagementServer(HttpConfig &config)
 {
 	std::string line;
 
-	if (!fdConfig)
-		throw std::runtime_error("Error opening configuration file.");
-	std::vector<std::map<std::string, Location> >::iterator it = serversLocations.begin();
+	std::vector<HttpConfig::ServerConfig>::iterator it = config.getParsedServers().begin();
 
-	while (getline(fdConfig, line))
+	while (it != config.getParsedServers().end())
 	{
-		if (it == serversLocations.end())
-			throw std::runtime_error("More server configurations than expected.");
-		std::istringstream lineStream(line);
-		addNewServer(lineStream, *it);
+		addNewServer(*it);
 		it++;
 	}
 }
@@ -54,41 +48,23 @@ ManagementServer::~ManagementServer()
 //de config importantes
 // crée une Socket (classe), la définie comme non-bloquante
 // la lie avec le port d'écoute (bind) et écoute les requests (listen)
-void ManagementServer::addNewServer(std::istringstream &configLine, \
-std::map<std::string, Location>& locations)
+void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 {
 	std::string pair;
 	_server newServer;
 	int ip;
 	socklen_t addrLen;
 
-	while (getline(configLine, pair, ' '))
-	{
-		size_t delimiterPos = pair.find(':');
-		if (delimiterPos == std::string::npos)
-			throw std::runtime_error("Invalid configuration format.");
-			
-		std::string key = pair.substr(0, delimiterPos);
-		std::string value = pair.substr(delimiterPos + 1);
-
-		if (key == "listen")
-			newServer._port = stoi(value);
-		else if (key == "name")
-			newServer._name = value;
-		else if (key == "size")
-		{
-			//trouver moyen de mieux gérer la taille (lettre/valeur)
-			value = value.substr(0, value.size() - 1);
-			newServer._maxSize = stoi(value);
-		}
-	}
+	newServer._name = server.serverName;
+	newServer._port = server.port;
+	newServer._maxSize = server.clientMaxBodySize;
+	newServer._errorPages = server.errorPages;
+	newServer._locations = server.locations;
 	newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
 	addrLen = sizeof(newServer._serverSocket->getAddress());
 	setNonBlocking(newServer._serverSocket->getFdSocket());
-	
 	newServer._serverSocket->Bind();
 	newServer._serverSocket->Listen();
-	newServer._locations = locations;
 	ip = getsockname(newServer._serverSocket->getFdSocket(), \
 	(struct sockaddr *)&newServer._serverSocket->getAddress(), &addrLen);
 	if (ip == -1)
@@ -254,12 +230,12 @@ void ManagementServer::handleClient(int clientSocket)
 	if (getsockname(clientSocket, (struct sockaddr*)&serverAddr, &serverAddrLen) == -1)
 		throw std::runtime_error("Error getting server socket information");
 	int serverPort = ntohs(serverAddr.sin_port);
-	_server* currentServer = nullptr;
+	_server currentServer;
 	for (std::vector<_server>::iterator it = _servers.begin(); it != _servers.end(); ++it)
 	{
 		if (it->_port == serverPort)
 		{
-			currentServer = &(*it);
+			currentServer = *it;
 			break;
 		}
 	}
@@ -267,7 +243,7 @@ void ManagementServer::handleClient(int clientSocket)
 
 	client.readRequest(readRawData(clientSocket));// parser renvoyé à Alex
 	//il ajoute a client sont attribut _request;
-	client.processRequest(currentServer->_locations, currentServer->_maxSize); //gestion de la requete par Baptiste
+	client.processRequest(currentServer); //gestion de la requete par Baptiste
 	//il ajoute a client sont attribut _response;
 	client.sendResponse();
 }
@@ -302,11 +278,11 @@ int ManagementServer::getSize(std::vector<_server>::iterator it)
 	return (it->_maxSize);
 }
 
-std::map<std::string, Location>& ManagementServer::\
-getLocation(std::vector<_server>::iterator it)
+/* _server& ManagementServer::\
+getServerInfo(std::vector<_server>::iterator it)
 {
-	return (it->_locations);
-} 
+	return (*it);
+}  */
 
 void ManagementServer::setIpAddress(std::vector<_server>::iterator it, int ip)
 {

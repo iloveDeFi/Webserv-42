@@ -45,12 +45,12 @@ public:
         std::vector<Location> locations;
     };
 
-    HttpConfig();
+    //HttpConfig();
     HttpConfig(const std::string& configPath);
     ~HttpConfig();
 
     void loadConfigFromFile(const std::string& configPath);
-    const std::vector<ServerConfig>& getParsedServers() const;
+    std::vector<ServerConfig>& getParsedServers();
 	static bool isCgiScript(const Location& location, const std::string& filename);
     static bool shouldListDirectory(const Location& location, const std::string& path);
 

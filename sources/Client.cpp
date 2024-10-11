@@ -1,5 +1,6 @@
 
 #include "Client.hpp"
+#include "MngmtServers.hpp"
 
 Client::Client(int fd, const struct sockaddr_in& address): _socket(fd), _address(address) {}
 
@@ -28,10 +29,9 @@ void Client::readRequest(const std::string &rawData)
 	//appeler parser Alex
 }
 
-void Client::processRequest(std::map<std::string, Location>& location, int size)
+void Client::processRequest(const _server& serverInfo)
 {
-	(void)location;
-	(void)size;
+	(void)serverInfo;
 	//appeler gestion Baptiste
 }
 

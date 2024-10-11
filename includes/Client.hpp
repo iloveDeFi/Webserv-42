@@ -1,15 +1,18 @@
+#pragma once
 #ifndef CLIENT_HPP
 # define CLIENT_HPP
-#include "HttpController.hpp"
-#include "HttpRequest.hpp"
-#include "HttpResponse.hpp"
-# include "Location.hpp"
 # include <fstream>
 # include <unistd.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
-#include <arpa/inet.h>//to remove if no ip address
+# include <arpa/inet.h>//to remove if no ip address
+# include "HttpConfig.hpp"
+# include "HttpController.hpp"
+# include "HttpRequest.hpp"
+# include "HttpResponse.hpp"
+# include "Location.hpp"
 
+struct _server;
 
 class Client
 {
@@ -21,12 +24,10 @@ class Client
 		
 	public:
 		Client(int socket, const struct sockaddr_in& address);
-		/* Client(const Client &other) = delete;
-		Client& operator=(const Client &other) = delete; */
 		~Client();
 
 		void readRequest(const std::string &rawData);
-		void processRequest(std::map<std::string, Location>& location, int size);
+		void processRequest(const _server& serverInfo);
 		void sendResponse();
 
 		void setHttpRequest(const HttpRequest& request);
@@ -38,6 +39,5 @@ class Client
 		std::string getIPaddress();
 
 };
-
 
 #endif
