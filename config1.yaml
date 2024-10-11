@@ -1,0 +1,125 @@
+- server:
+    server_name: myserver.com
+    port: 8080
+    client_max_body_size: 10M
+    root: /var/www/html
+
+    error_pages:
+        404: /errors/404.html
+        500: /errors/500.html
+        403: /errors/403.html
+
+    locations:
+        - path: /
+          methods: [GET, POST, DELETE]
+          root: /var/www/html
+          index: index.html
+          autoindex: on
+          cgi_extensions: [.php, .py]
+          allow_uploads: false
+
+        - path: /upload
+          methods: [POST]
+          handler: /var/www/html/upload.php
+          allow_uploads: true
+          upload_store: /var/www/uploads
+          client_max_body_size: 5M
+
+        - path: /api/users
+          methods: [GET, POST]
+          handler: /var/www/api/users.php
+
+        - path: /api/users/{id}
+          methods: [GET, DELETE]
+          handler: /var/www/api/delete_user.php
+
+        - path: /old-page
+          redirect: 
+            url: /new-page
+            code: 301
+
+        - path: /protected
+          methods: [GET]
+          handler: /var/www/protected/index.php
+          requires_auth: true
+
+- server:
+    server_name: mysecondserver.com
+    port: 9090
+    client_max_body_size: 100K
+    root: /var/www/second_site
+
+    error_pages:
+        404: /errors/not_found.html
+        500: /errors/internal_error.html
+
+    locations:
+        - path: /
+          methods: [GET]
+          root: /var/www/second_site
+          index: index.html
+          autoindex: off
+
+        - path: /admin
+          methods: [GET, POST]
+          root: /var/www/admin
+          index: dashboard.html
+          autoindex: off
+          requires_auth: true
+
+        - path: /admin/upload
+          methods: [POST]
+          handler: /var/www/admin/upload_file.php
+          allow_uploads: true
+          upload_store: /var/www/admin/uploads
+          client_max_body_size: 50K
+
+        - path: /admin/users
+          methods: [GET]
+          handler: /var/www/admin/list_users.php
+          requires_auth: true
+          content_type: application/json
+
+- server:
+    server_name: mythirdserver.com
+    port: 80
+    client_max_body_size: 1M
+    root: /var/www/third_site
+
+    error_pages:
+        404: /custom_errors/404.html
+        500: /custom_errors/500.html
+
+    locations:
+        - path: /
+          methods: [GET]
+          root: /var/www/third_site
+          index: index.html
+          autoindex: on
+
+        - path: /images
+          methods: [GET]
+          handler: /var/www/images/
+          allow_uploads: false
+          content_type: image/jpeg
+          autoindex: on
+
+        - path: /videos
+          methods: [GET]
+          handler: /var/www/videos/
+          allow_uploads: false
+          content_type: video/mp4
+          autoindex: on
+
+        - path: /upload/video
+          methods: [POST]
+          handler: /var/www/upload_video.php
+          allow_uploads: true
+          upload_store: /var/www/video_uploads
+          client_max_body_size: 100M
+
+        - path: ~ \.php$
+          methods: [GET, POST]
+          fastcgi_pass: unix:/var/run/php/php7.4-fpm.sock
+          fastcgi_index: index.php
+          include: fastcgi_params

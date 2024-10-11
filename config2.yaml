@@ -1,0 +1,46 @@
+server:
+  listen: 80 
+  server_name: localhost 
+  
+ 
+  error_page:
+    - code: 404
+      page: /404.html
+    - code: [500, 502, 503, 504]
+      page: /50x.html
+
+  client_max_body_size: 1M 
+
+ 
+  root: /var/www/html
+
+  locations:
+    - path: /
+      config:
+       
+        limit_except:
+          - GET
+          - POST
+          - DELETE
+        limit_except_action: deny all
+
+       
+        autoindex: on 
+        index: index.html 
+        try_files: [$uri, $uri/, '=404'] 
+
+    - path: /upload
+      config:
+       
+        limit_except:
+          - POST
+        limit_except_action: deny all
+        root: /var/www/upload 
+
+    - path: /cgi-bin
+      config:
+       
+        fastcgi_pass: unix:/var/run/fcgiwrap.socket
+        fastcgi_param:
+          SCRIPT_FILENAME: /var/www/cgi-bin$fastcgi_script_name
+        include: fastcgi_params
