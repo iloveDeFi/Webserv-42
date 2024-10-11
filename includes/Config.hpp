@@ -1,4 +1,4 @@
-
+#pragma once
 #ifndef CONFIG_HPP
 # define CONFIG_HPP
 # include "Location.hpp"

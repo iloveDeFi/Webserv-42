@@ -4,9 +4,9 @@
     client_max_body_size: 10M
 
     error_pages:
-        404: /errors/404.html
-        500: /errors/500.html
-        403: /errors/403.html
+        404: test_db/errors/404.html
+        500: test_db/errors/500.html
+        403: test_db/errors/403.html
 
     routes:
         - /:
@@ -66,8 +66,8 @@
     client_max_body_size: 1M
 
     error_pages:
-        404: /custom_errors/404.html
-        500: /custom_errors/500.html
+        404: errors/404.html
+        500: errors/500.html
 
     routes:
         - /images:
