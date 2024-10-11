@@ -1,12 +1,9 @@
-#ifndef MNGMTSERVER_HPP
-# define MNGMTSERVER_HPP
+#pragma once
+#ifndef MNGMTSERVERS_HPP
+# define MNGMTSERVERS_HPP
 # include <iostream>
 # include <vector>
 # include <map>
-# include "Socket.hpp"
-# include "Client.hpp"
-# include "Utils.hpp"
-# include "Location.hpp"
 # include <netinet/in.h>
 # include <sys/socket.h>
 # include <fstream>
@@ -14,29 +11,34 @@
 # include <utility>
 # include <string>
 # include <poll.h>
-#include "HttpController.hpp"
-#include "HttpRequest.hpp"
-#include "HttpResponse.hpp"
+# include "Socket.hpp"
+# include "Utils.hpp"
+# include "HttpConfig.hpp"
+# include "HttpController.hpp"
+# include "HttpRequest.hpp"
+# include "HttpResponse.hpp"
 
+struct _server
+{
+	Socket* _serverSocket;
+	std::string _name;
+	int	_ipAddress;
+	int	_port;
+	int _maxSize;
+	std::map<int, std::string> _errorPages;
+	std::vector<HttpConfig::Location> _locations;
+};
+
+# include "Client.hpp"
 
 class ManagementServer
 {
 	private:
-		struct _server
-		{
-			Socket* _serverSocket;
-			std::string _name;
-			int	_ipAddress;
-			int	_port;
-			int _maxSize; 
-			std::map<std::string, Location> _locations;
-		};
 		 std::vector<_server> _servers;
-		 void addNewServer(std::istringstream &configLine, \
-		 std::map<std::string, Location>& _locations);
+		 void addNewServer(HttpConfig::ServerConfig server);
 		
 	public:
-		ManagementServer(std::ifstream& fdConfig, std::vector<std::map<std::string, Location> > serverLocations);
+		ManagementServer(HttpConfig &config);
 		/* Server(const Server &other) = delete;
 		Server& operator=(const Server &other) = delete; */
 		~ManagementServer();
@@ -52,7 +54,7 @@ class ManagementServer
 
 		int getPort(std::vector<_server>::iterator it);
 		int	getSize(std::vector<_server>::iterator it);
-		std::map<std::string, Location>& getLocation(std::vector<_server>::iterator it);
+		_server& getServerInfo(std::vector<_server>::iterator it);
 
 		void setIpAddress(std::vector<_server>::iterator it, int ip);
 };

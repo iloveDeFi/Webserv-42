@@ -1,9 +1,8 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "Config.hpp"
-#include "Location.hpp"
 #include "MngmtServers.hpp"
+#include "HttpConfig.hpp"
 #include "Socket.hpp"
 #include "Client.hpp"
 #include "Utils.hpp"
