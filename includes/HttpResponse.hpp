@@ -62,6 +62,7 @@ class HttpResponse {
         // (separation lines)
 
         // OTHER
+        std::string normalizeHeader(const std::string& header);
         void ensureContentLength();
         std::string toString() const; // or use std::to_string ?
 

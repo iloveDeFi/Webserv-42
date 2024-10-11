@@ -35,6 +35,14 @@ void HttpResponse::setBody(const std::string& body) { _body = body; }
 void HttpResponse::setIsChunked(bool isChunked) { _isChunked = isChunked; }
 
 // OTHER
+std::string HttpResponse::normalizeHeader(const std::string& header) {
+    std::string normalized = header;
+    for (std::string::size_type i = 0; i < header.size(); ++i) {
+        normalized[i] = std::tolower(header[i]);
+    }
+    return normalized;
+}
+
 void HttpResponse::ensureContentLength() {
     if (_headers.find("Content-Length") == _headers.end()) {
         _headers["Content-Length"] = std::to_string(_body.size());
