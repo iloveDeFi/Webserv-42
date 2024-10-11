@@ -1,12 +1,12 @@
 #include "HttpResponse.hpp"
 
 HttpResponse::HttpResponse() 
-    : _httpVersion("HTTP/1.1"), _statusCode(200), _headers(), _body(""), _isChunked(false) {}
+    : _httpVersion("HTTP/1.1"), _statusCode(200), _reasonMessage("OK"), _headers(), _body(""), _isChunked(false) {}
 
 HttpResponse::~HttpResponse() {}
 
 HttpResponse::HttpResponse(const HttpResponse& src)
-    : _httpVersion(src._httpVersion), _statusCode(src._statusCode), _headers(src._headers), _body(src._body), _isChunked(src._isChunked) {}
+    : _httpVersion(src._httpVersion), _statusCode(src._statusCode), _reasonMessage(src._reasonMessage), _headers(src._headers), _body(src._body), _isChunked(src._isChunked) {}
 
 HttpResponse& HttpResponse::operator=(const HttpResponse& src) {
     if (this != &src) {
@@ -20,8 +20,8 @@ HttpResponse& HttpResponse::operator=(const HttpResponse& src) {
     return *this;
 }
 
-    // RESPONSE
-    // 200 OK response
+// RESPONSE
+// 200 OK response
 void HttpResponse::generate200OK(const std::string& contentType, const std::string& bodyContent) {
     setStatusCode(200);
     setReasonMessage("OK");
@@ -59,6 +59,18 @@ void HttpResponse::generate204NoContent() {
     setReasonMessage("No Content");
     setHeader("Content-Type", "text/plain");
     setBody(""); // No body
+}
+
+// Response 400 Bad Request
+void HttpResponse::generate400BadRequest(const std::string& errorMessage) {
+    setStatusCode(400);
+    setReasonMessage("Bad Request");
+    setHeader("Content-Type", "text/plain");
+    
+    std::string body = "400 Bad Request: " + errorMessage;
+    setBody(body);
+    // add my content length
+    setHeader("Content-Length", std::to_string(body.size()));
 }
 
 // 403 Forbidden response
@@ -101,23 +113,23 @@ void HttpResponse::generate500InternalServerError() {
     setHeader("Content-Length", std::to_string(body.size()));
 }
 
-// TO DO : check if add getters here
+// Getting full response
 std::string HttpResponse::getFullResponse() {
     std::string response;
 
-    // Ajouter la ligne de statut (version HTTP, code et message)
-    response += "HTTP/1.1 " + std::to_string(getStatusCode()) + " " + getReasonMessage() + "\r\n";
+    // Add status line
+    response += _httpVersion + " " + std::to_string(_statusCode) + " " + _reasonMessage + "\r\n";
 
-    // Ajouter les headers
-    for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+    // Add headers
+    for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
         response += it->first + ": " + it->second + "\r\n";
     }
 
-    // Ajouter une ligne vide entre les headers et le corps
+    // Add an empty line between headers and body
     response += "\r\n";
 
-    // Ajouter le corps
-    response += getBody();
+    // Add body
+    response += _body;
 
     return response;
 }

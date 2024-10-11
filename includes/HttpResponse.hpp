@@ -16,6 +16,7 @@ class HttpResponse {
         std::string _httpVersion;
         int _statusCode;
         std::string _reasonMessage;
+
         // HEADERS
         std::map<std::string, std::string> _headers; // content-type, content-length
         // cache-control
@@ -35,11 +36,12 @@ class HttpResponse {
         HttpResponse(const HttpResponse& src);
         HttpResponse& operator=(const HttpResponse& src);
 
-        // Response
+        // Response generation methods
         void generate200OK(const std::string& contentType, const std::string& bodyContent); // 200 OK response
         void generate201Created(const std::string& location); // 201 Created response
         void generate202Accepted(const std::string& deletionInfo); // 202 Accepted response
         void generate204NoContent(); // 204 No Content response
+        void generate400BadRequest(const std::string& errorMessage); // 400 Bad Request
         void generate403Forbidden(); // 403 Forbidden response
         void generate404NotFound(); // 404 Not Found response
         void generate409Conflict(const std::string& conflictInfo); // 409 Conflict response for PUT method

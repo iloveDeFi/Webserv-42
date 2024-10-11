@@ -36,7 +36,7 @@ class Client
 		HttpResponse& getHttpResponse();
 		int	getClientSocket();
 		std::string getIPaddress();
-
+		bool isConnected() const;
 };
 
 

@@ -17,28 +17,37 @@ int main(int ac, char **av)
         std::cout << "Binary must be: ./webserv [configuration file]" << std::endl;
         return (1);
     }
-	std::ifstream settings(av[1]);
+	  // Loading configuration
+    std::ifstream settings(av[1]);
+    if (!settings.is_open()) {
+        std::cerr << "Error opening configuration file." << std::endl;
+        return (1);
+    }
+
 	Config config(settings);
 	ManagementServer webserv(config.getFdConfig(), config.getLocations());
-	webserv.handleRequest();
+    
+    // My Loop to handle all client requests
+    while (true) {
+        try {
+            // Helene : TO DO : accept client connexions
+            Client client = webserv.acceptNewClients(std::vector<int> &clientFds, fd_set &readFds); 
+            if (client.isConnected()) {
+
+                // Alex : TO DO : read and parse client http request 
+                std::string requestStr = client.readRequest(); // Remplacez ceci par votre méthode de lecture
+                HttpRequest httpRequest(requestStr);
+
+                // Baptiste : TO DO : Handle request and generation of my Http response
+                RequestController requestController;
+                HttpResponse httpResponse = requestController.handleRequest(httpRequest);
+
+                // Helene : TO DO : Send response to client
+                client.sendResponse(/*httpResponse*/); 
+            }
+        } catch (const std::exception &e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
+    }
 	return (0);
 }
-
-    // HttpRequest simulatedRequest;
-
-    // simulatedRequest.setMethod("GET");
-    // simulatedRequest.setURI("/index.html");
-    // simulatedRequest.setHTTPVersion("HTTP/1.1");
-
-    // std::map<std::string, std::string> headers;
-    // headers["Host"] = "localhost";
-    // headers["Connection"] = "keep-alive";
-    // simulatedRequest.setHeaders(headers);
-    // simulatedRequest.setBody("");
-    // simulatedRequest.setIsChunked(false);
-
-    // std::cout << "Method: " << simulatedRequest.getMethod() << std::endl;
-    // std::cout << "URI: " << simulatedRequest.getURI() << std::endl;
-    // std::cout << "HTTP Version: " << simulatedRequest.getHTTPVersion() << std::endl;
-
-    // return 0;

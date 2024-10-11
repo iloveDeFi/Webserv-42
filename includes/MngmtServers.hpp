@@ -55,7 +55,6 @@ class ManagementServer
 		std::map<std::string, Location>& getLocation(std::vector<_server>::iterator it);
 
 		void setIpAddress(std::vector<_server>::iterator it, int ip);
-
 };
 
 #endif

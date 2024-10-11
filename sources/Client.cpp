@@ -82,3 +82,7 @@ std::string Client::getIPaddress()
 	return (ipAddress);
 	//to implemant but probably without using inet_ntoa()
 }
+
+bool Client::isConnected() const {
+    return (_socket >= 0);
+}

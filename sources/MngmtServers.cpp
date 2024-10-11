@@ -312,4 +312,3 @@ void ManagementServer::setIpAddress(std::vector<_server>::iterator it, int ip)
 {
 	it->_ipAddress = ip;
 }
-
