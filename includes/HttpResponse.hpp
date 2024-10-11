@@ -35,6 +35,17 @@ class HttpResponse {
         HttpResponse(const HttpResponse& src);
         HttpResponse& operator=(const HttpResponse& src);
 
+        // Response
+        void generate200OK(const std::string& contentType, const std::string& bodyContent); // 200 OK response
+        void generate201Created(const std::string& location); // 201 Created response
+        void generate202Accepted(const std::string& deletionInfo); // 202 Accepted response
+        void generate204NoContent(); // 204 No Content response
+        void generate403Forbidden(); // 403 Forbidden response
+        void generate404NotFound(); // 404 Not Found response
+        void generate409Conflict(const std::string& conflictInfo); // 409 Conflict response for PUT method
+        void generate500InternalServerError(); // 500 Internal Server Error response
+        std::string getFullResponse();
+
         // Setters
         // 1) RESPONSE LINE
         void setHTTPVersion(const std::string& version);
