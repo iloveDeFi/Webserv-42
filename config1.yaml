@@ -33,10 +33,10 @@
           methods: [GET, DELETE]
           handler: /var/www/api/delete_user.php
 
-        # - path: /old-page
-        #   redirect: 
-        #     url: /new-page
-        #     code: 301
+        - path: /old-page
+          redirect: 
+            url: /new-page
+            code: 301
 
         - path: /protected
           methods: [GET]
@@ -118,8 +118,7 @@
           upload_store: /var/www/video_uploads
           client_max_body_size: 1M
 
-        - path: ~ \.php$
+        - path: /cgi-bin
           methods: [GET, POST]
-          fastcgi_pass: unix:/var/run/php/php7.4-fpm.sock
-          fastcgi_index: index.php
-          include: fastcgi_params
+          cgi_extensions: [.cgi, .pl]
+          cgi_handler: /usr/bin/perl

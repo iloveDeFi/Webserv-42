@@ -107,13 +107,14 @@ int main() {
             printServerDetails(servers[i]);
             
             // Test des nouvelles fonctionnalités
-            for (std::vector<HttpConfig::Location>::const_iterator it = servers[i].locations.begin(); 
-                 it != servers[i].locations.end(); ++it) {
-                std::cout << "  Testing location: " << it->path << std::endl;
-                std::cout << "    Is CGI script: " << HttpConfig::isCgiScript(*it, "test.php") << std::endl;
-                std::cout << "    Should list directory: " << HttpConfig::shouldListDirectory(*it, it->root) << std::endl;
-            }
-        }
+  		for (std::vector<HttpConfig::Location>::const_iterator it = servers[i].locations.begin(); 
+			it != servers[i].locations.end(); ++it) {
+			std::cout << "  Testing location: " << it->path << std::endl;
+			std::cout << "    Is CGI script (.php): " << HttpConfig::isCgiScript(*it, "test.php") << std::endl;
+			std::cout << "    Is CGI script (.pl): " << HttpConfig::isCgiScript(*it, "test.pl") << std::endl;
+			std::cout << "    Should list directory: " << HttpConfig::shouldListDirectory(*it, it->root) << std::endl;
+		}
+	}
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

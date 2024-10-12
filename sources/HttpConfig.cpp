@@ -104,9 +104,8 @@ void HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
             currentSection = "locations";
             std::cout << "Début de la section locations" << std::endl;
             parseLocationConfig(configStream, serverData);
-            break;  // Sortir de la boucle après avoir parsé les locations
+            break;
         } else if (configLine.find("- server:") != std::string::npos) {
-            // Si on trouve un nouveau serveur, on sort de la boucle
             break;
         } else if (currentSection == "errorPages") {
             parseErrorPageConfig(configLine, serverData);
@@ -238,7 +237,6 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
         std::cout << "Ligne de location en cours de traitement: " << configLine << std::endl;
 
         if (configLine.find("- server:") != std::string::npos) {
-            // Si on trouve un nouveau serveur, on sort de la boucle
             break;
         }
 
@@ -259,6 +257,8 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
             locationPaths.insert(location.path);
             std::cout << "Nouvelle location initialisée avec path: " << location.path << std::endl;
             isFirstLocation = false;
+        } else if (configLine == "redirect:") {
+            parseRedirect(configStream, location);
         } else {
             size_t separatorPosition = configLine.find(": ");
             if (separatorPosition != std::string::npos) {
@@ -272,13 +272,11 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
         }
     }
 
-    // Ajout de la dernière location
     if (!location.path.empty()) {
         std::cout << "Ajout de la dernière location: " << location.path << std::endl;
         serverData.locations.push_back(location);
     }
 
-    // Validation de toutes les locations
     for (size_t i = 0; i < serverData.locations.size(); ++i) {
         validateLocation(serverData.locations[i], serverData);
     }
@@ -348,14 +346,27 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
         location.contentType = value;
     } else if (key == "include") {
         location.include = value;
-	} else    if (key == "default_file") {
+	} else if (key == "default_file") {
         location.defaultFile = value;
-    } else {
+    } else if (key == "cgi_extensions") {
+        location.cgiExtensions = split(value.substr(1, value.length() - 2), ',');
+        for (std::vector<std::string>::iterator it = location.cgiExtensions.begin(); it != location.cgiExtensions.end(); ++it) {
+            trimWhitespace(*it);
+            if ((*it)[0] != '.') {
+                throw std::runtime_error("CGI extension must start with a dot: " + *it);
+            }
+        }
+    } else if (key == "cgi_handler") {
+        location.cgiHandler = value;
+    }
+	 else {
         throw std::runtime_error("Unknown location attribute: " + key);
     }
 }
 
 void HttpConfig::validateLocation(const Location& location, const ServerConfig& serverData) {
+    std::cout << "Validation de la location: " << location.path << std::endl;
+
     if (location.path.empty() || location.path[0] != '/') {
         throw std::runtime_error("Invalid location path: " + location.path);
     }
@@ -364,13 +375,18 @@ void HttpConfig::validateLocation(const Location& location, const ServerConfig& 
         if (location.redirect.code == 0) {
             throw std::runtime_error("Incomplete redirect configuration for location: " + location.path);
         }
+        std::cout << "Redirection détectée pour " << location.path << " vers " << location.redirect.url << std::endl;
         return;
     }
 
+    std::cout << "Nombre de méthodes: " << location.methods.size() << std::endl;
+
     if (location.methods.empty()) {
-        throw std::runtime_error("No HTTP methods defined for location: " + location.path);
+        throw std::runtime_error("No HTTP methods defined for non-redirect location: " + location.path);
     }
+
     for (std::vector<std::string>::const_iterator it = location.methods.begin(); it != location.methods.end(); ++it) {
+        std::cout << "Méthode: " << *it << std::endl;
         if (*it != "GET" && *it != "POST" && *it != "DELETE") {
             throw std::runtime_error("Invalid HTTP method for location " + location.path + ": " + *it);
         }
@@ -482,6 +498,9 @@ std::vector<std::string> HttpConfig::split(const std::string& s, char delimiter)
 }
 
 bool HttpConfig::isCgiScript(const Location& location, const std::string& filename) {
+    if (location.cgiExtensions.empty()) {
+        return false;
+    }
     std::string extension = filename.substr(filename.find_last_of(".") + 1);
     return std::find(location.cgiExtensions.begin(), location.cgiExtensions.end(), "." + extension) != location.cgiExtensions.end();
 }

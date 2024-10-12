@@ -19,6 +19,7 @@ public:
         std::string index;
         bool autoindex;
         std::vector<std::string> cgiExtensions;
+		std::string cgiHandler;
         bool allowUploads;
         std::string uploadStore;
         size_t clientMaxBodySize;
