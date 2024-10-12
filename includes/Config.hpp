@@ -13,7 +13,7 @@ class Config
 		void parseLocation(std::istringstream &configLine);
 
 	public:
-		Config(std::ifstream &originalCofig);
+		Config(std::ifstream &originalConfig);
 		~Config();
 		Config(const Config &other);
 		Config& operator=(const Config &other);

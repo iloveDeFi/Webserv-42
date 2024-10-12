@@ -1,6 +1,7 @@
 
 #include "Client.hpp"
 #include "MngmtServers.hpp"
+#include "HttpRequest.hpp"
 
 Client::Client(int fd, const struct sockaddr_in& address): _socket(fd), _address(address) {}
 
@@ -25,14 +26,27 @@ Client::~Client()
 
 void Client::readRequest(const std::string &rawData)
 {
-	(void)rawData;
-	//appeler parser Alex
+	// (void)rawData;
+	// appeler parser Alex
+	_request = HttpRequest(rawData);
 }
 
 void Client::processRequest(const _server& serverInfo)
 {
 	(void)serverInfo;
 	//appeler gestion Baptiste
+	if (_request.getMethod() == "GET") {
+        handleGetRequest(serverConfig);
+    }
+    else if (_request.getMethod() == "POST") {
+        handlePostRequest(serverConfig);
+    }
+	else if (_request.getMethod() == "DELETE") {
+		handleDeleteRequest(serverConfig);
+	}
+	else {
+		handleUknownRequest(serverConfig);
+	}
 }
 
 void Client::sendResponse()
