@@ -46,39 +46,10 @@ std::string HttpConfig::readConfigFile(const std::string& configPath) {
 
 void HttpConfig::parseConfigurationFile() {
     std::istringstream configStream(configContent);
-    
-    while (parseServerConfiguration(configStream)) {
-        std::cout << "Passage au serveur suivant" << std::endl;
-    }
-
-    std::cout << "Fin du parsing. Nombre total de serveurs parsés: " << parsedServers.size() << std::endl;
-
+    while (parseServerConfiguration(configStream)) {}
     if (parsedServers.empty()) {
-        throw std::runtime_error("Aucune configuration de serveur valide trouvée");
+        throw std::runtime_error("No valid server configuration found");
     }
-}
-
-std::vector<std::string> HttpConfig::splitServerConfigurations() {
-    std::vector<std::string> rawServerConfigs;
-    const std::string serverDelimiter = "- server:";
-    size_t currentPosition = 0, nextServerPosition;
-
-    while ((nextServerPosition = configContent.find(serverDelimiter, currentPosition)) != std::string::npos) {
-        if (currentPosition != 0) {
-            rawServerConfigs.push_back(configContent.substr(currentPosition, nextServerPosition - currentPosition));
-        }
-        currentPosition = nextServerPosition + serverDelimiter.length();
-    }
-
-    if (currentPosition < configContent.length()) {
-        rawServerConfigs.push_back(configContent.substr(currentPosition));
-    }
-
-    if (rawServerConfigs.empty()) {
-        throw std::runtime_error("Invalid configuration: no server blocks found");
-    }
-
-    return rawServerConfigs;
 }
 
 bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
@@ -86,23 +57,16 @@ bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
     std::string configLine, currentSection;
     std::set<std::string> definedAttributes;
 
-    std::cout << "Début du parsing d'un nouveau serveur" << std::endl;
-
     while (std::getline(configStream, configLine)) {
         trimWhitespace(configLine);
         if (configLine.empty() || configLine[0] == '#') {
-            std::cout << "Ligne ignorée: [" << configLine << "]" << std::endl;
             continue;
         }
 
-        std::cout << "Ligne en cours de traitement: [" << configLine << "]" << std::endl;
-
         if (configLine == "- server:") {
             if (!serverData.serverName.empty()) {
-                // Si nous avons déjà un serveur, on le sauvegarde et on retourne true pour indiquer qu'il y a plus de serveurs à parser
                 validateServerConfiguration(serverData);
                 parsedServers.push_back(serverData);
-                std::cout << "Serveur ajouté à la liste. Nombre total de serveurs: " << parsedServers.size() << std::endl;
                 return true;
             }
             continue;
@@ -123,7 +87,6 @@ bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
     if (!serverData.serverName.empty()) {
         validateServerConfiguration(serverData);
         parsedServers.push_back(serverData);
-        std::cout << "Serveur ajouté à la liste. Nombre total de serveurs: " << parsedServers.size() << std::endl;
     }
 
     return false;
@@ -168,7 +131,6 @@ int HttpConfig::parsePortNumber(const std::string& portString) {
         throw std::runtime_error("Port number out of valid range (1-65535)");
     }
     if (port < 1024) {
-        std::cout << "Warning: Using a privileged port (< 1024). This may require root privileges." << std::endl;
     }
     return port;
 }
@@ -237,13 +199,11 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
     bool isFirstLocation = true;
     std::set<std::string> locationPaths;
 
-    std::cout << "Début du parsing des locations" << std::endl;
 
 	while (std::getline(configStream, configLine)) {
         trimWhitespace(configLine);
         if (configLine.empty() || configLine[0] == '#') continue;
          
-        std::cout << "Ligne de location en cours de traitement: [" << configLine << "]" << std::endl;
 
         if (configLine == "- server:" || configLine.find("server_name:") != std::string::npos) {
             configStream.seekg(-static_cast<int>(configLine.length()) - 1, std::ios::cur); // Revenir en arrière pour que cette ligne soit relue
@@ -252,26 +212,19 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
 
         if (configLine.find("- path:") != std::string::npos) {
             if (!isFirstLocation) {
-                std::cout << "Ajout de la location: " << location.path << std::endl;
                 serverData.locations.push_back(location);
             }
             location = Location();
             location.path = configLine.substr(configLine.find(":") + 1);
             trimWhitespace(location.path);
-            std::cout << "Nouvelle location initialisée avec path: " << location.path << std::endl;
             isFirstLocation = false;
-        } else {
-            // Traitement des autres attributs de location
-            // ...
         }
     }
 
     if (!location.path.empty()) {
-        std::cout << "Ajout de la dernière location: " << location.path << std::endl;
         serverData.locations.push_back(location);
     }
 
-    std::cout << "Fin du parsing des locations. Nombre total: " << serverData.locations.size() << std::endl;
 }
 void HttpConfig::parseLocationAttribute(const std::string& key, const std::string& value, Location& location, const ServerConfig& serverData) {
     if (key == "methods") {
@@ -354,7 +307,6 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
 }
 
 void HttpConfig::validateLocation(const Location& location, const ServerConfig& serverData) {
-    std::cout << "Validation de la location: " << location.path << std::endl;
 
     if (location.path.empty() || location.path[0] != '/') {
         throw std::runtime_error("Invalid location path: " + location.path);
@@ -364,18 +316,15 @@ void HttpConfig::validateLocation(const Location& location, const ServerConfig& 
         if (location.redirect.code == 0) {
             throw std::runtime_error("Incomplete redirect configuration for location: " + location.path);
         }
-        std::cout << "Redirection détectée pour " << location.path << " vers " << location.redirect.url << std::endl;
         return;
     }
 
-    std::cout << "Nombre de méthodes: " << location.methods.size() << std::endl;
 
     if (location.methods.empty()) {
         throw std::runtime_error("No HTTP methods defined for non-redirect location: " + location.path);
     }
 
     for (std::vector<std::string>::const_iterator it = location.methods.begin(); it != location.methods.end(); ++it) {
-        std::cout << "Méthode: " << *it << std::endl;
         if (*it != "GET" && *it != "POST" && *it != "DELETE") {
             throw std::runtime_error("Invalid HTTP method for location " + location.path + ": " + *it);
         }
