@@ -126,7 +126,7 @@ bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
         std::cout << "Serveur ajouté à la liste. Nombre total de serveurs: " << parsedServers.size() << std::endl;
     }
 
-    return false; // Indique qu'il n'y a plus de serveurs à parser
+    return false;
 }
 
 void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerConfig& serverData, std::set<std::string>& definedAttributes) {
@@ -151,9 +151,9 @@ void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerCo
         serverData.clientMaxBodySize = parseBodySizeLimit(attributeValue);
     } else if (attributeKey == "root") {
         serverData.root = attributeValue;
-        // if (!directoryExists(serverData.root)) {
-        //     throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root);
-        // }
+        if (!directoryExists(serverData.root)) {
+            throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root);
+        }
     } else {
         throw std::runtime_error("Unknown server attribute: " + attributeKey);
     }
@@ -224,9 +224,9 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
         throw std::runtime_error("Error page path cannot be empty for error code: " + errorCodeString);
     }
 
-    // if (!fileExists(errorPagePath)) {
-    //     throw std::runtime_error("Error page file does not exist: " + errorPagePath);
-    // }
+    if (!fileExists(errorPagePath)) {
+        throw std::runtime_error("Error page file does not exist: " + errorPagePath);
+    }
 
     serverData.errorPages[errorCode] = errorPagePath;
 }
@@ -246,7 +246,6 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
         std::cout << "Ligne de location en cours de traitement: [" << configLine << "]" << std::endl;
 
         if (configLine == "- server:" || configLine.find("server_name:") != std::string::npos) {
-            // On a atteint la fin des locations ou le début d'un nouveau serveur
             configStream.seekg(-static_cast<int>(configLine.length()) - 1, std::ios::cur); // Revenir en arrière pour que cette ligne soit relue
             break;
         }
@@ -293,9 +292,9 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
         }
     } else if (key == "root") {
         location.root = value;
-        // if (!directoryExists(location.root)) {
-        //     throw std::runtime_error("Location root directory does not exist or is not accessible: " + location.root);
-        // }
+        if (!directoryExists(location.root)) {
+            throw std::runtime_error("Location root directory does not exist or is not accessible: " + location.root);
+        }
     } else if (key == "index") {
         location.index = value;
     } else if (key == "autoindex") {
@@ -317,9 +316,9 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
         location.allowUploads = (value == "true");
     } else if (key == "upload_store") {
         location.uploadStore = value;
-        // if (!directoryExists(location.uploadStore)) {
-        //     throw std::runtime_error("Upload store directory does not exist or is not accessible: " + location.uploadStore);
-        // }
+        if (!directoryExists(location.uploadStore)) {
+            throw std::runtime_error("Upload store directory does not exist or is not accessible: " + location.uploadStore);
+        }
     } else if (key == "client_max_body_size") {
         location.clientMaxBodySize = parseBodySizeLimit(value);
         if (location.clientMaxBodySize > serverData.clientMaxBodySize) {
@@ -426,9 +425,9 @@ void HttpConfig::validateServerConfiguration(const ServerConfig& serverData) {
     if (serverData.locations.empty()) {
         throw std::runtime_error("No locations defined for server: " + serverData.serverName);
     }
-    // if (!directoryExists(serverData.root)) {
-    //     throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root);
-    // }
+    if (!directoryExists(serverData.root)) {
+        throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root);
+    }
 }
 
 bool HttpConfig::directoryExists(const std::string& path) {

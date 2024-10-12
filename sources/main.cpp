@@ -101,9 +101,6 @@ int main() {
         for (size_t i = 0; i < servers.size(); ++i) {
             std::cout << "\nDétails du serveur " << (i + 1) << ":" << std::endl;
             printServerDetails(servers[i]);
-            
-            // Tests des locations
-            // ...
         }
         
     } catch (const std::exception& e) {
