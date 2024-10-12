@@ -65,14 +65,6 @@ void printLocationDetails(const HttpConfig::Location& location) {
         std::cout << "      Code: " << location.redirect.code << std::endl;
     }
     
-    if (!location.fastcgiPass.empty()) {
-        std::cout << "    FastCGI Pass: " << location.fastcgiPass << std::endl;
-    }
-    
-    if (!location.fastcgiIndex.empty()) {
-        std::cout << "    FastCGI Index: " << location.fastcgiIndex << std::endl;
-    }
-    
     if (!location.include.empty()) {
         std::cout << "    Include: " << location.include << std::endl;
     }

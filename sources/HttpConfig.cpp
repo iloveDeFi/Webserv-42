@@ -45,9 +45,20 @@ std::string HttpConfig::readConfigFile(const std::string& configPath) {
 }
 
 void HttpConfig::parseConfigurationFile() {
-    std::vector<std::string> rawServerConfigs = splitServerConfigurations();
-    for (std::vector<std::string>::const_iterator it = rawServerConfigs.begin(); it != rawServerConfigs.end(); ++it) {
-        parseServerConfiguration(*it);
+    std::istringstream configStream(configContent);
+    std::string line;
+
+    while (std::getline(configStream, line)) {
+        trimWhitespace(line);
+        if (line.empty() || line[0] == '#') continue;
+
+        if (line.find("- server:") != std::string::npos) {
+            parseServerConfiguration(configStream);
+        }
+    }
+
+    if (parsedServers.empty()) {
+        throw std::runtime_error("No valid server configurations found");
     }
 }
 
@@ -73,9 +84,9 @@ std::vector<std::string> HttpConfig::splitServerConfigurations() {
 
     return rawServerConfigs;
 }
-void HttpConfig::parseServerConfiguration(const std::string& serverConfig) {
+
+void HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
     ServerConfig serverData;
-    std::istringstream configStream(serverConfig);
     std::string configLine, currentSection;
     std::set<std::string> definedAttributes;
 
@@ -92,10 +103,13 @@ void HttpConfig::parseServerConfiguration(const std::string& serverConfig) {
         } else if (configLine == "locations:") {
             currentSection = "locations";
             std::cout << "Début de la section locations" << std::endl;
+            parseLocationConfig(configStream, serverData);
+            break;  // Sortir de la boucle après avoir parsé les locations
+        } else if (configLine.find("- server:") != std::string::npos) {
+            // Si on trouve un nouveau serveur, on sort de la boucle
+            break;
         } else if (currentSection == "errorPages") {
             parseErrorPageConfig(configLine, serverData);
-        } else if (currentSection == "locations") {
-            parseLocationConfig(configStream, serverData);
         } else {
             parseServerAttribute(configLine, serverData, definedAttributes);
         }
@@ -129,9 +143,9 @@ void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerCo
         serverData.clientMaxBodySize = parseBodySizeLimit(attributeValue);
     } else if (attributeKey == "root") {
         serverData.root = attributeValue;
-        if (!directoryExists(serverData.root)) {
-            throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root);
-        }
+        // if (!directoryExists(serverData.root)) {
+        //     throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root);
+        // }
     } else {
         throw std::runtime_error("Unknown server attribute: " + attributeKey);
     }
@@ -202,9 +216,9 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
         throw std::runtime_error("Error page path cannot be empty for error code: " + errorCodeString);
     }
 
-    if (!fileExists(errorPagePath)) {
-        throw std::runtime_error("Error page file does not exist: " + errorPagePath);
-    }
+    // if (!fileExists(errorPagePath)) {
+    //     throw std::runtime_error("Error page file does not exist: " + errorPagePath);
+    // }
 
     serverData.errorPages[errorCode] = errorPagePath;
 }
@@ -220,20 +234,21 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
     while (std::getline(configStream, configLine)) {
         trimWhitespace(configLine);
         if (configLine.empty() || configLine[0] == '#') continue;
-        
+         
         std::cout << "Ligne de location en cours de traitement: " << configLine << std::endl;
 
-        if (configLine.find("- path:") != std::string::npos || isFirstLocation) {
+        if (configLine.find("- server:") != std::string::npos) {
+            // Si on trouve un nouveau serveur, on sort de la boucle
+            break;
+        }
+
+        if (configLine.find("- path:") != std::string::npos) {
             if (!isFirstLocation) {
-                validateLocation(location, serverData);
+                std::cout << "Ajout de la location: " << location.path << std::endl;
                 serverData.locations.push_back(location);
             }
             location = Location();
-            if (configLine.find("- path:") != std::string::npos) {
-                location.path = configLine.substr(configLine.find(":") + 1);
-            } else {
-                location.path = "/"; // Pour la première location si elle n'a pas de "- path:"
-            }
+            location.path = configLine.substr(configLine.find(":") + 1);
             trimWhitespace(location.path);
             if (location.path[0] != '/') {
                 throw std::runtime_error("Location path must start with '/': " + location.path);
@@ -244,27 +259,28 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
             locationPaths.insert(location.path);
             std::cout << "Nouvelle location initialisée avec path: " << location.path << std::endl;
             isFirstLocation = false;
-            continue;
-        }
-
-        size_t separatorPosition = configLine.find(": ");
-        if (separatorPosition == std::string::npos) {
-            if (configLine == "redirect:") {
-                parseRedirect(configStream, location);
+        } else {
+            size_t separatorPosition = configLine.find(": ");
+            if (separatorPosition != std::string::npos) {
+                std::string key = configLine.substr(0, separatorPosition);
+                std::string value = configLine.substr(separatorPosition + 2);
+                parseLocationAttribute(key, value, location, serverData);
             } else {
                 std::cout << "Erreur: format d'attribut de location invalide: " << configLine << std::endl;
                 throw std::runtime_error("Invalid location attribute format: " + configLine);
             }
-        } else {
-            std::string key = configLine.substr(0, separatorPosition);
-            std::string value = configLine.substr(separatorPosition + 2);
-            parseLocationAttribute(key, value, location, serverData);
         }
     }
 
+    // Ajout de la dernière location
     if (!location.path.empty()) {
-        validateLocation(location, serverData);
+        std::cout << "Ajout de la dernière location: " << location.path << std::endl;
         serverData.locations.push_back(location);
+    }
+
+    // Validation de toutes les locations
+    for (size_t i = 0; i < serverData.locations.size(); ++i) {
+        validateLocation(serverData.locations[i], serverData);
     }
 
     std::cout << "Fin du parsing des locations. Nombre total: " << serverData.locations.size() << std::endl;
@@ -289,9 +305,9 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
         }
     } else if (key == "root") {
         location.root = value;
-        if (!directoryExists(location.root)) {
-            throw std::runtime_error("Location root directory does not exist or is not accessible: " + location.root);
-        }
+        // if (!directoryExists(location.root)) {
+        //     throw std::runtime_error("Location root directory does not exist or is not accessible: " + location.root);
+        // }
     } else if (key == "index") {
         location.index = value;
     } else if (key == "autoindex") {
@@ -313,9 +329,9 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
         location.allowUploads = (value == "true");
     } else if (key == "upload_store") {
         location.uploadStore = value;
-        if (!directoryExists(location.uploadStore)) {
-            throw std::runtime_error("Upload store directory does not exist or is not accessible: " + location.uploadStore);
-        }
+        // if (!directoryExists(location.uploadStore)) {
+        //     throw std::runtime_error("Upload store directory does not exist or is not accessible: " + location.uploadStore);
+        // }
     } else if (key == "client_max_body_size") {
         location.clientMaxBodySize = parseBodySizeLimit(value);
         if (location.clientMaxBodySize > serverData.clientMaxBodySize) {
@@ -330,10 +346,6 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
         location.requiresAuth = (value == "true");
     } else if (key == "content_type") {
         location.contentType = value;
-    } else if (key == "fastcgi_pass") {
-        location.fastcgiPass = value;
-    } else if (key == "fastcgi_index") {
-        location.fastcgiIndex = value;
     } else if (key == "include") {
         location.include = value;
 	} else    if (key == "default_file") {
@@ -348,6 +360,13 @@ void HttpConfig::validateLocation(const Location& location, const ServerConfig& 
         throw std::runtime_error("Invalid location path: " + location.path);
     }
 
+    if (!location.redirect.url.empty()) {
+        if (location.redirect.code == 0) {
+            throw std::runtime_error("Incomplete redirect configuration for location: " + location.path);
+        }
+        return;
+    }
+
     if (location.methods.empty()) {
         throw std::runtime_error("No HTTP methods defined for location: " + location.path);
     }
@@ -359,10 +378,6 @@ void HttpConfig::validateLocation(const Location& location, const ServerConfig& 
 
     if (location.clientMaxBodySize > serverData.clientMaxBodySize) {
         throw std::runtime_error("Location client_max_body_size exceeds server's limit for location: " + location.path);
-    }
-
-    if (!location.redirect.url.empty() && location.redirect.code == 0) {
-        throw std::runtime_error("Incomplete redirect configuration for location: " + location.path);
     }
 }
 
@@ -388,7 +403,7 @@ void HttpConfig::parseRedirect(std::istringstream& configStream, Location& locat
         if (redirectLine.find("code:") != std::string::npos) break;
     }
     if (location.redirect.url.empty() || location.redirect.code == 0) {
-        throw std::runtime_error("Incomplete redirect configuration");
+        throw std::runtime_error("Incomplete redirect configuration for location: " + location.path);
     }
 }
 
@@ -405,9 +420,9 @@ void HttpConfig::validateServerConfiguration(const ServerConfig& serverData) {
     if (serverData.locations.empty()) {
         throw std::runtime_error("No locations defined for server: " + serverData.serverName);
     }
-    if (!directoryExists(serverData.root)) {
-        throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root);
-    }
+    // if (!directoryExists(serverData.root)) {
+    //     throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root);
+    // }
 }
 
 bool HttpConfig::directoryExists(const std::string& path) {

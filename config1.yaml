@@ -33,10 +33,10 @@
           methods: [GET, DELETE]
           handler: /var/www/api/delete_user.php
 
-        - path: /old-page
-          redirect: 
-            url: /new-page
-            code: 301
+        # - path: /old-page
+        #   redirect: 
+        #     url: /new-page
+        #     code: 301
 
         - path: /protected
           methods: [GET]
@@ -116,7 +116,7 @@
           handler: /var/www/upload_video.php
           allow_uploads: true
           upload_store: /var/www/video_uploads
-          client_max_body_size: 100M
+          client_max_body_size: 1M
 
         - path: ~ \.php$
           methods: [GET, POST]
