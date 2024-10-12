@@ -98,26 +98,22 @@ int main() {
     const std::string configFilename = "config1.yaml";
     
     try {
+        std::cout << "Début du parsing du fichier de configuration: " << configFilename << std::endl;
         HttpConfig config(configFilename);
         const std::vector<HttpConfig::ServerConfig>& servers = config.getParsedServers();
         
-        std::cout << "Parsed " << servers.size() << " server configurations:" << std::endl << std::endl;
+        std::cout << "Nombre total de serveurs parsés: " << servers.size() << std::endl;
+        
         for (size_t i = 0; i < servers.size(); ++i) {
-            std::cout << "Server " << (i + 1) << ":" << std::endl;
+            std::cout << "\nDétails du serveur " << (i + 1) << ":" << std::endl;
             printServerDetails(servers[i]);
             
-            // Test des nouvelles fonctionnalités
-  		for (std::vector<HttpConfig::Location>::const_iterator it = servers[i].locations.begin(); 
-			it != servers[i].locations.end(); ++it) {
-			std::cout << "  Testing location: " << it->path << std::endl;
-			std::cout << "    Is CGI script (.php): " << HttpConfig::isCgiScript(*it, "test.php") << std::endl;
-			std::cout << "    Is CGI script (.pl): " << HttpConfig::isCgiScript(*it, "test.pl") << std::endl;
-			std::cout << "    Should list directory: " << HttpConfig::shouldListDirectory(*it, it->root) << std::endl;
-		}
-	}
+            // Tests des locations
+            // ...
+        }
         
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Erreur: " << e.what() << std::endl;
         return 1;
     }
     

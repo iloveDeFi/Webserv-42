@@ -60,7 +60,7 @@ private:
     std::string readConfigFile(const std::string& path);
     void parseConfigurationFile();
     std::vector<std::string> splitServerConfigurations();
-	void parseServerConfiguration(std::istringstream& configStream);
+	bool parseServerConfiguration(std::istringstream& configStream);
     void parseServerAttribute(const std::string& attributeLine, ServerConfig& serverData, std::set<std::string>& definedAttributes);
     int parsePortNumber(const std::string& portString);
     size_t parseBodySizeLimit(const std::string& sizeString);
