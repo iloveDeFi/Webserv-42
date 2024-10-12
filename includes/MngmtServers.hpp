@@ -10,6 +10,7 @@
 # include <sstream>
 # include <utility>
 # include <string>
+# include <string.h>
 # include <poll.h>
 # include "Socket.hpp"
 # include "Utils.hpp"

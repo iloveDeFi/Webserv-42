@@ -4,6 +4,8 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <sstream>
+
 
 // My response format is:
 // 1) HTTP Response Line
@@ -64,6 +66,14 @@ class HttpResponse {
         // OTHER
         void ensureContentLength();
         std::string toString() const; // or use std::to_string ?
+		template <typename T>
+        std::string to_string(T value) const {
+            std::ostringstream oss;
+            oss << value;
+            return oss.str();
+        }
+
+
 
         // SPECIAL RESPONSES
         std::string generate404Error(const std::string& uri);

@@ -37,12 +37,12 @@ void HttpResponse::setIsChunked(bool isChunked) { _isChunked = isChunked; }
 // OTHER
 void HttpResponse::ensureContentLength() {
     if (_headers.find("Content-Length") == _headers.end()) {
-        _headers["Content-Length"] = std::to_string(_body.size());
+        _headers["Content-Length"] = to_string(_body.size());
     }
 }
 
 std::string HttpResponse::toString() const {
-    std::string response = _httpVersion + " " + std::to_string(_statusCode) + " " + _reasonMessage + "\r\n";
+    std::string response = _httpVersion + " " + to_string(_statusCode) + " " + _reasonMessage + "\r\n";
     
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
         response += it->first + ": " + it->second + "\r\n";
@@ -57,7 +57,7 @@ std::string HttpResponse::generate404Error(const std::string& uri) {
     std::string errorPage = "<html><body><h1>404 Not Found</h1>";
     errorPage += "<p>The requested resource " + uri + " was not found on this server.</p></body></html>";
     
-    return "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(errorPage.size()) + "\r\n\r\n" + errorPage;
+    return "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: " + to_string(errorPage.size()) + "\r\n\r\n" + errorPage;
 }
 
 std::string HttpResponse::generateRedirection(const std::string& newUri) {
