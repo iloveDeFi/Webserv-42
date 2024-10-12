@@ -8,83 +8,44 @@
         500: test_db/errors/500.html
         403: test_db/errors/403.html
 
-    routes:
-        - /:
-            method: GET
-            handler: /var/www/html/index.html
-            allow_uploads: false
-            content_type: text/html
+    locations:
+        - path: /
+          methods: GET
+          handler: test_db/index/index.html
+          allow_uploads: false
+          content_type: text/html
+            
+        - path: /index
+          methods: GET
+          handler: test_db/index/index1.html
+          allow_uploads: false
+          content_type: text/html
 
-        - /upload:
-            method: POST
-            handler: /var/www/html/upload.php
-            allow_uploads: true
-            max_upload_size: 5M
-
-        - /api/users:
-            method: GET
-            handler: /var/www/api/users.php
-            content_type: application/json
-
-        - /api/users/{id}:
-            method: DELETE
-            handler: /var/www/api/delete_user.php
-            content_type: application/json
-            requires_auth: true
+        - path: /upload
+          methods: POST
+          handler: test_db/upload/upload.php
+          allow_uploads: true
+          max_upload_size: 5M
 
 - server:
-    server_name: mysecondserver.com
-    port: 9090
-    client_max_body_size: 100K
-
-    error_pages:
-        404: /errors/not_found.html
-        500: /errors/internal_error.html
-
-    routes:
-        - /admin:
-            method: GET
-            handler: /var/www/admin/dashboard.html
-            requires_auth: true
-            content_type: text/html
-
-        - /admin/upload:
-            method: POST
-            handler: /var/www/admin/upload_file.php
-            allow_uploads: true
-            max_upload_size: 50K
-
-        - /admin/users:
-            method: GET
-            handler: /var/www/admin/list_users.php
-            requires_auth: true
-            content_type: application/json
-
-- server:
-    server_name: mythirdserver.com
+    server_name: secondserver.com
     port: 80
     client_max_body_size: 1M
 
     error_pages:
-        404: errors/404.html
-        500: errors/500.html
+        404: test_db/errors/404.html
+        500: test_db/errors/500.html
 
-    routes:
-        - /images:
-            method: GET
-            handler: /var/www/images/
-            allow_uploads: false
-            content_type: image/jpeg
+    locations:
+        - path: /images
+          methods: GET
+          handler: test_db/images/
+          allow_uploads: false
+          content_type: image/jpeg
 
-        - /videos:
-            method: GET
-            handler: /var/www/videos/
-            allow_uploads: false
-            content_type: video/mp4
-
-        - /upload/video:
-            method: POST
-            handler: /var/www/upload_video.php
-            allow_uploads: true
-            max_upload_size: 100M
+        - path: /videos
+          methods: GET
+          handler: test_db/videos/
+          allow_uploads: false
+          content_type: video/mp4
 
