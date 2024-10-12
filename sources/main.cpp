@@ -40,13 +40,7 @@ void printLocationDetails(const HttpConfig::Location& location) {
     }
     
     if (location.clientMaxBodySize > 0) {
-        std::cout << "    Client Max Body Size: " << location.clientMaxBodySize << " bytes";
-        if (location.clientMaxBodySize >= 1024 * 1024) {
-            std::cout << " (" << (location.clientMaxBodySize / (1024 * 1024)) << "M)";
-        } else if (location.clientMaxBodySize >= 1024) {
-            std::cout << " (" << (location.clientMaxBodySize / 1024) << "K)";
-        }
-        std::cout << std::endl;
+        std::cout << "    Client Max Body Size: " << location.clientMaxBodySize << " bytes" << std::endl;
     }
     
     if (!location.handler.empty()) {
@@ -69,7 +63,7 @@ void printLocationDetails(const HttpConfig::Location& location) {
         std::cout << "    Include: " << location.include << std::endl;
     }
 
-	if (!location.defaultFile.empty()) {
+    if (!location.defaultFile.empty()) {
         std::cout << "    Default File: " << location.defaultFile << std::endl;
     }
 }
