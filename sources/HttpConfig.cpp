@@ -5,7 +5,7 @@
 #include <set>
 #include <sys/stat.h>
 
-HttpConfig::HttpConfig() {}
+//HttpConfig::HttpConfig() {}
 
 HttpConfig::~HttpConfig() {}
 
@@ -13,7 +13,7 @@ HttpConfig::HttpConfig(const std::string& configPath) {
     loadConfigFromFile(configPath);
 }
 
-const std::vector<HttpConfig::ServerConfig>& HttpConfig::getParsedServers() const {
+std::vector<HttpConfig::ServerConfig>& HttpConfig::getParsedServers() {
     return parsedServers;
 }
 
