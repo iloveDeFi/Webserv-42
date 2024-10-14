@@ -13,24 +13,28 @@
 
 int main(int ac, char **av)
 {
-    if (ac != 2) {
+    if (ac != 2)
+    {
         std::cout << "Binary must be: ./webserv [configuration file]" << std::endl;
         return (1);
     }
 
     // Charger la configuration
-    std::ifstream settings(av[1]);
-    if (!settings.is_open()) {
-        std::cerr << "Error opening configuration file." << std::endl;
-        return (1);
-    }
+    // std::ifstream settings(av[1]);
+    // if (!settings.is_open()) {
+    //     std::cerr << "Error opening configuration file." << std::endl;
+    //     return (1);
+    // }
 
-    Config config(settings);
+    HttpConfig config(av[1]);
     ManagementServer webserv(config);
-    
-    try {
+
+    try
+    {
         webserv.handleRequest();
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
         std::cerr << "Error: " << e.what() << std::endl;
         return (1);
     }

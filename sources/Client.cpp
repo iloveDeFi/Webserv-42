@@ -3,7 +3,7 @@
 #include "MngmtServers.hpp"
 #include "HttpRequest.hpp"
 
-Client::Client(int fd, const struct sockaddr_in& address): _socket(fd), _address(address) {}
+Client::Client(int fd, const struct sockaddr_in &address) : _socket(fd), _address(address) {}
 
 /* Client::Client(const Client & src)
 : _request(src._request), _response(src._response)
@@ -20,8 +20,8 @@ Client& Client::operator=(const Client &src)
 
 Client::~Client()
 {
-/* 	if (is_open(_socket))
-		close(_socket); */
+	/* 	if (is_open(_socket))
+			close(_socket); */
 }
 
 void Client::readRequest(const std::string &rawData)
@@ -31,29 +31,36 @@ void Client::readRequest(const std::string &rawData)
 	_request = HttpRequest(rawData);
 }
 
-void Client::processRequest(const _server& serverInfo)
+void Client::processRequest(const _server &serverInfo)
 {
-	(void)serverInfo;
-	//appeler gestion Baptiste
-	if (_request.getMethod() == "GET") {
-        handleGetRequest(serverConfig);
-    }
-    else if (_request.getMethod() == "POST") {
-        handlePostRequest(serverConfig);
-    }
-	else if (_request.getMethod() == "DELETE") {
-		handleDeleteRequest(serverConfig);
+	HttpResponse response;
+
+	if (_request.getMethod() == "GET")
+	{
+		GetRequestHandler getHandler;
+        getHandler.handle(_request, response);
+		
+		handleGetRequest(serverInfo);
 	}
-	else {
-		handleUknownRequest(serverConfig);
+	else if (_request.getMethod() == "POST")
+	{
+		handlePostRequest(serverInfo);
+	}
+	else if (_request.getMethod() == "DELETE")
+	{
+		handleDeleteRequest(serverInfo);
+	}
+	else
+	{
+		handleUnkownRequest(serverInfo);
 	}
 }
 
 void Client::sendResponse()
 {
 	std::string response = _response.toString();
-	//creer une fonction dans httpreponse pour tout mettre en une string
-	const char* data = response.c_str();
+	// creer une fonction dans httpreponse pour tout mettre en une string
+	const char *data = response.c_str();
 	size_t total = response.size();
 	size_t sent = 0;
 	ssize_t n;
@@ -67,36 +74,37 @@ void Client::sendResponse()
 	}
 }
 
-void Client::setHttpRequest(const HttpRequest& request)
+void Client::setHttpRequest(const HttpRequest &request)
 {
 	_request = request;
 }
-void Client::setHttpResponse(const HttpResponse& response)
+void Client::setHttpResponse(const HttpResponse &response)
 {
 	_response = response;
 }
-		
-HttpRequest& Client::getHttpRequest()
+
+HttpRequest &Client::getHttpRequest()
 {
 	return (_request);
 }
-HttpResponse& Client::getHttpResponse()
+HttpResponse &Client::getHttpResponse()
 {
 	return (_response);
 }
-int	Client::getClientSocket()
+int Client::getClientSocket()
 {
 	return (_socket);
 }
 
 std::string Client::getIPaddress()
 {
-	char* cString = inet_ntoa(_address.sin_addr);
+	char *cString = inet_ntoa(_address.sin_addr);
 	std::string ipAddress = std::string(cString);
 	return (ipAddress);
-	//to implemant but probably without using inet_ntoa()
+	// to implemant but probably without using inet_ntoa()
 }
 
-bool Client::isConnected() const {
-    return (_socket >= 0);
+bool Client::isConnected() const
+{
+	return (_socket >= 0);
 }
