@@ -10,19 +10,19 @@
 
     locations:
         - path: /
-          methods: GET
+          methods: [GET]
           handler: test_db/index/index.html
           allow_uploads: false
           content_type: text/html
             
         - path: /index
-          methods: GET
+          methods: [GET]
           handler: test_db/index/index1.html
           allow_uploads: false
           content_type: text/html
 
         - path: /upload
-          methods: POST
+          methods: [POST]
           handler: test_db/upload/upload.php
           allow_uploads: true
           max_upload_size: 5M
@@ -38,13 +38,13 @@
 
     locations:
         - path: /images
-          methods: GET
+          methods: [GET]
           handler: test_db/images/
           allow_uploads: false
           content_type: image/jpeg
 
         - path: /videos
-          methods: GET
+          methods: [GET]
           handler: test_db/videos/
           allow_uploads: false
           content_type: video/mp4

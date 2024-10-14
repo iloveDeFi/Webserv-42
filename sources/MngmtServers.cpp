@@ -18,24 +18,24 @@
 //et ajouter un serveur au veteur de _servers
 ManagementServer::ManagementServer(HttpConfig &config)
 {
-	std::string line;
+    const std::vector<ServerConfig>& servers = config.getServers();
+    std::vector<ServerConfig>::const_iterator it = servers.begin();
 
-	std::vector<HttpConfig::ServerConfig>::iterator it = config.getParsedServers().begin();
-
-	while (it != config.getParsedServers().end())
-	{
-		addNewServer(*it);
-		it++;
-	}
+    while (it != servers.end())
+    {
+        _addNewServer(*it);
+        ++it;
+    }
 }
+
 
 ManagementServer::~ManagementServer()
 {
-	for (std::vector<_server>::iterator it = _servers.begin(); \
+	for (std::vector<_server*>::iterator it = _servers.begin(); \
 	it != _servers.end(); it++)
 	{
-		close(it->_serverSocket->getFdSocket());
-		delete it->_serverSocket;
+		close((*it)->_serverSocket->getFdSocket());
+		delete (*it)->_serverSocket;
 		//delete la map location ?
 	}
 }
@@ -48,30 +48,29 @@ ManagementServer::~ManagementServer()
 //de config importantes
 // crée une Socket (classe), la définie comme non-bloquante
 // la lie avec le port d'écoute (bind) et écoute les requests (listen)
-void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
+void ManagementServer::_addNewServer(const ServerConfig& server)
 {
 	std::string pair;
-	_server newServer;
-	int ip;
+	_server *newServer = new _server;
 	socklen_t addrLen;
 
-	newServer._name = server.serverName;
-	newServer._port = server.port;
-	newServer._maxSize = server.clientMaxBodySize;
-	newServer._errorPages = server.errorPages;
-	newServer._locations = server.locations;
-	newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
-	addrLen = sizeof(newServer._serverSocket->getAddress());
-	setNonBlocking(newServer._serverSocket->getFdSocket());
-	newServer._serverSocket->Bind();
-	newServer._serverSocket->Listen();
-	ip = getsockname(newServer._serverSocket->getFdSocket(), \
-	(struct sockaddr *)&newServer._serverSocket->getAddress(), &addrLen);
-	if (ip == -1)
-		throw std::runtime_error("Error getting host IP.");
+	newServer->_name = server.serverName;
+	newServer->_port = server.port;
+	newServer->_maxSize = server.clientMaxBodySize;
+	newServer->_errorPages = server.errorPages;
+	newServer->_locations = server.locations;
+	newServer->_serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer->_port, INADDR_ANY);
+	addrLen = sizeof(newServer->_serverSocket->getAddress());
+	setNonBlocking(newServer->_serverSocket->getFdSocket());
+	newServer->_serverSocket->Bind();
+	newServer->_serverSocket->Listen();
+	struct sockaddr_in addr;
+	if (getsockname(newServer->_serverSocket->getFdSocket(), (struct sockaddr *)&addr, &addrLen) == -1)
+        throw std::runtime_error("Error getting host IP.");
+    newServer->_ipAddress = ntohl(addr.sin_addr.s_addr);
+
 	_servers.push_back(newServer);
-	_servers.back()._ipAddress = ip;
-	std::cout << "Server is listening on port " << newServer._port << std::endl;
+	std::cout << "Server is listening on port " << newServer->_port << std::endl;
 }
 
 //La boucle principale d'écoute des différents serveur lancés
@@ -129,9 +128,10 @@ const std::vector<int> &clientFds, int &maxFd)
 {
 
 	FD_ZERO(&readFds);
+	
 	for (size_t i = 0; i < _servers.size(); i++)
 	{
-		int serverFd = _servers[i]._serverSocket->getFdSocket();
+		int serverFd = _servers[i]->_serverSocket->getFdSocket();
 		FD_SET(serverFd, &readFds);
 		if (serverFd > maxFd)
 			maxFd = serverFd;
@@ -155,15 +155,15 @@ void ManagementServer::acceptNewClients(std::vector<int> &clientFds, fd_set &rea
 {
 	for (size_t i = 0; i < _servers.size(); i++)
 	{
-		if (FD_ISSET(_servers[i]._serverSocket->getFdSocket(), &readFds))
+		if (FD_ISSET(_servers[i]->_serverSocket->getFdSocket(), &readFds))
 		{
-			std::cout << "Connection detected on server " << _servers[i]._name << std::endl;
-			int clientFd = _servers[i]._serverSocket->Accept();
+			std::cout << "Connection detected on server " << _servers[i]->_name << std::endl;
+			int clientFd = _servers[i]->_serverSocket->Accept();
 			if (clientFd != -1)
 			{
 				setNonBlocking(clientFd);
 				clientFds.push_back(clientFd);
-				std::cout << "New client connected on server " << _servers[i]._name << ": " << clientFd << std::endl;
+				std::cout << "New client connected on server " << _servers[i]->_name << ": " << clientFd << std::endl;
 			}
 		}
 		else
@@ -230,10 +230,10 @@ void ManagementServer::handleClient(int clientSocket)
 	if (getsockname(clientSocket, (struct sockaddr*)&serverAddr, &serverAddrLen) == -1)
 		throw std::runtime_error("Error getting server socket information");
 	int serverPort = ntohs(serverAddr.sin_port);
-	_server currentServer;
-	for (std::vector<_server>::iterator it = _servers.begin(); it != _servers.end(); ++it)
+	_server *currentServer = NULL;
+	for (std::vector<_server*>::iterator it = _servers.begin(); it != _servers.end(); ++it)
 	{
-		if (it->_port == serverPort)
+		if ((*it)->_port == serverPort)
 		{
 			currentServer = *it;
 			break;
@@ -243,7 +243,7 @@ void ManagementServer::handleClient(int clientSocket)
 
 	client.readRequest(readRawData(clientSocket));// parser renvoyé à Alex
 	//il ajoute a client sont attribut _request;
-	client.processRequest(currentServer); //gestion de la requete par Baptiste
+	client.processRequest(*currentServer); //gestion de la requete par Baptiste
 	//il ajoute a client sont attribut _response;
 	client.sendResponse();
 }

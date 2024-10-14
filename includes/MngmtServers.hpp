@@ -10,7 +10,6 @@
 # include <sstream>
 # include <utility>
 # include <string>
-# include <string.h>
 # include <poll.h>
 # include "Socket.hpp"
 # include "Utils.hpp"
@@ -27,7 +26,14 @@ struct _server
 	int	_port;
 	int _maxSize;
 	std::map<int, std::string> _errorPages;
-	std::vector<HttpConfig::Location> _locations;
+	std::vector<Location> _locations;
+	_server() : _serverSocket(NULL), _ipAddress(0), _port(0), _maxSize(0) {}
+    ~_server() {
+        if (_serverSocket) {
+            delete _serverSocket;
+            _serverSocket = NULL;
+        }
+    }
 };
 
 # include "Client.hpp"
@@ -35,8 +41,8 @@ struct _server
 class ManagementServer
 {
 	private:
-		 std::vector<_server> _servers;
-		 void addNewServer(HttpConfig::ServerConfig server);
+		 std::vector<_server*> _servers;
+		 void _addNewServer(const ServerConfig& server);
 		
 	public:
 		ManagementServer(HttpConfig &config);
