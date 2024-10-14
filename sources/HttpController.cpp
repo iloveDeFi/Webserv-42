@@ -3,31 +3,23 @@
 const std::set<std::string> RequestController::_validMethods = {
     "GET", "PUT", "DELETE", "UNKNOWN"};
 
-RequestController::RequestController(std::map<std::string, std::string> &resourceDatabase)
-    : _resourceDatabase(resourceDatabase), _deletionInProgress()
-{
-    _resourceDatabase[""] = "";
-}
+RequestController::RequestController(HttpConfig::Location &locationConfig)
+    : _locationConfig(locationConfig), _deletionInProgress() {}
 
 RequestController::RequestController(const RequestController &src)
-    : _resourceDatabase(src._resourceDatabase), _deletionInProgress(src._deletionInProgress) {}
+    : _locationConfig(src._locationConfig), _deletionInProgress(src._deletionInProgress) {}
 
 RequestController &RequestController::operator=(const RequestController &src)
 {
     if (this != &src)
     {
-        _resourceDatabase = src._resourceDatabase;
+        _locationConfig = src._locationConfig;
         _deletionInProgress = src._deletionInProgress;
     }
     return *this;
 }
 
 RequestController::~RequestController() {}
-
-std::map<std::string, std::string> &RequestController::getResourceDatabase()
-{
-    return _resourceDatabase;
-}
 
 bool RequestController::hasReadPermissions(const std::string &filePath)
 {
@@ -44,7 +36,7 @@ bool RequestController::hasReadPermissions(const std::string &filePath)
 
 std::string RequestController::loadResource(const std::string &filePath)
 {
-    std::ifstream file(filePath.c_str(), std::ios::in); // Open file in text mode
+    std::ifstream file(filePath.c_str(), std::ios::in);
     if (!file.is_open())
     {
         throw std::runtime_error("Unable to open file: " + filePath);
@@ -83,22 +75,7 @@ bool RequestController::hasPermissionToCreate(const std::string &uri)
 
 bool RequestController::hasPermissionToDelete(const std::string &uri) const
 {
-    for (size_t i = 0; i < getServerLocations().size(); ++i)
-    {
-        const LocationConfig &location = getServerLocations()[i];
-        if (uri.find(location.path) == 0)
-        {
-            if (std::find(location.methods.begin(), location.methods.end(), "DELETE") != location.methods.end())
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
-    return false;
+    return std::find(_locationConfig.methods.begin(), _locationConfig.methods.end(), "DELETE") != _locationConfig.methods.end();
 }
 
 bool RequestController::isValidHttpMethod(const std::string &method) const
@@ -108,18 +85,9 @@ bool RequestController::isValidHttpMethod(const std::string &method) const
 
 bool RequestController::isMethodAllowed(const std::string &method) const
 {
-    for (size_t i = 0; i < getServerLocations().size(); ++i)
-    {
-        const LocationConfig &location = getServerLocations()[i];
-        if (location.methods.find(method) != location.methods.end())
-        {
-            return true;
-        }
-    }
-    return false;
+    return std::find(_locationConfig.methods.begin(), _locationConfig.methods.end(), method) != _locationConfig.methods.end();
 }
 
-// ------------------------ GET METHOD --------------------------
 void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res)
 {
     std::string uri = req.getURI();
@@ -131,15 +99,9 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         return;
     }
 
-    std::map<std::string, std::string>::const_iterator resourceIt = getResourceDatabase().find(uri);
+    std::string resourcePath = _locationConfig.root + uri;
 
-    if (resourceIt == getResourceDatabase().end())
-    {
-        res.generate404NotFound("Resource not found: " + uri);
-        return;
-    }
-
-    if (!hasReadPermissions(resourceIt->second))
+    if (!hasReadPermissions(resourcePath))
     {
         res.generate403Forbidden("Access to the resource is forbidden");
         return;
@@ -147,7 +109,7 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
 
     try
     {
-        std::string resourceContent = loadResource(resourceIt->second);
+        std::string resourceContent = loadResource(resourcePath);
         res.generate200OK("text/plain", resourceContent);
     }
     catch (const std::exception &e)
@@ -159,7 +121,6 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
     res.ensureContentLength();
 }
 
-// ------------------------ POST METHOD --------------------------
 void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res)
 {
     std::string uri = req.getURI();
@@ -177,17 +138,8 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
         res.generate403Forbidden("Forbidden: You do not have permission to create a resource at this location.");
         return;
     }
-
-    if (getResourceDatabase().find(uri) != getResourceDatabase().end())
-    {
-        res.generate409Conflict("409 Conflict: Resource already exists at this URI: " + uri);
-        return;
-    }
-
     try
     {
-        // Simulate resource creation
-        getResourceDatabase()[uri] = body;
         res.generate201Created(uri);
     }
     catch (const std::exception &e)
@@ -199,7 +151,6 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
     res.ensureContentLength();
 }
 
-// ------------------------ DELETE METHOD --------------------------
 void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res)
 {
     std::string uri = req.getURI();
@@ -210,27 +161,17 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
         res.generate403Forbidden("403 Forbidden: You do not have permission to delete this resource.");
         return;
     }
-
-    if (getResourceDatabase().find(uri) == getResourceDatabase().end())
+    std::string resourcePath = _locationConfig.root + uri;
+    if (remove(resourcePath.c_str()) != 0)
     {
         res.generate404NotFound("404 Not Found: Resource not found: " + uri);
         return;
     }
 
-    try
-    {
-        getResourceDatabase().erase(uri);
-        res.generate204NoContent("204 No Content : Delete success");
-    }
-    catch (const std::exception &e)
-    {
-        res.generate500InternalServerError("500 Internal Server Error: An error occurred while processing the request: " + std::string(e.what()));
-    }
-
+    res.generate204NoContent("204 No Content: Delete success");
     res.setHTTPVersion(version);
 }
 
-// ------------------------ UNKNOWN METHOD --------------------------
 void RequestController::handleUnknownResponse(const HttpRequest &req, HttpResponse &res)
 {
     std::string version = req.getHTTPVersion();
@@ -257,9 +198,8 @@ void RequestController::handleUnknownResponse(const HttpRequest &req, HttpRespon
     res.ensureContentLength();
 }
 
-// GET
-GetRequestHandler::GetRequestHandler(std::map<std::string, std::string> &resourceDatabase)
-    : RequestController(resourceDatabase) {}
+GetRequestHandler::GetRequestHandler(HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
 GetRequestHandler::~GetRequestHandler() {}
 
 void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
@@ -267,9 +207,8 @@ void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handleGetResponse(req, res);
 }
 
-// POST
-PostRequestHandler::PostRequestHandler(std::map<std::string, std::string> &resourceDatabase)
-    : RequestController(resourceDatabase) {}
+PostRequestHandler::PostRequestHandler(HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
 PostRequestHandler::~PostRequestHandler() {}
 
 void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
@@ -277,9 +216,8 @@ void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handlePostResponse(req, res);
 }
 
-// DELETE
-DeleteRequestHandler::DeleteRequestHandler(std::map<std::string, std::string> &resourceDatabase)
-    : RequestController(resourceDatabase) {}
+DeleteRequestHandler::DeleteRequestHandler(HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
 DeleteRequestHandler::~DeleteRequestHandler() {}
 
 void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
@@ -287,9 +225,8 @@ void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handleDeleteResponse(req, res);
 }
 
-// UNKNOWN
-UnknownRequestHandler::UnknownRequestHandler(std::map<std::string, std::string> &resourceDatabase)
-    : RequestController(resourceDatabase) {}
+UnknownRequestHandler::UnknownRequestHandler(HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
 UnknownRequestHandler::~UnknownRequestHandler() {}
 
 void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)

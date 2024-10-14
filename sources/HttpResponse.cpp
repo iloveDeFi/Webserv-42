@@ -1,5 +1,4 @@
 #include "HttpResponse.hpp"
-#include <sstream> // Pour utiliser std::ostringstream
 
 HttpResponse::HttpResponse()
     : _httpVersion("HTTP/1.1"), _statusCode(200), _reasonMessage("OK"), _headers(), _body(""), _isChunked(false) {}
@@ -23,8 +22,6 @@ HttpResponse &HttpResponse::operator=(const HttpResponse &src)
     return *this;
 }
 
-// RESPONSE
-// 200 OK response
 void HttpResponse::generate200OK(const std::string &contentType, const std::string &bodyContent)
 {
     setStatusCode(200);
@@ -35,19 +32,17 @@ void HttpResponse::generate200OK(const std::string &contentType, const std::stri
     setHeader("Content-Length", to_string(bodyContent.size()));
 }
 
-// 201 Created response
 void HttpResponse::generate201Created(const std::string &location)
 {
     setStatusCode(201);
     setReasonMessage("Created");
-    setHeader("Location", location); // URI of the newly created resource
+    setHeader("Location", location);
     setHeader("Content-Type", "text/plain");
     std::string body = "Resource created at " + location;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
 }
 
-// 202 Accepted response
 void HttpResponse::generate202Accepted(const std::string &deletionInfo)
 {
     setStatusCode(202);
@@ -58,7 +53,6 @@ void HttpResponse::generate202Accepted(const std::string &deletionInfo)
     setHeader("Content-Length", to_string(body.size()));
 }
 
-// 204 No Content response
 void HttpResponse::generate204NoContent(const std::string &errorMessage)
 {
     setStatusCode(204);
@@ -67,7 +61,6 @@ void HttpResponse::generate204NoContent(const std::string &errorMessage)
     setBody("");
 }
 
-// Response 400 Bad Request
 void HttpResponse::generate400BadRequest(const std::string &errorMessage)
 {
     setStatusCode(400);
@@ -79,7 +72,6 @@ void HttpResponse::generate400BadRequest(const std::string &errorMessage)
     setHeader("Content-Length", to_string(body.size()));
 }
 
-// 403 Forbidden response
 void HttpResponse::generate403Forbidden(const std::string &errorMessage)
 {
     setStatusCode(403);
@@ -90,7 +82,6 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage)
     setHeader("Content-Length", to_string(body.size()));
 }
 
-// 404 Not Found response
 void HttpResponse::generate404NotFound(const std::string &errorMessage)
 {
     setStatusCode(404);
@@ -101,7 +92,6 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage)
     setHeader("Content-Length", to_string(body.size()));
 }
 
-// 405 Method Not Allowed response
 void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods)
 {
     setStatusCode(405);
@@ -111,10 +101,9 @@ void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods
     setBody(body);
 
     setHeader("Content-Length", to_string(body.size()));
-    setHeader("Allow", allowedMethods); // Indiquer les méthodes autorisées dans l'en-tête "Allow"
+    setHeader("Allow", allowedMethods);
 }
 
-// 409 Conflict response for PUT method
 void HttpResponse::generate409Conflict(const std::string &conflictInfo)
 {
     setStatusCode(409);
@@ -125,7 +114,6 @@ void HttpResponse::generate409Conflict(const std::string &conflictInfo)
     setHeader("Content-Length", to_string(body.size()));
 }
 
-// 500 Internal Server Error response
 void HttpResponse::generate500InternalServerError(const std::string &errorMessage)
 {
     setStatusCode(500);
@@ -136,7 +124,6 @@ void HttpResponse::generate500InternalServerError(const std::string &errorMessag
     setHeader("Content-Length", to_string(body.size()));
 }
 
-// 501 Not Implemented response
 void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
 {
     setStatusCode(501);
@@ -148,44 +135,37 @@ void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
     setHeader("Content-Length", to_string(body.size()));
 }
 
-// Getting full response
 std::string HttpResponse::getFullResponse()
 {
     std::string response;
 
-    // Add status line
     response += _httpVersion + " " + to_string(_statusCode) + " " + _reasonMessage + "\r\n";
 
-    // Add headers
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
     {
         response += it->first + ": " + it->second + "\r\n";
     }
 
-    // Add an empty line between headers and body
     response += "\r\n";
 
-    // Add body
     response += _body;
 
     return response;
 }
 
-// Setters
-// 1) RESPONSE LINE
 void HttpResponse::setHTTPVersion(const std::string &httpVersion) { _httpVersion = httpVersion; }
 void HttpResponse::setStatusCode(int statusCode) { _statusCode = statusCode; }
 void HttpResponse::setReasonMessage(const std::string &reasonMessage) { _reasonMessage = reasonMessage; }
-
-// 2) HEADERS
 void HttpResponse::setHeader(const std::string &name, const std::string &value) { _headers[name] = value; }
 void HttpResponse::setHeaders(const std::map<std::string, std::string> &headers) { _headers = headers; }
-
-// 3) BODY
 void HttpResponse::setBody(const std::string &body) { _body = body; }
 void HttpResponse::setIsChunked(bool isChunked) { _isChunked = isChunked; }
 
-// OTHER
+int HttpResponse::getStatusCode() const
+{
+    return _statusCode;
+}
+
 std::string HttpResponse::normalizeHeader(const std::string &header)
 {
     std::string normalized = header;
@@ -204,7 +184,7 @@ void HttpResponse::ensureContentLength()
     }
 }
 
-std::string HttpResponse::toString() const
+std::string HttpResponse::toString()
 {
     std::string response = _httpVersion + " " + to_string(_statusCode) + " " + _reasonMessage + "\r\n";
 
@@ -217,7 +197,6 @@ std::string HttpResponse::toString() const
     return response;
 }
 
-// SPECIAL RESPONSES
 std::string HttpResponse::generate404Error(const std::string &uri)
 {
     std::string errorPage = "<html><body><h1>404 Not Found</h1>";
@@ -231,7 +210,6 @@ std::string HttpResponse::generateRedirection(const std::string &newUri)
     return "HTTP/1.1 302 Found\r\nLocation: " + newUri + "\r\n\r\n";
 }
 
-// PRINT DATA
 std::ostream &HttpResponse::print(std::ostream &os) const
 {
     os << "--- RESPONSE LINE INFOS: ---" << std::endl;

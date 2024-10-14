@@ -9,11 +9,11 @@ Location::~Location()
 {
 }
 
-void Location::setPath(const std::string& path)
+void Location::setPath(const std::string &path)
 {
 	_path = path;
 }
-void Location::setMethods(const std::string& methods)
+void Location::setMethods(const std::string &methods)
 {
 	std::istringstream stream(methods);
 	std::string method;
@@ -29,22 +29,21 @@ void Location::setMethods(const std::string& methods)
 		else
 			throw std::runtime_error("Error method not implemanted.");
 	}
-	
 }
-void Location::setErrorCode(const std::string& methods)
+void Location::setErrorCode(const std::string &methods)
 {
 	(void)methods;
 }
 
-std::string& Location::getPath()
+std::string &Location::getPath()
 {
 	return (_path);
 }
-std::vector<httpRequestMethod>& Location::getMethods()
+std::vector<httpRequestMethod> &Location::getMethods()
 {
 	return (_methods);
 }
-std::map<HttpStatusCode, std::string>& Location::getError()
+std::map<HttpStatusCode, std::string> &Location::getError()
 {
 	return (_Error);
 }

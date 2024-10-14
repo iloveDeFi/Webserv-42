@@ -3,18 +3,18 @@
 
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
+#include "HttpConfig.hpp"
 #include <fstream>
 #include <stdexcept>
 #include <string>
-#include <map>
 #include <set>
-#include <unistd.h>   // Pour access()
-#include <sys/stat.h> // Pour S_IRUSR
+#include <unistd.h>
+#include <sys/stat.h>
 
 class RequestController
 {
 protected:
-    std::map<std::string, std::string> &_resourceDatabase;
+    HttpConfig::Location &_locationConfig;
     std::set<std::string> _deletionInProgress;
     static const std::set<std::string> _validMethods;
 
@@ -25,19 +25,23 @@ protected:
     bool isValidHttpMethod(const std::string &method) const;
     bool isMethodAllowed(const std::string &method) const;
 
+    void handleGetResponse(const HttpRequest &req, HttpResponse &res);
+    void handlePostResponse(const HttpRequest &req, HttpResponse &res);
+    void handleDeleteResponse(const HttpRequest &req, HttpResponse &res);
+    void handleUnknownResponse(const HttpRequest &req, HttpResponse &res);
+
 public:
-    RequestController(std::map<std::string, std::string> &resourceDatabase);
+    RequestController(HttpConfig::Location &locationConfig);
     RequestController(const RequestController &src);
     RequestController &operator=(const RequestController &src);
     virtual ~RequestController();
 
     virtual void handle(const HttpRequest &req, HttpResponse &res) = 0;
-    std::map<std::string, std::string> &getResourceDatabase();
 };
 class GetRequestHandler : public RequestController
 {
 public:
-    GetRequestHandler(std::map<std::string, std::string> &resourceDatabase);
+    GetRequestHandler(HttpConfig::Location &locationConfig);
     virtual ~GetRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -45,7 +49,7 @@ public:
 class PostRequestHandler : public RequestController
 {
 public:
-    PostRequestHandler(std::map<std::string, std::string> &resourceDatabase);
+    PostRequestHandler(HttpConfig::Location &locationConfig);
     virtual ~PostRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -53,7 +57,7 @@ public:
 class DeleteRequestHandler : public RequestController
 {
 public:
-    DeleteRequestHandler(std::map<std::string, std::string> &resourceDatabase);
+    DeleteRequestHandler(HttpConfig::Location &locationConfig);
     virtual ~DeleteRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -61,50 +65,9 @@ public:
 class UnknownRequestHandler : public RequestController
 {
 public:
-    UnknownRequestHandler(std::map<std::string, std::string> &resourceDatabase);
+    UnknownRequestHandler(HttpConfig::Location &locationConfig);
     virtual ~UnknownRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
-
-// Implémentation des constructeurs
-GetRequestHandler::GetRequestHandler(std::map<std::string, std::string> &resourceDatabase)
-    : RequestController(resourceDatabase) {}
-
-GetRequestHandler::~GetRequestHandler() {}
-
-void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
-{
-    // Logique pour gérer la requête GET
-}
-
-PostRequestHandler::PostRequestHandler(std::map<std::string, std::string> &resourceDatabase)
-    : RequestController(resourceDatabase) {}
-
-PostRequestHandler::~PostRequestHandler() {}
-
-void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
-{
-    // Logique pour gérer la requête POST
-}
-
-DeleteRequestHandler::DeleteRequestHandler(std::map<std::string, std::string> &resourceDatabase)
-    : RequestController(resourceDatabase) {}
-
-DeleteRequestHandler::~DeleteRequestHandler() {}
-
-void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
-{
-    // Logique pour gérer la requête DELETE
-}
-
-UnknownRequestHandler::UnknownRequestHandler(std::map<std::string, std::string> &resourceDatabase)
-    : RequestController(resourceDatabase) {}
-
-UnknownRequestHandler::~UnknownRequestHandler() {}
-
-void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
-{
-    // Logique pour gérer la requête UNKNOWN
-}
 
 #endif
