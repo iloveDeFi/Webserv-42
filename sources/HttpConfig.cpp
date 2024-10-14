@@ -67,6 +67,8 @@ bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
             if (!serverData.serverName.empty()) {
                 validateServerConfiguration(serverData);
                 parsedServers.push_back(serverData);
+                serverData = ServerConfig();
+                definedAttributes.clear();
                 return true;
             }
             continue;
@@ -91,6 +93,7 @@ bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
 
     return false;
 }
+
 
 void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerConfig& serverData, std::set<std::string>& definedAttributes) {
     size_t separatorPosition = attributeLine.find(": ");
@@ -366,18 +369,22 @@ void HttpConfig::validateServerConfiguration(const ServerConfig& serverData) {
         throw std::runtime_error("Server name is missing");
     }
     if (serverData.port == 0) {
-        throw std::runtime_error("Port is missing or invalid");
+        throw std::runtime_error("Port is missing or invalid for server: " + serverData.serverName);
     }
     if (serverData.clientMaxBodySize == 0) {
-        throw std::runtime_error("Client max body size is missing or invalid");
+        throw std::runtime_error("Client max body size is missing or invalid for server: " + serverData.serverName);
     }
     if (serverData.locations.empty()) {
         throw std::runtime_error("No locations defined for server: " + serverData.serverName);
     }
-    if (!directoryExists(serverData.root)) {
-        throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root);
+
+    if (serverData.root.empty()) {
+        throw std::runtime_error("Server root is empty for server: " + serverData.serverName);
+    } else if (!directoryExists(serverData.root)) {
+        throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root + " for server: " + serverData.serverName);
     }
 }
+
 
 bool HttpConfig::directoryExists(const std::string& path) {
     struct stat info;

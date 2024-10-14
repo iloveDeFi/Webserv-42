@@ -48,32 +48,67 @@ ManagementServer::~ManagementServer()
 //de config importantes
 // crée une Socket (classe), la définie comme non-bloquante
 // la lie avec le port d'écoute (bind) et écoute les requests (listen)
+#include <sstream>
+
 void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 {
-	std::string pair;
-	_server newServer;
-	int ip;
-	socklen_t addrLen;
+    _server newServer;
+    socklen_t addrLen;
 
-	newServer._name = server.serverName;
-	newServer._port = server.port;
-	newServer._maxSize = server.clientMaxBodySize;
-	newServer._errorPages = server.errorPages;
-	newServer._locations = server.locations;
-	newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
-	addrLen = sizeof(newServer._serverSocket->getAddress());
-	setNonBlocking(newServer._serverSocket->getFdSocket());
-	newServer._serverSocket->Bind();
-	newServer._serverSocket->Listen();
-	ip = getsockname(newServer._serverSocket->getFdSocket(), \
-	(struct sockaddr *)&newServer._serverSocket->getAddress(), &addrLen);
-	if (ip == -1)
-		throw std::runtime_error("Error getting host IP.");
-	_servers.push_back(newServer);
-	_servers.back()._ipAddress = ip;
-	std::cout << "Server is listening on port " << newServer._port << std::endl;
+    try {
+        newServer._name = server.serverName;
+        newServer._port = server.port;
+        newServer._maxSize = server.clientMaxBodySize;
+        newServer._errorPages = server.errorPages;
+        newServer._locations = server.locations;
+
+        newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
+        addrLen = sizeof(newServer._serverSocket->getAddress());
+        
+        setNonBlocking(newServer._serverSocket->getFdSocket());
+        
+        try {
+            newServer._serverSocket->Bind();
+        } catch (const std::runtime_error& e) {
+            std::ostringstream errorMsg;
+            if (errno == EACCES) {
+                errorMsg << "Permission denied. You may need root privileges to bind to port " << newServer._port;
+                throw std::runtime_error(errorMsg.str());
+            } else if (errno == EADDRINUSE) {
+                errorMsg << "Address already in use. Port " << newServer._port << " may already be occupied.";
+                throw std::runtime_error(errorMsg.str());
+            } else {
+                throw; // Rethrow the original exception if it's not one of the specific cases we're handling
+            }
+        }
+
+        newServer._serverSocket->Listen();
+
+        int ip = getsockname(newServer._serverSocket->getFdSocket(), 
+                             (struct sockaddr *)&newServer._serverSocket->getAddress(), 
+                             &addrLen);
+        if (ip == -1) {
+            std::string errorStr = "Error getting host IP: ";
+            errorStr += strerror(errno);
+            throw std::runtime_error(errorStr);
+        }
+
+        _servers.push_back(newServer);
+        _servers.back()._ipAddress = ip;
+        std::cout << "Server is listening on port " << newServer._port << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Failed to set up server on port " << server.port << ": " << e.what() << std::endl;
+        
+        // Clean up resources if an error occurred
+        if (newServer._serverSocket) {
+            delete newServer._serverSocket;
+        }
+        
+        // Optionally, you might want to rethrow the exception or handle it in some other way
+        // throw;
+    }
 }
-
 //La boucle principale d'écoute des différents serveur lancés
 //prépare les FD des serveurs et des potentiels clients
 //en modifiant la valeur max du nombre d'FD actif
