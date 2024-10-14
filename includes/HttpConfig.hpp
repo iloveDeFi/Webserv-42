@@ -12,6 +12,9 @@
 #include <set>
 #include <cctype>
 #include <vector>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 
 struct Location {
@@ -58,6 +61,15 @@ private:
     bool _parseErrorPages(std::ifstream& file, ServerConfig& server, int indentLevel);
     bool _parseLocations(std::ifstream& file, ServerConfig& server, int indentLevel);
     bool _parseLocationBlock(std::ifstream& file, Location& location, int indentLevel);
+
+    // Utils
+    int _parsePortNumber(const std::string& portString);
+    size_t _parseBodySizeLimit(const std::string& sizeString);
+    bool _fileExists(const std::string& path);
+    bool _directoryExists(const std::string& path);
+    std::string _toUpperCase(const std::string& str);
+    bool _isAllDigits(const std::string& str);
+
 };
 
 #endif
