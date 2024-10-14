@@ -16,7 +16,7 @@ class RequestController
 protected:
     HttpConfig::Location &_locationConfig;
     std::set<std::string> _deletionInProgress;
-    static const std::set<std::string> _validMethods;
+    static std::set<std::string> _validMethods;
 
     bool hasReadPermissions(const std::string &filePath);
     std::string loadResource(const std::string &filePath);
@@ -38,6 +38,7 @@ public:
 
     virtual void handle(const HttpRequest &req, HttpResponse &res) = 0;
 };
+
 class GetRequestHandler : public RequestController
 {
 public:

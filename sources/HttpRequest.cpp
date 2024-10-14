@@ -1,7 +1,66 @@
 #include "HttpRequest.hpp"
 
+std::string HttpRequest::trim(const std::string &str)
+{
+    size_t first = str.find_first_not_of(' ');
+    if (std::string::npos == first)
+    {
+        return "";
+    }
+    size_t last = str.find_last_not_of(' ');
+    return str.substr(first, (last - first + 1));
+}
+
 HttpRequest::HttpRequest(const std::string &rawData)
-    : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods()) {}
+    : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods())
+{
+    std::istringstream requestStream(rawData);
+    std::string requestLine;
+
+    if (std::getline(requestStream, requestLine))
+    {
+        std::istringstream lineStream(requestLine);
+        lineStream >> _method >> _uri >> _version;
+
+        if (_method.empty() || _uri.empty() || _version.empty())
+        {
+            throw std::runtime_error("Invalid request line");
+        }
+
+        size_t queryPos = _uri.find('?');
+        if (queryPos != std::string::npos)
+        {
+            _queryParameters = _uri.substr(queryPos + 1);
+            _uri = _uri.substr(0, queryPos);
+        }
+    }
+
+    std::string headerLine;
+    while (std::getline(requestStream, headerLine) && !headerLine.empty())
+    {
+        size_t colonPos = headerLine.find(':');
+        if (colonPos != std::string::npos)
+        {
+            std::string headerName = trim(headerLine.substr(0, colonPos));
+            std::string headerValue = trim(headerLine.substr(colonPos + 1));
+            _headers[headerName] = headerValue;
+        }
+    }
+
+    std::map<std::string, std::string>::iterator contentLengthIt = _headers.find("Content-Length");
+    if (contentLengthIt != _headers.end())
+    {
+        int contentLength = atoi(contentLengthIt->second.c_str());
+        if (contentLength > 0)
+        {
+            char *bodyData = new char[contentLength + 1];
+            requestStream.read(bodyData, contentLength);
+            bodyData[contentLength] = '\0';
+            _body = std::string(bodyData);
+            delete[] bodyData;
+        }
+    }
+}
 
 HttpRequest::~HttpRequest() {}
 
@@ -28,6 +87,7 @@ std::string HttpRequest::getURI() const { return _uri; }
 std::string HttpRequest::getHTTPVersion() const { return _version; }
 
 std::map<std::string, std::string> HttpRequest::getHeaders() const { return _headers; }
+
 std::string HttpRequest::getHeader(const std::string &name) const
 {
     std::map<std::string, std::string>::const_iterator it = _headers.find(name);
@@ -35,20 +95,13 @@ std::string HttpRequest::getHeader(const std::string &name) const
     {
         return it->second;
     }
-    else
-    {
-        return "";
-    }
+    return "";
 }
 
 std::string HttpRequest::getBody() const { return _body; }
 std::string HttpRequest::getQueryParameters() const { return _queryParameters; }
 
-// TO DO : check this function
-bool HttpRequest::isChunked() const
-{
-    return (true);
-}
+bool HttpRequest::isChunked() const { return false; }
 
 std::set<std::string> HttpRequest::initMethods()
 {
@@ -83,7 +136,7 @@ std::ostream &operator<<(std::ostream &os, const HttpRequest &req)
     std::map<std::string, std::string> headers = req.getHeaders();
     for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
     {
-        // to do handle
+        os << it->first << ": " << it->second << "\n";
     }
     os << "Body: " << req.getBody() << "\n";
     os << "Query Parameters: " << req.getQueryParameters() << "\n";
@@ -91,14 +144,13 @@ std::ostream &operator<<(std::ostream &os, const HttpRequest &req)
     return os;
 }
 
-void HttpRequest::requestController(HttpResponse &response, std::map<std::string, std::string> &resourceDatabase)
+void HttpRequest::requestController(HttpResponse &response)
 {
     HttpConfig::Location locationConfig;
     GetRequestHandler getHandler(locationConfig);
     PostRequestHandler postHandler(locationConfig);
     DeleteRequestHandler deleteHandler(locationConfig);
     UnknownRequestHandler unknownHandler(locationConfig);
-    (void)resourceDatabase;
 
     std::map<std::string, RequestController *> handlerMap;
     handlerMap["GET"] = &getHandler;

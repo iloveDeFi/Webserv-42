@@ -59,6 +59,7 @@ void HttpResponse::generate204NoContent(const std::string &errorMessage)
     setReasonMessage("No Content");
     setHeader("Content-Type", "text/plain");
     setBody("");
+    (void)errorMessage;
 }
 
 void HttpResponse::generate400BadRequest(const std::string &errorMessage)
@@ -66,7 +67,6 @@ void HttpResponse::generate400BadRequest(const std::string &errorMessage)
     setStatusCode(400);
     setReasonMessage("Bad Request");
     setHeader("Content-Type", "text/plain");
-
     std::string body = "400 Bad Request: " + errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
@@ -80,6 +80,7 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage)
     std::string body = "403 Forbidden: You don't have permission to access this resource.";
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
+    (void)errorMessage;
 }
 
 void HttpResponse::generate404NotFound(const std::string &errorMessage)
@@ -90,6 +91,7 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage)
     std::string body = "404 Not Found: The requested resource could not be found.";
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
+    (void)errorMessage;
 }
 
 void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods)
@@ -99,7 +101,6 @@ void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods
     setHeader("Content-Type", "text/plain");
     std::string body = "405 Method Not Allowed: The method used is not allowed for this resource.\nAllowed Methods: " + allowedMethods;
     setBody(body);
-
     setHeader("Content-Length", to_string(body.size()));
     setHeader("Allow", allowedMethods);
 }
@@ -122,6 +123,7 @@ void HttpResponse::generate500InternalServerError(const std::string &errorMessag
     std::string body = "500 Internal Server Error: The server encountered an error.";
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
+    (void)errorMessage;
 }
 
 void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
@@ -131,8 +133,8 @@ void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
     setHeader("Content-Type", "text/plain");
     std::string body = "501 Not Implemented: The server does not recognize the HTTP method used.";
     setBody(body);
-
     setHeader("Content-Length", to_string(body.size()));
+    (void)errorMessage;
 }
 
 std::string HttpResponse::getFullResponse()

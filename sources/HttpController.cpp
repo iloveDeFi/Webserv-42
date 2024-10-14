@@ -1,7 +1,10 @@
 #include "HttpController.hpp"
 
-const std::set<std::string> RequestController::_validMethods = {
-    "GET", "PUT", "DELETE", "UNKNOWN"};
+std::set<std::string> RequestController::_validMethods = {
+    "GET",
+    "PUT",
+    "DELETE",
+    "UNKNOWN"};
 
 RequestController::RequestController(HttpConfig::Location &locationConfig)
     : _locationConfig(locationConfig), _deletionInProgress() {}
@@ -75,6 +78,7 @@ bool RequestController::hasPermissionToCreate(const std::string &uri)
 
 bool RequestController::hasPermissionToDelete(const std::string &uri) const
 {
+    (void)uri;
     return std::find(_locationConfig.methods.begin(), _locationConfig.methods.end(), "DELETE") != _locationConfig.methods.end();
 }
 
@@ -180,56 +184,9 @@ void RequestController::handleUnknownResponse(const HttpRequest &req, HttpRespon
     if (method.empty())
     {
         res.generate400BadRequest("400 Bad Request: Method cannot be empty.");
-    }
-    else if (!isValidHttpMethod(method))
-    {
-        res.generate400BadRequest("400 Bad Request: Unrecognized or malformed HTTP method.");
-    }
-    else if (!isMethodAllowed(method))
-    {
-        res.generate405MethodNotAllowed("405 Method Not Allowed: " + method + " is not allowed.");
-    }
-    else
-    {
-        res.generate501NotImplemented("501 Not Implemented: Sorry. Http method not recognized.");
+        return;
     }
 
+    res.generate405MethodNotAllowed("405 Method Not Allowed: The method " + method + " is not allowed.");
     res.setHTTPVersion(version);
-    res.ensureContentLength();
-}
-
-GetRequestHandler::GetRequestHandler(HttpConfig::Location &locationConfig)
-    : RequestController(locationConfig) {}
-GetRequestHandler::~GetRequestHandler() {}
-
-void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
-{
-    handleGetResponse(req, res);
-}
-
-PostRequestHandler::PostRequestHandler(HttpConfig::Location &locationConfig)
-    : RequestController(locationConfig) {}
-PostRequestHandler::~PostRequestHandler() {}
-
-void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
-{
-    handlePostResponse(req, res);
-}
-
-DeleteRequestHandler::DeleteRequestHandler(HttpConfig::Location &locationConfig)
-    : RequestController(locationConfig) {}
-DeleteRequestHandler::~DeleteRequestHandler() {}
-
-void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
-{
-    handleDeleteResponse(req, res);
-}
-
-UnknownRequestHandler::UnknownRequestHandler(HttpConfig::Location &locationConfig)
-    : RequestController(locationConfig) {}
-UnknownRequestHandler::~UnknownRequestHandler() {}
-
-void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
-{
-    handleUnknownResponse(req, res);
 }

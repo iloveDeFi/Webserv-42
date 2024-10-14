@@ -10,19 +10,16 @@ class HttpResponse;
 #include <set>
 #include "HttpResponse.hpp"
 #include "HttpController.hpp"
-
+#include <sstream>
 class HttpRequest
 {
 private:
     std::string _method;
     std::string _uri;
     std::string _version;
-
     std::map<std::string, std::string> _headers;
-
     std::string _body;
     std::string _queryParameters;
-
     std::set<std::string> initMethods();
     std::set<std::string> _allowedMethods;
 
@@ -45,7 +42,8 @@ public:
 
     bool isMethodAllowed(const std::string &method) const;
     bool isSupportedContentType(const std::string &contentType) const;
-    void requestController(HttpResponse &response, std::map<std::string, std::string> &resourceDatabase);
+    void requestController(HttpResponse &response);
+    std::string trim(const std::string &str);
 };
 
 std::ostream &operator<<(std::ostream &os, const HttpRequest &re);
