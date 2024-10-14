@@ -116,10 +116,9 @@
           handler: /var/www/upload_video.php
           allow_uploads: true
           upload_store: /var/www/video_uploads
-          client_max_body_size: 100M
+          client_max_body_size: 1M
 
-        - path: ~ \.php$
+        - path: /cgi-bin
           methods: [GET, POST]
-          fastcgi_pass: unix:/var/run/php/php7.4-fpm.sock
-          fastcgi_index: index.php
-          include: fastcgi_params
+          cgi_extensions: [.cgi, .pl]
+          cgi_handler: /usr/bin/perl
