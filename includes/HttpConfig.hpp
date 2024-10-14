@@ -19,6 +19,7 @@ public:
         std::string index;
         bool autoindex;
         std::vector<std::string> cgiExtensions;
+		std::string cgiHandler;
         bool allowUploads;
         std::string uploadStore;
         size_t clientMaxBodySize;
@@ -29,8 +30,6 @@ public:
             std::string url;
             int code;
         } redirect;
-        std::string fastcgiPass;
-        std::string fastcgiIndex;
         std::string include;
 		std::string defaultFile;
 
@@ -61,7 +60,7 @@ private:
     std::string readConfigFile(const std::string& path);
     void parseConfigurationFile();
     std::vector<std::string> splitServerConfigurations();
-    void parseServerConfiguration(const std::string& serverConfig);
+	bool parseServerConfiguration(std::istringstream& configStream);
     void parseServerAttribute(const std::string& attributeLine, ServerConfig& serverData, std::set<std::string>& definedAttributes);
     int parsePortNumber(const std::string& portString);
     size_t parseBodySizeLimit(const std::string& sizeString);
