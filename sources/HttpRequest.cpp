@@ -1,6 +1,7 @@
 #include "../includes/HttpRequest.hpp"
 #include "../includes/HttpRequestException.hpp"
-
+#include <algorithm>
+#include <sstream>
 
 // COPLIEN'S FORM
 HttpRequest::HttpRequest() 
@@ -25,59 +26,44 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& src) {
     return *this;
 }
 
-// 1) REQUEST LINE
+// GETTERS AND SETTERS
 std::string HttpRequest::getMethod() const { return _method; }
 std::string HttpRequest::getURI() const { return _uri; }
 std::string HttpRequest::getHTTPVersion() const { return _version; }
-void HttpRequest::setMethod(const std::string& method) {
-	if (_allowedMethods.find(method) == _allowedMethods.end()) {
-		throw HttpRequestException("Invalid method: " + method);
-	}
-	_method = method;
-}
-void HttpRequest::setURI(const std::string& uri) { _uri = uri; }
-void HttpRequest::setHTTPVersion(const std::string& version) {
-	if (version != "HTTP/1.1" && version != "HTTP/1.0") {
-		throw HttpRequestException("Invalid HTTP version: " + version);
-	}
-	_version = version;
-}
-
-// 2) HEADERS
 std::map<std::string, std::string> HttpRequest::getHeaders() const { return _headers; }
-std::string HttpRequest::getHeader(const std::string& name) const {
-    std::map<std::string, std::string>::const_iterator it = _headers.find(name);
-    if (it != _headers.end()) {
-        return it->second;
-    } else {
-        return "";
-    }
-}
-void HttpRequest::setHeaders(const std::map<std::string, std::string>& headers) { _headers = headers; }
-
-
-// 3) BODY
 std::string HttpRequest::getBody() const { return _body; }
 std::map<std::string, std::string> HttpRequest::getQueryParameters() const { return _queryParameters; }
-void HttpRequest::setBody(const std::string& body) {
-	if (!body.empty() && body.size() > MAX_BODY_SIZE) {
-		throw BodyTooLargeException();
-	}
-	_body = body;
+
+void HttpRequest::setMethod(const std::string& method) {
+    if (_allowedMethods.find(method) == _allowedMethods.end()) {
+        throw HttpRequestException("Invalid method: " + method);
+    }
+    _method = method;
 }
+
+void HttpRequest::setURI(const std::string& uri) { _uri = uri; }
+
+void HttpRequest::setHTTPVersion(const std::string& version) {
+    if (version != "HTTP/1.1" && version != "HTTP/1.0") {
+        throw HttpRequestException("Invalid HTTP version: " + version);
+    }
+    _version = version;
+}
+
+void HttpRequest::setHeaders(const std::map<std::string, std::string>& headers) { _headers = headers; }
+
+void HttpRequest::setBody(const std::string& body) {
+    if (!body.empty() && body.size() > MAX_BODY_SIZE) {
+        throw BodyTooLargeException();
+    }
+    _body = body;
+}
+
 void HttpRequest::setQueryParameters(const std::map<std::string, std::string>& query_params) { _queryParameters = query_params; }
 
-// OTHER
-const std::set<std::string> HttpRequest::initMethods() {
-    std::set<std::string> methods;
-    methods.insert("GET");
-    methods.insert("POST");
-    methods.insert("DELETE");
-    return methods;
-}
 void HttpRequest::setIsChunked(bool isChunked) { _isChunked = isChunked; }
 
-// Parsing principal
+// MAIN PARSING FUNCTION
 void HttpRequest::parse(const std::string& raw_request) {
     if (!isValidRequest(raw_request)) {
         throw HttpRequestException("Invalid request format: request is not properly formatted.");
@@ -90,10 +76,8 @@ void HttpRequest::parse(const std::string& raw_request) {
         setHeaders(extractHeaders(raw_request));
         
         if (_method == "POST") {
-            
             setBody(extractBody(raw_request));
         } else if (_method == "GET" || _method == "DELETE") {
-            
             if (hasBody(raw_request)) {
                 throw HttpRequestException("GET or DELETE request should not contain a body.");
             }
@@ -104,10 +88,19 @@ void HttpRequest::parse(const std::string& raw_request) {
     } catch (const HttpRequestException& e) {
         std::cerr << "Error during request parsing: " << e.what() << std::endl;
         clearRequestData();
+        throw;
     }
 }
 
-// Fonctions auxiliaires (trim, safe_substr, etc.)
+// UTILITY FUNCTIONS
+const std::set<std::string> HttpRequest::initMethods() {
+    std::set<std::string> methods;
+    methods.insert("GET");
+    methods.insert("POST");
+    methods.insert("DELETE");
+    return methods;
+}
+
 std::string HttpRequest::safe_substr(const std::string& str, size_t start, size_t length) {
     if (start >= str.size()) throw HttpRequestException("Substring extraction failed: start index out of bounds.");
     if (start + length > str.size()) throw HttpRequestException("Substring extraction failed: length out of bounds.");
@@ -119,6 +112,12 @@ std::string HttpRequest::trim(const std::string& str) {
     if (first == std::string::npos) return "";
     size_t last = str.find_last_not_of(" \t");
     return safe_substr(str, first, last - first + 1);
+}
+
+std::string HttpRequest::toLower(const std::string& str) {
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+    return result;
 }
 
 bool HttpRequest::isValidRequest(const std::string& raw_request) {
@@ -147,7 +146,11 @@ void HttpRequest::clearRequestData() {
     _isChunked = false;
 }
 
-// Fonctions d'extraction
+bool HttpRequest::isChunked() const {
+    return _isChunked;
+}
+
+// EXTRACTION FUNCTIONS
 std::string HttpRequest::extractMethod(const std::string& raw_request) {
     size_t method_end = raw_request.find(' ');
     if (method_end == std::string::npos) throw MissingMethodException();
@@ -181,23 +184,18 @@ std::map<std::string, std::string> HttpRequest::extractHeaders(const std::string
         size_t line_end = raw_request.find("\r\n", current);
         if (line_end == std::string::npos || line_end > headers_end) break;
 
-        size_t colon_pos = raw_request.find(':', current);
-        if (colon_pos == std::string::npos || colon_pos > line_end) {
-            throw HttpRequestException("Invalid header format: missing ':' in header.");
+        std::string header_line = raw_request.substr(current, line_end - current);
+        size_t colon_pos = header_line.find(':');
+        if (colon_pos == std::string::npos) {
+            throw HttpRequestException("Invalid header format: missing ':' in header '" + header_line + "'");
         }
 
-        
-        if (raw_request.find(':', colon_pos + 1) != std::string::npos && raw_request.find(':', colon_pos + 1) < line_end) {
-            throw HttpRequestException("Invalid header format.");
+        std::string key = toLower(trim(header_line.substr(0, colon_pos)));
+        std::string value = trim(header_line.substr(colon_pos + 1));
+
+        if (key.empty()) {
+            throw HttpRequestException("Invalid header format: empty header key in '" + header_line + "'");
         }
-
-        std::string key = safe_substr(raw_request, current, colon_pos - current);
-        std::string value = safe_substr(raw_request, colon_pos + 1, line_end - colon_pos - 1);
-
-        key = trim(key);
-        value = trim(value);
-
-        if (key.empty()) throw HttpRequestException("Invalid header format: empty header key.");
 
         headers[key] = value;
         current = line_end + 2;
@@ -218,29 +216,33 @@ std::string HttpRequest::extractBody(const std::string& raw_request) {
     return body;
 }
 
+// Dans HttpRequest.cpp, modifiez la méthode extractHTTPVersion comme suit:
 std::string HttpRequest::extractHTTPVersion(const std::string& raw_request) {
-    size_t uri_end = raw_request.find(' ', raw_request.find(' ') + 1);
-    if (uri_end == std::string::npos) throw MissingURIException();
+    size_t first_space = raw_request.find(' ');
+    if (first_space == std::string::npos) throw MissingMethodException();
 
-    size_t version_end = raw_request.find("\r\n", uri_end + 1);
+    size_t second_space = raw_request.find(' ', first_space + 1);
+    if (second_space == std::string::npos) throw MissingURIException();
+
+    size_t version_end = raw_request.find("\r\n", second_space + 1);
     if (version_end == std::string::npos) throw MissingHTTPVersionException();
 
-    return safe_substr(raw_request, uri_end + 1, version_end - uri_end - 1);
+    std::string version = trim(raw_request.substr(second_space + 1, version_end - second_space - 1));
+    
+    if (version.substr(0, 5) != "HTTP/") {
+        throw HttpRequestException("Invalid HTTP version format: '" + version + "'. Expected format: HTTP/x.x");
+    }
+
+    return version;
 }
 
-/* aide à déterminer le mode de transfert des données dans une requête HTTP(en morceaux ou non), 
-permettant au serveur de gérer correctement les données reçues.*/
 bool HttpRequest::checkIfChunked(const std::string& raw_request) {
     std::map<std::string, std::string> headers = extractHeaders(raw_request);
-    std::map<std::string, std::string>::const_iterator it = headers.find("Transfer-Encoding");
+    std::map<std::string, std::string>::const_iterator it = headers.find("transfer-encoding");
     if (it == headers.end()) return false;
     std::string encoding = trim(it->second);
 
-    return encoding == "chunked";
-}
-
-bool HttpRequest::isChunked() const {
-    return _isChunked;
+    return toLower(encoding) == "chunked";
 }
 
 std::map<std::string, std::string> HttpRequest::extractQueryParameters(const std::string& uri) {
@@ -272,13 +274,18 @@ std::map<std::string, std::string> HttpRequest::extractQueryParameters(const std
     return query_params;
 }
 
-// Surcharge de l'opérateur << pour afficher la requête
+std::string HttpRequest::getHeader(const std::string& name) const {
+    std::map<std::string, std::string>::const_iterator it = _headers.find(toLower(name));
+    return (it != _headers.end()) ? it->second : "";
+}
+
+// OPERATOR OVERLOADING
 std::ostream& operator<<(std::ostream& os, const HttpRequest& req) {
     os << "Method: " << req.getMethod() << "\n";
     os << "URI: " << req.getURI() << "\n";
     os << "Version: " << req.getHTTPVersion() << "\n";
     os << "Headers: \n";
-    std::map<std::string, std::string> headers = req.getHeaders();  // Copie locale des headers
+    std::map<std::string, std::string> headers = req.getHeaders();
     for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
         os << "  " << it->first << ": " << it->second << "\n";
     }
@@ -286,12 +293,11 @@ std::ostream& operator<<(std::ostream& os, const HttpRequest& req) {
     return os;
 }
 
-/*Fonction pour tester mon parsing de la requête (peut être supprimée par la suite)*/
+// TEST FUNCTION
 void testRequest(const std::string& raw_request) {
     HttpRequest request;
     try {
         request.parse(raw_request);
-
         
         std::cout << "Method: " << request.getMethod() << std::endl;
         std::cout << "URI: " << request.getURI() << std::endl;
@@ -313,6 +319,129 @@ void testRequest(const std::string& raw_request) {
 
     } catch (const HttpRequestException& e) {
         std::cerr << "Error during request parsing: " << e.what() << std::endl;
+        // Afficher les premières lignes de la requête pour plus de contexte
+        std::istringstream iss(raw_request);
+        std::string line;
+        int lineCount = 0;
+        std::cerr << "Request preview:" << std::endl;
+        while (std::getline(iss, line) && lineCount < 3) {
+            std::cerr << line << std::endl;
+            lineCount++;
+        }
+        if (lineCount == 3) std::cerr << "..." << std::endl;
     }
 }
 
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <cstdlib>
+#include <cstring>
+
+void HttpRequest::executeCGI(const HttpConfig::Location& location, std::string& response) {
+    int input_pipe[2];
+    int output_pipe[2];
+
+    if (pipe(input_pipe) < 0 || pipe(output_pipe) < 0) {
+        throw std::runtime_error("Failed to create pipes for CGI execution");
+    }
+
+    pid_t pid = fork();
+
+    if (pid == 0) {  // Child process
+        // Set up environment variables
+        setenv("REQUEST_METHOD", _method.c_str(), 1);
+        setenv("QUERY_STRING", getQueryString().c_str(), 1);
+        setenv("CONTENT_TYPE", getHeader("Content-Type").c_str(), 1);
+        setenv("CONTENT_LENGTH", getHeader("Content-Length").c_str(), 1);
+        // Add more environment variables as needed
+
+        // Redirect stdin to input pipe
+        dup2(input_pipe[0], STDIN_FILENO);
+        close(input_pipe[1]);
+
+        // Redirect stdout to output pipe
+        dup2(output_pipe[1], STDOUT_FILENO);
+        close(output_pipe[0]);
+
+        // Execute the CGI script
+        std::string script_path = location.root + _uri;
+        execl(location.cgiHandler.c_str(), location.cgiHandler.c_str(), script_path.c_str(), NULL);
+
+        // If execl fails
+        exit(1);
+    } else if (pid > 0) {  // Parent process
+        close(input_pipe[0]);
+        close(output_pipe[1]);
+
+        // Write request body to input pipe
+        write(input_pipe[1], _body.c_str(), _body.length());
+        close(input_pipe[1]);
+
+        // Read CGI output from output pipe
+        char buffer[4096];
+        ssize_t bytes_read;
+        while ((bytes_read = read(output_pipe[0], buffer, sizeof(buffer))) > 0) {
+            response.append(buffer, bytes_read);
+        }
+        close(output_pipe[0]);
+
+        // Wait for child process to finish
+        int status;
+        waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+            throw std::runtime_error("CGI script execution failed");
+        }
+    } else {
+        throw std::runtime_error("Failed to fork for CGI execution");
+    }
+}
+
+std::string HttpRequest::getQueryString() const {
+    std::string query_string;
+    for (std::map<std::string, std::string>::const_iterator it = _queryParameters.begin(); it != _queryParameters.end(); ++it) {
+        if (!query_string.empty()) {
+            query_string += "&";
+        }
+        query_string += it->first + "=" + it->second;
+    }
+    return query_string;
+}
+
+void HttpRequest::testCGI() {
+    HttpRequest request;
+    HttpConfig::Location location;
+    location.root = "/path/to/your/cgi-scripts";
+    location.cgiHandler = "/usr/bin/python3";
+
+    // Test GET request
+    std::string get_request = "GET /cgi-bin/test.py?name=John HTTP/1.1\r\n"
+                              "Host: localhost:8080\r\n"
+                              "\r\n";
+    request.parse(get_request);
+    
+    std::string response;
+    try {
+        request.executeCGI(location, response);
+        std::cout << "CGI GET Response:\n" << response << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "CGI GET execution failed: " << e.what() << std::endl;
+    }
+
+    // Test POST request
+    std::string post_request = "POST /cgi-bin/test.py HTTP/1.1\r\n"
+                               "Host: localhost:8080\r\n"
+                               "Content-Type: application/x-www-form-urlencoded\r\n"
+                               "Content-Length: 9\r\n"
+                               "\r\n"
+                               "name=Jane";
+    request.parse(post_request);
+    
+    try {
+        request.executeCGI(location, response);
+        std::cout << "CGI POST Response:\n" << response << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "CGI POST execution failed: " << e.what() << std::endl;
+    }
+}
