@@ -1,22 +1,24 @@
 #include "HttpRequest.hpp"
 
 // COPLIEN'S FORM
-HttpRequest::HttpRequest() 
-    : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods())/* , _cookies(""), _isChunked(false) */ {}
+HttpRequest::HttpRequest(const std::string &rawData)
+    : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods()) /* , _cookies(""), _isChunked(false) */ {}
 
 HttpRequest::~HttpRequest() {}
 
-HttpRequest::HttpRequest(const HttpRequest& src) 
-    : _method(src._method), _uri(src._uri), _version(src._version), _headers(src._headers),  _body(src._body), _queryParameters(src._queryParameters), _allowedMethods(src._allowedMethods) /* _cookies(src._cookies), _isChunked(src._isChunked) */ {}
+HttpRequest::HttpRequest(const HttpRequest &src)
+    : _method(src._method), _uri(src._uri), _version(src._version), _headers(src._headers), _body(src._body), _queryParameters(src._queryParameters), _allowedMethods(src._allowedMethods) /* _cookies(src._cookies), _isChunked(src._isChunked) */ {}
 
-HttpRequest& HttpRequest::operator=(const HttpRequest& src) {
-    if (this != &src) {
+HttpRequest &HttpRequest::operator=(const HttpRequest &src)
+{
+    if (this != &src)
+    {
         _method = src._method;
         _uri = src._uri;
         _version = src._version;
         _headers = src._headers;
-		_body = src._body;
-		_queryParameters = src._queryParameters;
+        _body = src._body;
+        _queryParameters = src._queryParameters;
         _allowedMethods = src._allowedMethods;
         // BONUS :
         //_cookies = src._cookies;
@@ -31,11 +33,15 @@ std::string HttpRequest::getHTTPVersion() const { return _version; }
 
 // 2) HEADERS
 std::map<std::string, std::string> HttpRequest::getHeaders() const { return _headers; }
-std::string HttpRequest::getHeader(const std::string& name) const {
+std::string HttpRequest::getHeader(const std::string &name) const
+{
     std::map<std::string, std::string>::const_iterator it = _headers.find(name);
-        if (it != _headers.end()) {
+    if (it != _headers.end())
+    {
         return it->second;
-    } else {
+    }
+    else
+    {
         return "";
     }
 }
@@ -53,16 +59,17 @@ std::string HttpRequest::getHeader(const std::string& name) const {
 std::string HttpRequest::getBody() const { return _body; }
 std::string HttpRequest::getQueryParameters() const { return _queryParameters; }
 // BONUS :
-//std::string HttpRequest::getCookies() /* const */ { return _cookies; }
+// std::string HttpRequest::getCookies() /* const */ { return _cookies; }
 
 bool HttpRequest::isChunked() const
 {
-	//TO DO
-	return (true);
+    // TO DO
+    return (true);
 }
 
- // OTHER
-std::set<std::string> HttpRequest::initMethods() {
+// OTHER
+std::set<std::string> HttpRequest::initMethods()
+{
     std::set<std::string> methods;
     methods.insert("GET");
     methods.insert("POST");
@@ -70,12 +77,13 @@ std::set<std::string> HttpRequest::initMethods() {
     return methods;
 }
 
-
-bool HttpRequest::isMethodAllowed(const std::string& method) const {
+bool HttpRequest::isMethodAllowed(const std::string &method) const
+{
     return _allowedMethods.find(method) != _allowedMethods.end();
 }
 
-bool HttpRequest::isSupportedContentType(const std::string& contentType) const {
+bool HttpRequest::isSupportedContentType(const std::string &contentType) const
+{
     std::set<std::string> supportedTypes;
     supportedTypes.insert("application/json");
     supportedTypes.insert("text/html");
@@ -85,50 +93,56 @@ bool HttpRequest::isSupportedContentType(const std::string& contentType) const {
 }
 
 // PRINT DATA
-std::ostream& operator<<(std::ostream& os, const HttpRequest& req) {
+std::ostream &operator<<(std::ostream &os, const HttpRequest &req)
+{
     os << "Method: " << req.getMethod() << "\n";
     os << "URI: " << req.getURI() << "\n";
     os << "Version: " << req.getHTTPVersion() << "\n";
     os << "Headers: \n";
     std::map<std::string, std::string> headers = req.getHeaders();
-	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
-		// traitement
-	}
+    for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
+    {
+        // traitement
+    }
     os << "Body: " << req.getBody() << "\n";
     os << "Query Parameters: " << req.getQueryParameters() << "\n";
-    //os << "Cookies: " << req.getCookies() << "\n";
+    // os << "Cookies: " << req.getCookies() << "\n";
     os << "Chunked: " << (req.isChunked() ? "Yes" : "No") << "\n";
     return os;
 }
 
-void HttpRequest::requestController(HttpResponse& response, std::map<std::string, std::string>& resourceDatabase) {
+void HttpRequest::requestController(HttpResponse &response, std::map<std::string, std::string> &resourceDatabase)
+{
 
     // Pointeur de fonction membre pour handle()
-    //typedef void (RequestController::*HandlerFunction)(const HttpRequest& req, HttpResponse& res);
+    // typedef void (RequestController::*HandlerFunction)(const HttpRequest& req, HttpResponse& res);
 
     // Création des handlers
-	GetRequestHandler getHandler;
-	PostRequestHandler postHandler;
-	DeleteRequestHandler deleteHandler;
-	(void)resourceDatabase;
+    GetRequestHandler getHandler;
+    PostRequestHandler postHandler;
+    DeleteRequestHandler deleteHandler;
+    (void)resourceDatabase;
     // GetRequestHandler getHandler(/* resourceDatabase */);
     // PostRequestHandler postHandler(/* resourceDatabase */);
     // DeleteRequestHandler deleteHandler(/* resourceDatabase */);
 
     // Map associant les méthodes HTTP avec les handlers
-    std::map<std::string, RequestController*> handlerMap;
+    std::map<std::string, RequestController *> handlerMap;
     handlerMap["GET"] = &getHandler;
     handlerMap["POST"] = &postHandler;
     handlerMap["DELETE"] = &deleteHandler;
 
     // Trouver le bon handler en fonction de la méthode HTTP
     std::string method = getMethod();
-    std::map<std::string, RequestController*>::iterator it = handlerMap.find(method);
-    
-    if (it != handlerMap.end()) {
-        RequestController* handler = it->second;
+    std::map<std::string, RequestController *>::iterator it = handlerMap.find(method);
+
+    if (it != handlerMap.end())
+    {
+        RequestController *handler = it->second;
         handler->handle(*this, response);
-    } else {
+    }
+    else
+    {
         response.setStatusCode(405);
         response.setBody("405 Method Not Allowed");
         response.setHeader("Content-Type", "text/plain");

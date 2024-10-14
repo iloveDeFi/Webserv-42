@@ -59,7 +59,7 @@ void HttpResponse::generate202Accepted(const std::string &deletionInfo)
 }
 
 // 204 No Content response
-void HttpResponse::generate204NoContent()
+void HttpResponse::generate204NoContent(const std::string &errorMessage)
 {
     setStatusCode(204);
     setReasonMessage("No Content");
@@ -137,7 +137,7 @@ void HttpResponse::generate500InternalServerError(const std::string &errorMessag
 }
 
 // 501 Not Implemented response
-void HttpResponse::generate501NotImplemented()
+void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
 {
     setStatusCode(501);
     setReasonMessage("Not Implemented");

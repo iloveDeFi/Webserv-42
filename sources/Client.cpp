@@ -24,36 +24,39 @@ Client::~Client()
 			close(_socket); */
 }
 
+// Alex parse Http request
 void Client::readRequest(const std::string &rawData)
 {
-	// (void)rawData;
-	// appeler parser Alex
 	_request = HttpRequest(rawData);
 }
 
+// Bat handle Http request && Http response
 void Client::processRequest(const _server &serverInfo)
 {
-	HttpResponse response;
+    HttpResponse response;
 
-	if (_request.getMethod() == "GET")
-	{
-		GetRequestHandler getHandler;
+    if (_request.getMethod() == "GET")
+    {
+        GetRequestHandler getHandler(serverInfo._locations[0]._resourceDatabase);
         getHandler.handle(_request, response);
-		
-		handleGetRequest(serverInfo);
-	}
-	else if (_request.getMethod() == "POST")
-	{
-		handlePostRequest(serverInfo);
-	}
-	else if (_request.getMethod() == "DELETE")
-	{
-		handleDeleteRequest(serverInfo);
-	}
-	else
-	{
-		handleUnkownRequest(serverInfo);
-	}
+    }
+    else if (_request.getMethod() == "POST")
+    {
+        PostRequestHandler postHandler(serverInfo._locations[0]._resourceDatabase);
+        postHandler.handle(_request, response);
+    }
+    else if (_request.getMethod() == "DELETE")
+    {
+        DeleteRequestHandler deleteHandler(serverInfo._locations[0]._resourceDatabase);
+        deleteHandler.handle(_request, response);
+    }
+    else
+    {
+        UnknownRequestHandler unknownHandler(serverInfo._locations[0]._resourceDatabase);
+        unknownHandler.handle(_request, response);
+    }
+	_response = response;
+    sendResponse();
 }
 
 void Client::sendResponse()
@@ -72,6 +75,7 @@ void Client::sendResponse()
 			throw std::runtime_error("Error sending reponse.");
 		sent += n;
 	}
+	// TO DO : close connexion if fail or other check?
 }
 
 void Client::setHttpRequest(const HttpRequest &request)

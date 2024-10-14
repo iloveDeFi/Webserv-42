@@ -4,12 +4,10 @@ const std::set<std::string> RequestController::_validMethods = {
     "GET", "PUT", "DELETE", "UNKNOWN"};
 
 RequestController::RequestController(std::map<std::string, std::string> &resourceDatabase)
-    : _resourceDatabase(resourceDatabase)
+    : _resourceDatabase(resourceDatabase), _deletionInProgress()
 {
     _resourceDatabase[""] = "";
 }
-
-RequestController::~RequestController() {}
 
 RequestController::RequestController(const RequestController &src)
     : _resourceDatabase(src._resourceDatabase), _deletionInProgress(src._deletionInProgress) {}
@@ -18,10 +16,13 @@ RequestController &RequestController::operator=(const RequestController &src)
 {
     if (this != &src)
     {
+        _resourceDatabase = src._resourceDatabase;
         _deletionInProgress = src._deletionInProgress;
     }
     return *this;
 }
+
+RequestController::~RequestController() {}
 
 std::map<std::string, std::string> &RequestController::getResourceDatabase()
 {
