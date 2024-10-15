@@ -1,13 +1,16 @@
 #include "HttpController.hpp"
 
-std::set<std::string> RequestController::_validMethods = {
-    "GET",
-    "PUT",
-    "DELETE",
-    "UNKNOWN"};
-
-RequestController::RequestController(HttpConfig::Location &locationConfig)
-    : _locationConfig(locationConfig), _deletionInProgress() {}
+RequestController::RequestController(const HttpConfig::Location &locationConfig)
+    : _locationConfig(locationConfig), _deletionInProgress()
+{
+    if (_validMethods.empty())
+    {
+        _validMethods.insert("GET");
+        _validMethods.insert("POST");
+        _validMethods.insert("DELETE");
+        _validMethods.insert("UNKNOWN");
+    }
+}
 
 RequestController::RequestController(const RequestController &src)
     : _locationConfig(src._locationConfig), _deletionInProgress(src._deletionInProgress) {}
@@ -16,13 +19,53 @@ RequestController &RequestController::operator=(const RequestController &src)
 {
     if (this != &src)
     {
-        _locationConfig = src._locationConfig;
+        // _locationConfig = src._locationConfig; nope ref constante here
         _deletionInProgress = src._deletionInProgress;
     }
     return *this;
 }
 
 RequestController::~RequestController() {}
+
+GetRequestHandler::GetRequestHandler(const HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
+
+GetRequestHandler::~GetRequestHandler() {}
+
+void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+{
+    handleGetResponse(req, res);
+}
+
+PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
+
+PostRequestHandler::~PostRequestHandler() {}
+
+void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+{
+    handlePostResponse(req, res);
+}
+
+DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
+
+DeleteRequestHandler::~DeleteRequestHandler() {}
+
+void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+{
+    handleDeleteResponse(req, res);
+}
+
+UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
+
+UnknownRequestHandler::~UnknownRequestHandler() {}
+
+void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+{
+    handleUnknownResponse(req, res);
+}
 
 bool RequestController::hasReadPermissions(const std::string &filePath)
 {

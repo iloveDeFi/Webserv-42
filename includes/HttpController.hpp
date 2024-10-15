@@ -10,13 +10,14 @@
 #include <set>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <algorithm>
 
 class RequestController
 {
 protected:
-    HttpConfig::Location &_locationConfig;
+    const HttpConfig::Location &_locationConfig;
     std::set<std::string> _deletionInProgress;
-    static std::set<std::string> _validMethods;
+    std::set<std::string> _validMethods;
 
     bool hasReadPermissions(const std::string &filePath);
     std::string loadResource(const std::string &filePath);
@@ -31,7 +32,7 @@ protected:
     void handleUnknownResponse(const HttpRequest &req, HttpResponse &res);
 
 public:
-    RequestController(HttpConfig::Location &locationConfig);
+    RequestController(const HttpConfig::Location &locationConfig);
     RequestController(const RequestController &src);
     RequestController &operator=(const RequestController &src);
     virtual ~RequestController();
@@ -42,7 +43,7 @@ public:
 class GetRequestHandler : public RequestController
 {
 public:
-    GetRequestHandler(HttpConfig::Location &locationConfig);
+    GetRequestHandler(const HttpConfig::Location &locationConfig);
     virtual ~GetRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -50,7 +51,7 @@ public:
 class PostRequestHandler : public RequestController
 {
 public:
-    PostRequestHandler(HttpConfig::Location &locationConfig);
+    PostRequestHandler(const HttpConfig::Location &locationConfig);
     virtual ~PostRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -58,7 +59,7 @@ public:
 class DeleteRequestHandler : public RequestController
 {
 public:
-    DeleteRequestHandler(HttpConfig::Location &locationConfig);
+    DeleteRequestHandler(const HttpConfig::Location &locationConfig);
     virtual ~DeleteRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -66,7 +67,7 @@ public:
 class UnknownRequestHandler : public RequestController
 {
 public:
-    UnknownRequestHandler(HttpConfig::Location &locationConfig);
+    UnknownRequestHandler(const HttpConfig::Location &locationConfig);
     virtual ~UnknownRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };

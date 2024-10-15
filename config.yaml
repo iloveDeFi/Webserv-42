@@ -2,7 +2,7 @@
     server_name: myserver.com
     port: 8080
     client_max_body_size: 10M
-    root: /home/alex/webServ/www/html
+    root: ./test_db
 
 
     error_pages:
@@ -33,7 +33,7 @@
     server_name: secondserver.com
     port: 80
     client_max_body_size: 1M
-    root: /home/alex/webServ/www/html
+    root: ./test_db
 
 
     error_pages:
