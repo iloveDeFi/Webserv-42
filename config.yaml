@@ -2,7 +2,7 @@
     server_name: myserver.com
     port: 8080
     client_max_body_size: 10M
-    root: /home/alex/webServ/www/html
+    root: ./test_db
 
 
     error_pages:
@@ -19,7 +19,7 @@
             
         - path: /index
           methods: GET
-          handler: test_db/index/index1.html
+          handler: test_db/index/about.html
           allow_uploads: false
           content_type: text/html
 
@@ -33,7 +33,7 @@
     server_name: secondserver.com
     port: 80
     client_max_body_size: 1M
-    root: /home/alex/webServ/www/html
+    root: ./test_db
 
 
     error_pages:

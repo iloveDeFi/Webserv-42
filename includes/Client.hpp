@@ -10,7 +10,6 @@
 # include "HttpController.hpp"
 # include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
-# include "Location.hpp"
 
 struct _server;
 

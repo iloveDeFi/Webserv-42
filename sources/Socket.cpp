@@ -51,11 +51,18 @@ void Socket::Listen()
 
 int Socket::Accept()
 {
-	int socket = accept(_fdSocket, (struct sockaddr*)&_address, &_len);
-	if (socket < 0)
-		throw std::runtime_error("Error accepting socket.");
-	return (socket);
+    int clientSocket = accept(_fdSocket, (struct sockaddr*)&_address, &_len);
+    if (clientSocket < 0)
+    {
+		 // Pas de connexion en attente, ce n'est pas une erreur fatale
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return -1;
+        else
+            throw std::runtime_error(std::string("Error accepting socket: ") + strerror(errno));
+    }
+    return clientSocket;
 }
+
 
 ssize_t Socket::Send(int client_socket, const char* buffer, size_t buffer_length, int flags)
 {

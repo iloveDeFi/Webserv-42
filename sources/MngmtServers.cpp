@@ -188,23 +188,34 @@ const std::vector<int> &clientFds, int &maxFd)
 //member of the set pointed to by fdset. (int FD_ISSET(int fd, fd_set *fdset))
 void ManagementServer::acceptNewClients(std::vector<int> &clientFds, fd_set &readFds)
 {
-	for (size_t i = 0; i < _servers.size(); i++)
-	{
-		if (FD_ISSET(_servers[i]._serverSocket->getFdSocket(), &readFds))
-		{
-			std::cout << "Connection detected on server " << _servers[i]._name << std::endl;
-			int clientFd = _servers[i]._serverSocket->Accept();
-			if (clientFd != -1)
-			{
-				setNonBlocking(clientFd);
-				clientFds.push_back(clientFd);
-				std::cout << "New client connected on server " << _servers[i]._name << ": " << clientFd << std::endl;
-			}
-		}
-		else
-			 std::cerr << "Error accepting client connection: " << strerror(errno) << std::endl;
-	}
+    for (size_t i = 0; i < _servers.size(); i++)
+    {
+        if (FD_ISSET(_servers[i]._serverSocket->getFdSocket(), &readFds))
+        {
+            std::cout << "Connection detected on server " << _servers[i]._name << std::endl;
+            try
+            {
+                int clientFd = _servers[i]._serverSocket->Accept();
+                if (clientFd != -1)
+                {
+                    setNonBlocking(clientFd);
+                    clientFds.push_back(clientFd);
+                    std::cout << "New client connected on server " << _servers[i]._name << ": " << clientFd << std::endl;
+                }
+                else
+                {
+                    // Aucun client accepté, ce qui peut arriver avec des sockets non bloquantes
+                    std::cout << "No client accepted on server " << _servers[i]._name << std::endl;
+                }
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr << "Error accepting client connection: " << e.what() << std::endl;
+            }
+        }
+    }
 }
+
 
 //Configure la socket en non bloquant
 // FD_CLOEXEC : Ce flag est utilisé pour indiquer que 
