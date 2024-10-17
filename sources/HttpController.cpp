@@ -233,3 +233,4 @@ void RequestController::handleUnknownResponse(const HttpRequest &req, HttpRespon
     res.generate405MethodNotAllowed("405 Method Not Allowed: The method " + method + " is not allowed.");
     res.setHTTPVersion(version);
 }
+

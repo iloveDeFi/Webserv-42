@@ -1,5 +1,6 @@
 #include "Client.hpp"
 #include "MngmtServers.hpp"
+#include "CgiHandler.hpp"
 
 Client::Client(int fd, const struct sockaddr_in &address)
     : _socket(fd), _address(address), _request(""), _response() {}
@@ -19,7 +20,12 @@ void Client::processRequest(const _server &serverInfo) {
         const HttpConfig::Location &location = serverInfo._locations[i];
 
         if (uri.find(location.path) == 0) {
-            if (_request.getMethod() == "GET") {
+            if (uri.find(".php") != std::string::npos) {
+                CgiHandler cgiHandler(uri, setEnv(_request, getIPaddress(), serverInfo._port));
+                cgiHandler.handle(_request, response);
+                requestHandled = true;
+            }
+            else if (_request.getMethod() == "GET") {
                 GetRequestHandler getHandler(location);
                 getHandler.handle(_request, response);
                 requestHandled = true;
