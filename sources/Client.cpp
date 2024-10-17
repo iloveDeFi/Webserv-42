@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include "MngmtServers.hpp"
 
 Client::Client(int fd, const struct sockaddr_in &address)
     : _socket(fd), _address(address), _request(""), _response() {}
