@@ -1,129 +1,235 @@
 #include "HttpController.hpp"
 
-// TO DO : need coplien's form if memory management needed ex. dynamic
-static std::map<std::string, std::string> defaultResourceDatabase;
-
-// Constructeur par défaut, utilise une référence vers la base de données statique par défaut
-RequestController::RequestController()
-: _resourceDatabase(defaultResourceDatabase)  // Liaison de la référence à une map statique
+RequestController::RequestController(const HttpConfig::Location &locationConfig)
+    : _locationConfig(locationConfig), _deletionInProgress()
 {
-    _resourceDatabase[""] = "";  // Exemple de modification de la map statique
+    if (_validMethods.empty())
+    {
+        _validMethods.insert("GET");
+        _validMethods.insert("POST");
+        _validMethods.insert("DELETE");
+        _validMethods.insert("UNKNOWN");
+    }
 }
 
-// Constructeur prenant une référence valide
-/* RequestController::RequestController(std::map<std::string, std::string>& RsrDatabase)
-: _resourceDatabase(RsrDatabase)  // Liaison à une référence valide passée par l'appelant
-{
-} */
+RequestController::RequestController(const RequestController &src)
+    : _locationConfig(src._locationConfig), _deletionInProgress(src._deletionInProgress) {}
 
-// Destructeur (pas de gestion spéciale nécessaire ici)
+RequestController &RequestController::operator=(const RequestController &src)
+{
+    if (this != &src)
+    {
+        // _locationConfig = src._locationConfig; nope ref constante here
+        _deletionInProgress = src._deletionInProgress;
+    }
+    return *this;
+}
+
 RequestController::~RequestController() {}
 
+GetRequestHandler::GetRequestHandler(const HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
 
-RequestController::RequestController(const RequestController& src)
-: _resourceDatabase(src._resourceDatabase)
+GetRequestHandler::~GetRequestHandler() {}
+
+void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 {
-		(void)src;
+    handleGetResponse(req, res);
 }
 
-RequestController& RequestController::operator=(const RequestController& src)
+PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
+
+PostRequestHandler::~PostRequestHandler() {}
+
+void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 {
-	(void)src;
-
-	return (*this);
+    handlePostResponse(req, res);
 }
 
-void GetRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
-    std::string uri = req.getURI();
-    std::string version = req.getHTTPVersion();
-    std::string queryParams = req.getQueryParameters();
-    //std::string cookies = req.getCookies(); //BONUS
- 
-    std::string responseBody = "You requested: " + uri + "\nQuery Params: " + queryParams + "\nCookies: "; // + cookies;
+DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
 
-    res.setHTTPVersion(version);
-    res.setStatusCode(200);
-    res.setHeader("Content-Type", "text/plain");
-    // TO DO : Or to set body use data base resource from server
-    // res.setBody(resourceDatabase[path]);
-    res.setBody(responseBody);
-    res.ensureContentLength();
+DeleteRequestHandler::~DeleteRequestHandler() {}
+
+void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+{
+    handleDeleteResponse(req, res);
 }
 
-void PostRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
-    std::string uri = req.getURI();
-    std::string version = req.getHTTPVersion();
-    std::string body = req.getBody();
-    //std::string cookies = req.getCookies();
-    std::string queryParams = req.getQueryParameters(); 
+UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig)
+    : RequestController(locationConfig) {}
 
-    std::string responseBody = "Received POST data for: " + uri + "\nBody: " + body + "\nCookies: " /* + cookies */;
+UnknownRequestHandler::~UnknownRequestHandler() {}
 
-    res.setStatusCode(201);
-    res.setBody(responseBody);
-    res.setHTTPVersion(version);
-    res.setHeader("Content-Type", "text/plain");
-    res.ensureContentLength();
+void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+{
+    handleUnknownResponse(req, res);
 }
 
-bool checkResourceExists(const std::string& uri, const std::map<std::string, std::string>& resourceDatabase) {
-    return resourceDatabase.find(uri) != resourceDatabase.end();
-}
-
-bool deleteResource(const std::string& uri, std::map<std::string, std::string>& resourceDatabase) {
-    std::map<std::string, std::string>::iterator it = resourceDatabase.find(uri);
-    if (it != resourceDatabase.end()) {
-        resourceDatabase.erase(it);
-        return true;
+bool RequestController::hasReadPermissions(const std::string &filePath)
+{
+    if (access(filePath.c_str(), R_OK) == 0)
+    {
+        struct stat fileStat;
+        if (stat(filePath.c_str(), &fileStat) == 0)
+        {
+            return S_ISREG(fileStat.st_mode);
+        }
     }
     return false;
 }
 
-void DeleteRequestHandler::handle(const HttpRequest& req, HttpResponse& res) {
+std::string RequestController::loadResource(const std::string &filePath)
+{
+    std::ifstream file(filePath.c_str(), std::ios::in);
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Unable to open file: " + filePath);
+    }
+    std::string content;
+    std::string line;
+
+    while (std::getline(file, line))
+    {
+        content += line + "\n";
+    }
+
+    if (file.bad())
+    {
+        throw std::runtime_error("Error reading file: " + filePath);
+    }
+
+    file.close();
+    return content;
+}
+
+bool RequestController::hasPermissionToCreate(const std::string &uri)
+{
+    std::string path = uri;
+    size_t lastSlash = path.find_last_of('/');
+    std::string parentDir = (lastSlash != std::string::npos) ? path.substr(0, lastSlash) : ".";
+
+    struct stat dirStat;
+    if (stat(parentDir.c_str(), &dirStat) != 0)
+    {
+        return false;
+    }
+
+    return (access(parentDir.c_str(), W_OK) == 0);
+}
+
+bool RequestController::hasPermissionToDelete(const std::string &uri) const
+{
+    (void)uri;
+    return std::find(_locationConfig.methods.begin(), _locationConfig.methods.end(), "DELETE") != _locationConfig.methods.end();
+}
+
+bool RequestController::isValidHttpMethod(const std::string &method) const
+{
+    return _validMethods.find(method) != _validMethods.end();
+}
+
+bool RequestController::isMethodAllowed(const std::string &method) const
+{
+    return std::find(_locationConfig.methods.begin(), _locationConfig.methods.end(), method) != _locationConfig.methods.end();
+}
+
+void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res)
+{
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
 
-    bool resourceExists = checkResourceExists(uri, getResourceDatabase());
-    std::string responseBody;
-
-    if (resourceExists) {
-        deleteResource(uri, getResourceDatabase());
-        responseBody = "Resource deleted: " + uri;
-        res.setStatusCode(200);
-    } else {
-        responseBody = "Resource not found: " + uri;
-        res.setStatusCode(404);
+    if (version != "HTTP/1.1" && version != "HTTP/1.0")
+    {
+        res.generate400BadRequest("Invalid HTTP version");
+        return;
     }
 
-    res.setBody(responseBody);
+    std::string resourcePath = _locationConfig.root + uri;
+
+    if (!hasReadPermissions(resourcePath))
+    {
+        res.generate403Forbidden("Access to the resource is forbidden");
+        return;
+    }
+
+    try
+    {
+        std::string resourceContent = loadResource(resourcePath);
+        res.generate200OK("text/plain", resourceContent);
+    }
+    catch (const std::exception &e)
+    {
+        res.generate500InternalServerError("Internal error 500: An error occurred while processing the request: " + std::string(e.what()));
+    }
+
     res.setHTTPVersion(version);
-    res.setHeader("Content-Type", "text/plain");
     res.ensureContentLength();
 }
 
-GetRequestHandler::GetRequestHandler() {
-    // Constructeur par défaut
+void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res)
+{
+    std::string uri = req.getURI();
+    std::string version = req.getHTTPVersion();
+    std::string body = req.getBody();
+
+    if (body.empty())
+    {
+        res.generate400BadRequest("400 error : Bad Request: Empty body or malformed request.");
+        return;
+    }
+
+    if (!hasPermissionToCreate(uri))
+    {
+        res.generate403Forbidden("Forbidden: You do not have permission to create a resource at this location.");
+        return;
+    }
+    try
+    {
+        res.generate201Created(uri);
+    }
+    catch (const std::exception &e)
+    {
+        res.generate500InternalServerError("500 Internal Server Error: An error occurred while processing the request: " + std::string(e.what()));
+    }
+
+    res.setHTTPVersion(version);
+    res.ensureContentLength();
 }
 
-PostRequestHandler::PostRequestHandler() {
-    // Constructeur par défaut
+void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res)
+{
+    std::string uri = req.getURI();
+    std::string version = req.getHTTPVersion();
+
+    if (!hasPermissionToDelete(uri))
+    {
+        res.generate403Forbidden("403 Forbidden: You do not have permission to delete this resource.");
+        return;
+    }
+    std::string resourcePath = _locationConfig.root + uri;
+    if (remove(resourcePath.c_str()) != 0)
+    {
+        res.generate404NotFound("404 Not Found: Resource not found: " + uri);
+        return;
+    }
+
+    res.generate204NoContent("204 No Content: Delete success");
+    res.setHTTPVersion(version);
 }
 
-DeleteRequestHandler::DeleteRequestHandler() {
-    // Constructeur par défaut
+void RequestController::handleUnknownResponse(const HttpRequest &req, HttpResponse &res)
+{
+    std::string version = req.getHTTPVersion();
+    std::string method = req.getMethod();
+
+    if (method.empty())
+    {
+        res.generate400BadRequest("400 Bad Request: Method cannot be empty.");
+        return;
+    }
+
+    res.generate405MethodNotAllowed("405 Method Not Allowed: The method " + method + " is not allowed.");
+    res.setHTTPVersion(version);
 }
-
-GetRequestHandler::~GetRequestHandler() {
-    // Implémentation vide ou nécessaire selon les besoins
-}
-
-PostRequestHandler::~PostRequestHandler() {
-    // Implémentation vide ou nécessaire selon les besoins
-}
-
-DeleteRequestHandler::~DeleteRequestHandler() {
-    // Implémentation vide ou nécessaire selon les besoins
-}
-
-
-

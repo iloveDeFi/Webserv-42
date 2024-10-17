@@ -58,7 +58,6 @@ class ManagementServer
 		_server& getServerInfo(std::vector<_server>::iterator it);
 
 		void setIpAddress(std::vector<_server>::iterator it, int ip);
-
 };
 
 #endif
