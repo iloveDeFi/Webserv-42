@@ -15,6 +15,7 @@ std::string to_string_c98(T value) {
     return oss.str();
 }
 
+struct _server;
 
 class CgiHandler
 {
@@ -22,13 +23,12 @@ class CgiHandler
         std::string _scriptPath;
         std::vector<std::string> _envVars;
         std::string execCgi(HttpResponse &res);
-        std::vector<std::string> setEnv(HttpRequest request, const std::string ip, int port);
 
     public:
-        CgiHandler(const std::string& scriptPath,  std::vector<std::string> env);
+        CgiHandler(const std::string& scriptPath);
         ~CgiHandler();
-        
-        virtual void handle(const HttpRequest &req, HttpResponse &res);
+        void setEnv(HttpRequest request, std::string ip, const _server &serverInfo);
+        virtual void handle(HttpResponse &res);
 };
 
 #endif

@@ -6,7 +6,7 @@ INCLUDES_FOLDER = includes
 SRCS_LIST = main.cpp \
             $(addprefix $(SRCS_FOLDER)/, Client.cpp HttpConfig.cpp \
 			HttpRequest.cpp HttpResponse.cpp HttpController.cpp \
-			MngmtServers.cpp Socket.cpp Utils.cpp)
+			MngmtServers.cpp Socket.cpp CgiHandler.cpp)
 
 SRCS = $(SRCS_LIST)
 

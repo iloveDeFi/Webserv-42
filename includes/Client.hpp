@@ -37,6 +37,7 @@ public:
     int getClientSocket();
     std::string getIPaddress();
     bool isConnected() const;
+    bool isCGI(std::string uri);
 };
 
 #endif

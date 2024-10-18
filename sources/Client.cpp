@@ -1,6 +1,7 @@
 #include "Client.hpp"
 #include "MngmtServers.hpp"
 #include "CgiHandler.hpp"
+#include "HttpController.hpp"
 
 Client::Client(int fd, const struct sockaddr_in &address)
     : _socket(fd), _address(address), _request(""), _response() {}
@@ -20,12 +21,12 @@ void Client::processRequest(const _server &serverInfo) {
         const HttpConfig::Location &location = serverInfo._locations[i];
 
         if (uri.find(location.path) == 0) {
-            if (uri.find(".php") != std::string::npos) {
-                CgiHandler cgiHandler(uri, setEnv(_request, getIPaddress(), serverInfo._port));
-                cgiHandler.handle(_request, response);
+            if (isCGI(uri)) {
+                CgiHandler cgiHandler(uri);
+                cgiHandler.setEnv(_request, getIPaddress(), serverInfo);
+                cgiHandler.handle(response);
                 requestHandled = true;
-            }
-            else if (_request.getMethod() == "GET") {
+            } else if (_request.getMethod() == "GET") {
                 GetRequestHandler getHandler(location);
                 getHandler.handle(_request, response);
                 requestHandled = true;
@@ -104,4 +105,13 @@ std::string Client::getIPaddress() {
 
 bool Client::isConnected() const {
     return _socket >= 0;
+}
+
+bool Client::isCGI(std::string uri)
+{
+    if (_request.getMethod() != "GET" || _request.getMethod() != "POST")
+        return (false);
+    if (uri.find(".php") != std::string::npos || uri.find(".py") != std::string::npos )
+        return (true);
+    return (false);
 }

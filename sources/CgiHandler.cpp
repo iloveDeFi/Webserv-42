@@ -1,7 +1,9 @@
 #include "CgiHandler.hpp"
+#include "MngmtServers.hpp"
 
-CgiHandler::CgiHandler(const std::string& scriptPath,  std::vector<std::string> env)
-:_scriptPath(scriptPath), _envVars(env) {}
+CgiHandler::CgiHandler(const std::string& scriptPath)
+:_scriptPath(scriptPath)
+{}
 
 CgiHandler::~CgiHandler()
 {
@@ -14,17 +16,23 @@ CgiHandler::~CgiHandler()
     }
 }
 
-std::vector<std::string> CgiHandler::setEnv(HttpRequest request, std::string ip, int port)
+void CgiHandler::setEnv(HttpRequest request, std::string ip, const _server &serverInfo)
 {
     std::map<std::string, std::string> env;
-    env["REQUEST_METHOD"] = request.getMethod();
+    std::string method = request.getMethod();
+    env["REQUEST_METHOD"] = method;
+
+    if (method == "GET")
+        env["QUERY_STRING"] = request.getQueryParameters();
+    else
+    {
+        env["CONTENT_TYPE"] = request.getHeader("Content-Type");
+        env["CONTENT_LENGTH"] = request.getHeader("Content-Length");
+    }
     env["SCRIPT_FILENAME"] = request.getURI();
-    env["QUERY_STRING"] = request.getQueryParameters();
-    env["CONTENT_TYPE"] = request.getHeader("Content-Type");
-    env["CONTENT_LENGTH"] = request.getHeader("Content-Length");
     env["REMOTE_ADDR"] = ip;
-    env["SERVER_NAME"] = "localhost";
-    env["SERVER_PORT"] = to_string_c98(port);
+    env["SERVER_NAME"] = serverInfo._name;
+    env["SERVER_PORT"] = to_string_c98(serverInfo._port);
     env["HTTP_USER_AGENT"] = request.getHeader("User-Agent");
     env["HTTP_COOKIE"] = request.getHeader("Cookie");   
 
@@ -33,16 +41,18 @@ std::vector<std::string> CgiHandler::setEnv(HttpRequest request, std::string ip,
     it != env.end(); it++)
 	{
 		std::string tmp = it->first + "=" + it->second;
-		envVar.push_back(strdup((tmp.c_str())));
+		envVar.push_back(tmp);
 	}
-    envVar.push_back(NULL);
-    return (envVar);
+    _envVars = envVar;
 }
-void CgiHandler::handle(const HttpRequest &req, HttpResponse &res)
+
+void CgiHandler::handle(HttpResponse &res)
 {
     res.setBody(execCgi(res));
-    //a comprendre
-    res.setHeader();
+
+    if (res.getStatusCode() != 200)
+        return ;
+    res.setHeader("Content-Type", "text/plain");
     res.ensureContentLength();
 }
 
@@ -50,15 +60,12 @@ std::string CgiHandler::execCgi(HttpResponse &res)
 {
     int pipefd[2];
     pid_t pid;
-    char **argv;
+    char **argv = NULL;
     int status;
     std::vector<const char*> envp;
 
     if (pipe(pipefd) == -1)
-    {
-        res.setStatusCode(500);
-        throw std::runtime_error("pipe failed");
-    }
+        res.generate500InternalServerError("pipe failed");
 
     argv[0] = (char *)_scriptPath.c_str();
     argv[1] = NULL;
@@ -73,10 +80,7 @@ std::string CgiHandler::execCgi(HttpResponse &res)
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[0]);
         if (execve(argv[0], argv, const_cast<char* const*>(envp.data())) == -1)
-        {
-            res.setStatusCode(500);
-            throw std::runtime_error("execve failed");
-        }
+            res.generate500InternalServerError("execve failed");
         exit(1); 
     }
     else if (pid > 0)
@@ -94,9 +98,7 @@ std::string CgiHandler::execCgi(HttpResponse &res)
         return (result);
     }
     else
-    {
-        res.setStatusCode(500);
-        throw std::runtime_error("fork failed");
-    }
+        res.generate500InternalServerError("fork failed");
+    return (NULL);
 }
 
