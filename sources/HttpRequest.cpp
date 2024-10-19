@@ -1,16 +1,39 @@
 #include "../includes/HttpRequest.hpp"
-#include "../includes/HttpRequestException.hpp"
+#include "../includes/HttpException.hpp"
 #include <algorithm>
 #include <sstream>
 
 // COPLIEN'S FORM
-HttpRequest::HttpRequest() 
-    : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(), _isChunked(false), _allowedMethods(initMethods()) {}
+
+HttpRequest::HttpRequest(const std::string &rawData) : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(), _isChunked(false), _allowedMethods(initMethods()) {
+	if (!isValidRequest(rawData)) {
+        throw HttpException("Invalid request format: request is not properly formatted.");
+    }
+
+    try {
+        setMethod(extractMethod(rawData));
+        setURI(extractURI(rawData));
+        setHTTPVersion(extractHTTPVersion(rawData));
+        setHeaders(extractHeaders(rawData));
+        
+        if (_method == "POST") {
+            setBody(extractBody(rawData));
+        } else if (_method == "GET" || _method == "DELETE") {
+            if (hasBody(rawData)) {
+                throw HttpException("GET or DELETE request should not contain a body.");
+            }
+        }
+
+        setIsChunked(checkIfChunked(rawData));
+        setQueryParameters(extractQueryParameters(_uri));
+    } catch (const HttpException& e) {
+        std::cerr << "Error during request parsing: " << e.what() << std::endl;
+        clearRequestData();
+        throw;
+    }
+}
 
 HttpRequest::~HttpRequest() {}
-
-HttpRequest::HttpRequest(const HttpRequest &src)
-    : _method(src._method), _uri(src._uri), _version(src._version), _headers(src._headers), _body(src._body), _queryParameters(src._queryParameters), _allowedMethods(src._allowedMethods) {}
 
 HttpRequest &HttpRequest::operator=(const HttpRequest &src)
 {
@@ -37,7 +60,7 @@ std::map<std::string, std::string> HttpRequest::getQueryParameters() const { ret
 
 void HttpRequest::setMethod(const std::string& method) {
     if (_allowedMethods.find(method) == _allowedMethods.end()) {
-        throw HttpRequestException("Invalid method: " + method);
+        throw HttpException("Invalid method: " + method);
     }
     _method = method;
 }
@@ -46,7 +69,7 @@ void HttpRequest::setURI(const std::string& uri) { _uri = uri; }
 
 void HttpRequest::setHTTPVersion(const std::string& version) {
     if (version != "HTTP/1.1" && version != "HTTP/1.0") {
-        throw HttpRequestException("Invalid HTTP version: " + version);
+        throw HttpException("Invalid HTTP version: " + version);
     }
     _version = version;
 }
@@ -64,34 +87,6 @@ void HttpRequest::setQueryParameters(const std::map<std::string, std::string>& q
 
 void HttpRequest::setIsChunked(bool isChunked) { _isChunked = isChunked; }
 
-// MAIN PARSING FUNCTION
-void HttpRequest::parse(const std::string& raw_request) {
-    if (!isValidRequest(raw_request)) {
-        throw HttpRequestException("Invalid request format: request is not properly formatted.");
-    }
-
-    try {
-        setMethod(extractMethod(raw_request));
-        setURI(extractURI(raw_request));
-        setHTTPVersion(extractHTTPVersion(raw_request));
-        setHeaders(extractHeaders(raw_request));
-        
-        if (_method == "POST") {
-            setBody(extractBody(raw_request));
-        } else if (_method == "GET" || _method == "DELETE") {
-            if (hasBody(raw_request)) {
-                throw HttpRequestException("GET or DELETE request should not contain a body.");
-            }
-        }
-
-        setIsChunked(checkIfChunked(raw_request));
-        setQueryParameters(extractQueryParameters(_uri));
-    } catch (const HttpRequestException& e) {
-        std::cerr << "Error during request parsing: " << e.what() << std::endl;
-        clearRequestData();
-        throw;
-    }
-}
 
 // UTILITY FUNCTIONS
 const std::set<std::string> HttpRequest::initMethods() {
@@ -103,8 +98,8 @@ const std::set<std::string> HttpRequest::initMethods() {
 }
 
 std::string HttpRequest::safe_substr(const std::string& str, size_t start, size_t length) {
-    if (start >= str.size()) throw HttpRequestException("Substring extraction failed: start index out of bounds.");
-    if (start + length > str.size()) throw HttpRequestException("Substring extraction failed: length out of bounds.");
+    if (start >= str.size()) throw HttpException("Substring extraction failed: start index out of bounds.");
+    if (start + length > str.size()) throw HttpException("Substring extraction failed: length out of bounds.");
     return str.substr(start, length);
 }
 
@@ -174,11 +169,11 @@ std::string HttpRequest::extractURI(const std::string& raw_request) {
 std::map<std::string, std::string> HttpRequest::extractHeaders(const std::string& raw_request) {
     std::map<std::string, std::string> headers;
     size_t headers_start = raw_request.find("\r\n");
-    if (headers_start == std::string::npos) throw HttpRequestException("Missing headers.");
+    if (headers_start == std::string::npos) throw HttpException("Missing headers.");
     headers_start += 2;
 
     size_t headers_end = raw_request.find("\r\n\r\n", headers_start);
-    if (headers_end == std::string::npos) throw HttpRequestException("Missing end of headers.");
+    if (headers_end == std::string::npos) throw HttpException("Missing end of headers.");
 
     size_t current = headers_start;
     while (current < headers_end) {
@@ -188,14 +183,14 @@ std::map<std::string, std::string> HttpRequest::extractHeaders(const std::string
         std::string header_line = raw_request.substr(current, line_end - current);
         size_t colon_pos = header_line.find(':');
         if (colon_pos == std::string::npos) {
-            throw HttpRequestException("Invalid header format: missing ':' in header '" + header_line + "'");
+            throw HttpException("Invalid header format: missing ':' in header '" + header_line + "'");
         }
 
         std::string key = toLower(trim(header_line.substr(0, colon_pos)));
         std::string value = trim(header_line.substr(colon_pos + 1));
 
         if (key.empty()) {
-            throw HttpRequestException("Invalid header format: empty header key in '" + header_line + "'");
+            throw HttpException("Invalid header format: empty header key in '" + header_line + "'");
         }
 
         headers[key] = value;
@@ -231,7 +226,7 @@ std::string HttpRequest::extractHTTPVersion(const std::string& raw_request) {
     std::string version = trim(raw_request.substr(second_space + 1, version_end - second_space - 1));
     
     if (version.substr(0, 5) != "HTTP/") {
-        throw HttpRequestException("Invalid HTTP version format: '" + version + "'. Expected format: HTTP/x.x");
+        throw HttpException("Invalid HTTP version format: '" + version + "'. Expected format: HTTP/x.x");
     }
 
     return version;
@@ -296,12 +291,54 @@ std::ostream& operator<<(std::ostream& os, const HttpRequest& req) {
     return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const std::map<std::string, std::string>& map) {
+    for (std::map<std::string, std::string>::const_iterator it = map.begin(); it != map.end(); ++it) {
+        os << it->first << ": " << it->second << "\n";
+    }
+    return os;
+}
+
+void HttpRequest::requestController(HttpResponse &response)
+{
+    HttpConfig::Location locationConfig;
+    GetRequestHandler getHandler(locationConfig);
+    PostRequestHandler postHandler(locationConfig);
+    DeleteRequestHandler deleteHandler(locationConfig);
+    UnknownRequestHandler unknownHandler(locationConfig);
+
+    std::map<std::string, RequestController *> handlerMap;
+    handlerMap["GET"] = &getHandler;
+    handlerMap["POST"] = &postHandler;
+    handlerMap["DELETE"] = &deleteHandler;
+
+    std::string method = getMethod();
+    std::map<std::string, RequestController *>::iterator it = handlerMap.find(method);
+
+    if (it != handlerMap.end())
+    {
+        RequestController *handler = it->second;
+        handler->handle(*this, response);
+    }
+    else
+    {
+        unknownHandler.handle(*this, response);
+    }
+}
+
+bool HttpRequest::isSupportedContentType(const std::string &contentType) const
+{
+    std::set<std::string> supportedTypes;
+    supportedTypes.insert("application/json");
+    supportedTypes.insert("text/html");
+    supportedTypes.insert("text/plain");
+
+    return supportedTypes.find(contentType) != supportedTypes.end();
+}
+
 // TEST FUNCTION
 void testRequest(const std::string& raw_request) {
-    HttpRequest request;
     try {
-        request.parse(raw_request);
-        
+        HttpRequest request(raw_request);
         std::cout << "Method: " << request.getMethod() << std::endl;
         std::cout << "URI: " << request.getURI() << std::endl;
         std::cout << "HTTP Version: " << request.getHTTPVersion() << std::endl;
@@ -320,7 +357,7 @@ void testRequest(const std::string& raw_request) {
             std::cout << "The request is not chunked." << std::endl;
         }
 
-    } catch (const HttpRequestException& e) {
+    } catch (const HttpException& e) {
         std::cerr << "Error during request parsing: " << e.what() << std::endl;
         // Afficher les premières lignes de la requête pour plus de contexte
         std::istringstream iss(raw_request);

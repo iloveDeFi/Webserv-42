@@ -11,6 +11,9 @@ class HttpResponse;
 #include "HttpResponse.hpp"
 #include "HttpController.hpp"
 #include <sstream>
+
+#define MAX_BODY_SIZE 1024 * 1024 // 1MB
+
 class HttpRequest
 {
 private:
@@ -19,8 +22,8 @@ private:
     std::string _version;
     std::map<std::string, std::string> _headers;
     std::string _body;
-    std::string _queryParameters;
-    std::set<std::string> initMethods();
+    std::map<std::string, std::string> _queryParameters;
+	bool _isChunked;
     std::set<std::string> _allowedMethods;
 
     static const std::set<std::string> initMethods();
@@ -41,15 +44,13 @@ private:
     bool isValidRequest(const std::string& raw_request);
     void clearRequestData();
     static std::string toLower(const std::string& str);
+	bool isSupportedContentType(const std::string &contentType) const;
+    void requestController(HttpResponse &response);
 
 public:
-    HttpRequest();
+	HttpRequest(const std::string &rawData);
     ~HttpRequest();
-    HttpRequest(const HttpRequest& src);
     HttpRequest& operator=(const HttpRequest& src);
-
-    // Méthode de parsing principale
-    void parse(const std::string& raw_request);
 
     // Getters
     std::string getMethod() const;
@@ -59,7 +60,6 @@ public:
     std::string getHeader(const std::string& name) const;
     std::string getBody() const;
     std::map<std::string, std::string> getQueryParameters() const;
-    std::string getQueryString() const;
     bool isChunked() const;
 
     // Setters
@@ -74,6 +74,8 @@ public:
 
 // Fonction pour imprimer les détails de la requête
 std::ostream& operator<<(std::ostream& os, const HttpRequest& req);
+std::ostream& operator<<(std::ostream& os, const std::map<std::string, std::string>& map);
+
 
 // Fonction de test
 void testRequest(const std::string& raw_request);
