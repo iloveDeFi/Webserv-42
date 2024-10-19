@@ -186,18 +186,29 @@ void HttpResponse::ensureContentLength()
     }
 }
 
-std::string HttpResponse::toString()
+std::string HttpResponse::toString() const
 {
-    std::string response = _httpVersion + " " + to_string(_statusCode) + " " + _reasonMessage + "\r\n";
+    // Créer la chaîne de réponse HTTP
+    std::ostringstream oss;
 
+    // Ajouter la ligne de statut (par exemple "HTTP/1.1 200 OK")
+    oss << _httpVersion << " " << to_string(_statusCode) << " " << _reasonMessage << "\r\n";
+
+    // Ajouter les en-têtes de la réponse
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
     {
-        response += it->first + ": " + it->second + "\r\n";
+        oss << it->first << ": " << it->second << "\r\n";
     }
 
-    response += "\r\n" + _body;
-    return response;
+    // Ajouter une ligne vide après les en-têtes et avant le corps
+    oss << "\r\n";
+
+    // Ajouter le corps de la réponse (s'il existe)
+    oss << _body;
+
+    return oss.str();
 }
+
 
 std::string HttpResponse::generate404Error(const std::string &uri)
 {

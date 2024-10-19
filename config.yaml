@@ -1,55 +1,85 @@
-- server:
-    server_name: myserver.com
-    port: 8081
-    client_max_body_size: 10M
-    root: ./test_db
+# - server:
+#     server_name: myserver.com
+#     port: 8081
+#     client_max_body_size: 10M
+#     root: ./test_db
 
 
-    error_pages:
-        404: test_db/errors/404.html
-        500: test_db/errors/500.html
-        403: test_db/errors/403.html
+#     error_pages:
+#         404: test_db/errors/404.html
+#         500: test_db/errors/500.html
+#         403: test_db/errors/403.html
 
-    locations:
-        - path: /
-          methods: GET
-          handler: test_db/index/index.html
-          allow_uploads: false
-          content_type: text/html
+#     locations:
+#         - path: /
+#           methods: GET
+#           handler: test_db/index/index.html
+#           allow_uploads: false
+#           content_type: text/html
             
-        - path: /index
-          methods: GET
-          handler: test_db/index/index1.html
-          allow_uploads: false
-          content_type: text/html
+#         - path: /index
+#           methods: GET
+#           handler: test_db/index/index1.html
+#           allow_uploads: false
+#           content_type: text/html
 
-        - path: /upload
-          methods: POST
-          handler: test_db/upload/upload.php
-          allow_uploads: true
-          max_upload_size: 5M
+#         - path: /upload
+#           methods: POST
+#           handler: test_db/upload/upload.php
+#           allow_uploads: true
+#           max_upload_size: 5M
+
+# - server:
+#     server_name: secondserver.com
+#     port: 80
+#     client_max_body_size: 1M
+#     root: ./test_db
+
+
+#     error_pages:
+#         404: test_db/errors/404.html
+#         500: test_db/errors/500.html
+
+#     locations:
+#         - path: /images
+#           methods: GET
+#           handler: test_db/images/
+#           allow_uploads: false
+#           content_type: image/jpeg
+
+#         - path: /videos
+#           methods: GET
+#           handler: test_db/videos/
+#           allow_uploads: false
+#           content_type: video/mp4
+
+
+# - server:
+#     port: 8081
+#     root: /home/alex/webServ/www/html
+#     error_pages: 
+#       404: test_db/errors/404.html
+#       500: test_db/errors/500.html
+#       403: test_db/errors/403.html
+
+#     locations:
+#         path: /cgi-bin
+#         root: /home/alex/webServ/www/cgi-bin
+#         cgi_handler: /usr/bin/python3
 
 - server:
-    server_name: secondserver.com
+    server_name: mythirdserver.com
     port: 80
     client_max_body_size: 1M
-    root: ./test_db
-
+    root: /home/alex/webServ/test_db/index
 
     error_pages:
         404: test_db/errors/404.html
         500: test_db/errors/500.html
 
     locations:
-        - path: /images
-          methods: GET
-          handler: test_db/images/
-          allow_uploads: false
-          content_type: image/jpeg
-
-        - path: /videos
-          methods: GET
-          handler: test_db/videos/
-          allow_uploads: false
-          content_type: video/mp4
-
+        - path: /cgi-bin
+          methods: [GET, POST]
+          root: /home/alex/webServ/www/cgi-bin
+          cgi_extensions: [.cgi, .py]
+          cgi_handler: /usr/bin/python3

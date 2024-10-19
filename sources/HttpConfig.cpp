@@ -13,7 +13,7 @@ HttpConfig::HttpConfig(const std::string& configPath) {
     loadConfigFromFile(configPath);
 }
 
-std::vector<HttpConfig::ServerConfig>& HttpConfig::getParsedServers() {
+const std::vector<HttpConfig::ServerConfig>& HttpConfig::getParsedServers() const {
     return parsedServers;
 }
 
@@ -46,11 +46,18 @@ std::string HttpConfig::readConfigFile(const std::string& configPath) {
 
 void HttpConfig::parseConfigurationFile() {
     std::istringstream configStream(configContent);
-    while (parseServerConfiguration(configStream)) {}
+
+    std::cout << "[DEBUG] Content of configuration file:\n" << configContent << std::endl;
+
+    while (parseServerConfiguration(configStream)) {
+        std::cout << "[DEBUG] Successfully parsed a server configuration" << std::endl;
+    }
+
     if (parsedServers.empty()) {
         throw std::runtime_error("No valid server configuration found");
     }
 }
+
 
 bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
     ServerConfig serverData;

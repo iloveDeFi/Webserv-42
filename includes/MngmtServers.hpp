@@ -19,6 +19,8 @@
 # include "HttpRequest.hpp"
 # include "HttpResponse.hpp"
 
+class HttpConfig;
+
 struct _server
 {
 	Socket* _serverSocket;
@@ -43,13 +45,14 @@ class ManagementServer
 		/* Server(const Server &other) = delete;
 		Server& operator=(const Server &other) = delete; */
 		~ManagementServer();
+		void requestController(HttpResponse &response);
 		void setNonBlocking(int fd);
 		Location& parseLocation(std::ifstream config, std::string& value, std::string key);
-		void handleRequest();
+		void handleRequest(const HttpConfig &config);
 		void prepareFdSets(fd_set &readFds, \
 		const std::vector<int> &clientFds, int &maxFd);
 		void acceptNewClients(std::vector<int> &clientFds, fd_set &readFds);
-		void handleActiveClients(fd_set &readFds, std::vector<int> &clientFds);
+   		void handleActiveClients(fd_set &readFds, std::vector<int> &clientFds, const HttpConfig &config); // Ajoutez le paramètre `config` ici
 		void handleClient(int clientSocket);
 		std::string readRawData(int clientSocket);
 
@@ -58,6 +61,8 @@ class ManagementServer
 		_server& getServerInfo(std::vector<_server>::iterator it);
 
 		void setIpAddress(std::vector<_server>::iterator it, int ip);
+		void sendResponse(int clientSocket, const HttpResponse &response);
+
 };
 
 #endif

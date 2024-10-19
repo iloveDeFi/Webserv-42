@@ -39,7 +39,7 @@ int main(int ac, char **av)
 
     try
     {
-        webserv.handleRequest();
+        webserv.handleRequest(config);
     }
     catch (const std::exception &e)
     {

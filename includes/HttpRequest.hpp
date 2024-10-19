@@ -3,6 +3,8 @@
 
 class HttpRequest;
 class HttpResponse;
+class HttpController;
+class HttpConfig;
 
 #include "HttpResponse.hpp"
 #include "HttpController.hpp"
@@ -51,16 +53,21 @@ private:
     void clearRequestData();
     static std::string toLower(const std::string& str);
 	bool isSupportedContentType(const std::string &contentType) const;
-    void requestController(HttpResponse &response);
 
 public:
 	HttpRequest(const std::string &rawData);
     ~HttpRequest();
     HttpRequest& operator=(const HttpRequest& src);
 
+	// Fonction pour traiter la requête
+	void requestController(HttpResponse &response, const HttpConfig &config);
+
+	HttpConfig::Location determineLocation(const HttpConfig &config) const; // Ajout de la méthode `determineLocation`
+
+	
 	// CGI
     std::string getQueryString() const;
-	void executeCGI(const HttpConfig::Location &location, std::string &response);
+	void executeCGI(const HttpConfig::Location &location, HttpResponse &response);
 
 
     // Getters

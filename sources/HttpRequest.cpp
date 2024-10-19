@@ -326,7 +326,7 @@ std::ostream& operator<<(std::ostream& os, const std::map<std::string, std::stri
 }
 
 // CGI
-void HttpRequest::executeCGI(const HttpConfig::Location &location, std::string &response) {
+void HttpRequest::executeCGI(const HttpConfig::Location &location, HttpResponse &response) {
     int input_pipe[2];
     int output_pipe[2];
 
@@ -336,53 +336,63 @@ void HttpRequest::executeCGI(const HttpConfig::Location &location, std::string &
 
     pid_t pid = fork();
 
-    if (pid == 0) {  // Child process
-        // Set up environment variables
+    if (pid == 0) {  // Processus enfant
+        // Configuration des variables d'environnement
         setenv("REQUEST_METHOD", _method.c_str(), 1);
         setenv("QUERY_STRING", getQueryString().c_str(), 1);
-        setenv("CONTENT_TYPE", _headers["Content-Type"].c_str(), 1);
-        setenv("CONTENT_LENGTH", _headers["Content-Length"].c_str(), 1);
+        if (_headers.find("Content-Type") != _headers.end()) {
+            setenv("CONTENT_TYPE", _headers["Content-Type"].c_str(), 1);
+        }
+        if (_headers.find("Content-Length") != _headers.end()) {
+            setenv("CONTENT_LENGTH", _headers["Content-Length"].c_str(), 1);
+        }
         
-        // Redirect stdin to input pipe
+        // Redirection des pipes
         dup2(input_pipe[0], STDIN_FILENO);
         close(input_pipe[1]);
         close(input_pipe[0]);
 
-        // Redirect stdout to output pipe
         dup2(output_pipe[1], STDOUT_FILENO);
         close(output_pipe[0]);
         close(output_pipe[1]);
 
-        // Execute the CGI script
+        // Exécution du script CGI
         std::string script_path = location.root + _uri;
         execl(location.cgiHandler.c_str(), location.cgiHandler.c_str(), script_path.c_str(), NULL);
 
-        // If execl fails
+        // Si execl échoue
         perror("Error executing CGI script");
         exit(1);
-    } else if (pid > 0) {  // Parent process
+    } else if (pid > 0) {  // Processus parent
         close(input_pipe[0]);
         close(output_pipe[1]);
 
-        // Write request body to input pipe
+        // Écrire le corps de la requête dans le pipe d'entrée
         write(input_pipe[1], _body.c_str(), _body.length());
         close(input_pipe[1]);
 
-        // Read CGI output from output pipe
+        // Lire la sortie CGI depuis le pipe de sortie
         char buffer[4096];
         ssize_t bytes_read;
+        std::string cgiOutput;
+
         while ((bytes_read = read(output_pipe[0], buffer, sizeof(buffer))) > 0) {
-            response.append(buffer, bytes_read);
+            cgiOutput.append(buffer, bytes_read);
         }
         close(output_pipe[0]);
 
-        // Wait for child process to finish
+        // Attendre que le processus enfant se termine
         int status;
         waitpid(pid, &status, 0);
 
         if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
             throw std::runtime_error("CGI script execution failed");
         }
+
+        // Construire la réponse HTTP
+        response.generate200OK("text/html", cgiOutput);
+        response.setHTTPVersion("HTTP/1.1"); // ou version appropriée selon la requête
+        response.ensureContentLength();
     } else {
         throw std::runtime_error("Failed to fork for CGI execution");
     }
@@ -399,34 +409,64 @@ std::string HttpRequest::getQueryString() const {
     return query_string;
 }
 
+HttpConfig::Location HttpRequest::determineLocation(const HttpConfig& config) const {
+    // Parcourir chaque serveur configuré
+	const std::vector<HttpConfig::ServerConfig>& servers = config.getParsedServers();
+    for (size_t i = 0; i < servers.size(); ++i) {
+        const HttpConfig::ServerConfig& server = servers[i];
 
-// REQUEST CONTROLLER
-void HttpRequest::requestController(HttpResponse &response)
-{
-    HttpConfig::Location locationConfig;
-    GetRequestHandler getHandler(locationConfig);
-    PostRequestHandler postHandler(locationConfig);
-    DeleteRequestHandler deleteHandler(locationConfig);
-    UnknownRequestHandler unknownHandler(locationConfig);
+        // Parcourir chaque location du serveur
+        for (size_t j = 0; j < server.locations.size(); ++j) {
+            const HttpConfig::Location& location = server.locations[j];
 
-    std::map<std::string, RequestController *> handlerMap;
-    handlerMap["GET"] = &getHandler;
-    handlerMap["POST"] = &postHandler;
-    handlerMap["DELETE"] = &deleteHandler;
-
-    std::string method = getMethod();
-    std::map<std::string, RequestController *>::iterator it = handlerMap.find(method);
-
-    if (it != handlerMap.end())
-    {
-        RequestController *handler = it->second;
-        handler->handle(*this, response);
+            // Si l'URI commence par le chemin de la location, retourner cette location
+            if (_uri.find(location.path) == 0) {
+                return location;
+            }
+        }
     }
-    else
-    {
-        unknownHandler.handle(*this, response);
+
+    throw std::runtime_error("No valid location found for URI: " + _uri);
+}
+
+
+// RequestController
+void HttpRequest::requestController(HttpResponse &response, const HttpConfig &config) {
+    try {
+        // Obtenez la location appropriée en utilisant une méthode existante de `HttpConfig`.
+        HttpConfig::Location locationConfig = determineLocation(config);
+
+        if (HttpConfig::isCgiScript(locationConfig, _uri)) {
+            executeCGI(locationConfig, response);
+        } else {
+            // Gestion des requêtes normales (GET, POST, DELETE).
+            GetRequestHandler getHandler(locationConfig);
+            PostRequestHandler postHandler(locationConfig);
+            DeleteRequestHandler deleteHandler(locationConfig);
+            UnknownRequestHandler unknownHandler(locationConfig);
+
+            std::map<std::string, RequestController *> handlerMap;
+            handlerMap["GET"] = &getHandler;
+            handlerMap["POST"] = &postHandler;
+            handlerMap["DELETE"] = &deleteHandler;
+
+            std::string method = getMethod();
+            std::map<std::string, RequestController *>::iterator it = handlerMap.find(method);
+
+            if (it != handlerMap.end()) {
+                RequestController *handler = it->second;
+                handler->handle(*this, response);
+            } else {
+                unknownHandler.handle(*this, response);
+            }
+        }
+    } catch (const std::exception &e) {
+        response.generate500InternalServerError("500 Internal Server Error: " + std::string(e.what()));
     }
 }
+
+
+
 
 bool HttpRequest::isSupportedContentType(const std::string &contentType) const
 {

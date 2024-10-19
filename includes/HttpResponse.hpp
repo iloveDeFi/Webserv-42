@@ -49,17 +49,19 @@ public:
     int getStatusCode() const;
     std::string normalizeHeader(const std::string &header);
     void ensureContentLength();
-    std::string toString();
-    template <typename T>
-    std::string to_string(T value)
-    {
-        std::ostringstream oss;
-        oss << value;
-        return oss.str();
-    }
+    std::string toString() const;
     std::string generate404Error(const std::string &uri);
     std::string generateRedirection(const std::string &newUri);
     std::ostream &print(std::ostream &os) const;
 };
+
+template <typename T>
+std::string to_string(T value)
+{
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}
+
 
 #endif

@@ -18,17 +18,15 @@
 //constructeur du gestionnaire de serveurs
 //il va découper le fichier en ligne (chacune représentant un serveur)
 //et ajouter un serveur au veteur de _servers
-ManagementServer::ManagementServer(HttpConfig &config)
-{
-	std::string line;
+ManagementServer::ManagementServer(HttpConfig &config) {
+    std::string line;
 
-	std::vector<HttpConfig::ServerConfig>::iterator it = config.getParsedServers().begin();
+    std::vector<HttpConfig::ServerConfig>::const_iterator it = config.getParsedServers().begin();
 
-	while (it != config.getParsedServers().end())
-	{
-		addNewServer(*it);
-		it++;
-	}
+    while (it != config.getParsedServers().end()) {
+        addNewServer(*it);
+        it++;
+    }
 }
 
 ManagementServer::~ManagementServer()
@@ -120,38 +118,95 @@ void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 //en récupéreant les fd préalablement préparés
 //si des nouvelles connections sont repérées, elles sont
 //acceptées puis gérées
-void ManagementServer::handleRequest()
+void ManagementServer::handleRequest(const HttpConfig &config)
 {
-	fd_set readFds;
-	std::vector<int> clientFds;
-	int maxFd = 0;
+    fd_set readFds;
+    std::vector<int> clientFds;
+    int maxFd = 0;
 
-	while (true)
-	{
-		prepareFdSets(readFds, clientFds, maxFd);
+    while (true)
+    {
+        prepareFdSets(readFds, clientFds, maxFd);
 
-		// Attendre 5 secondes (et 0microscd) pour un événement sur les 
-		//sockets surveillés avant de retourner.
-		//timeout permet de contrôler la fréquence à laquelle 
-		//le serveur traite les entrées sans être bloqué indéfiniment 
-		//en attente d'activité
-		struct timeval tv = {5, 0};
-		int selectRes = select(maxFd + 1, &readFds, NULL, NULL, &tv);
-		if (selectRes > 0)
-		{
-			acceptNewClients(clientFds, readFds);
-    		handleActiveClients(readFds, clientFds);
-		}
-		else if (selectRes == -1)
-			throw std::runtime_error("Select error");
-		else if (selectRes == 0)
-		{
-			std::cout << "Timeout occurred, performing routine checks." << std::endl;
-			continue;
-		}
-		std::cout << "select() returned: " << selectRes << std::endl;
-	}
+        // Attendre 5 secondes pour un événement sur les sockets surveillés
+        struct timeval tv = {5, 0};
+        int selectRes = select(maxFd + 1, &readFds, NULL, NULL, &tv);
 
+        if (selectRes > 0)
+        {
+            // Accepter de nouveaux clients si des connexions sont prêtes
+            acceptNewClients(clientFds, readFds);
+            
+            // Traiter les clients actifs - Ajoutez `config` ici
+            handleActiveClients(readFds, clientFds, config);
+        }
+        else if (selectRes == -1)
+        {
+            throw std::runtime_error("Select error");
+        }
+        else if (selectRes == 0)
+        {
+            std::cout << "Timeout occurred, performing routine checks." << std::endl;
+            continue;
+        }
+
+        std::cout << "select() returned: " << selectRes << std::endl;
+    }
+}
+
+void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds, const HttpConfig &config) {
+    for (std::vector<int>::iterator it = clientFds.begin(); it != clientFds.end();) {
+        int clientSocket = *it;
+
+        // Vérifier si le client est prêt à lire
+        if (FD_ISSET(clientSocket, &readFds)) {
+            try {
+                // Lire les données brutes de la requête du client
+                std::string rawRequest = readRawData(clientSocket);
+
+                if (rawRequest.empty()) {
+                    std::cerr << "Received empty request, closing client socket: " << clientSocket << std::endl;
+                    close(clientSocket);
+                    it = clientFds.erase(it);
+                    continue;
+                }
+
+                // Créer l'objet HttpRequest
+                HttpRequest request(rawRequest);
+                std::cout << "Request successfully parsed." << std::endl;
+
+                // Traiter la requête (exemple: renvoyer une réponse HTTP)
+                HttpResponse response;
+                request.requestController(response, config);  // Passez `config` ici
+                
+                // Envoyer la réponse au client
+                sendResponse(clientSocket, response);
+            }
+            catch (const std::exception &e) {
+                std::cerr << "Error handling client request: " << e.what() << std::endl;
+                // Fermer le socket si une erreur survient (par exemple, mauvaise requête)
+                close(clientSocket);
+                it = clientFds.erase(it);
+                continue;
+            }
+        }
+
+        ++it;
+    }
+}
+
+
+
+
+void ManagementServer::sendResponse(int clientSocket, const HttpResponse &response) {
+    // Convertir la réponse HTTP en une chaîne de caractères brute
+    std::string rawResponse = response.toString(); // Assurez-vous que HttpResponse a une méthode toString() pour obtenir la réponse complète.
+
+    // Envoyer la réponse au socket client
+    ssize_t bytesSent = send(clientSocket, rawResponse.c_str(), rawResponse.length(), 0);
+    if (bytesSent < 0) {
+        std::cerr << "Error sending response to client socket: " << clientSocket << std::endl;
+    }
 }
 
 //fonction permettant de préparer et initialiser les fd
@@ -225,29 +280,29 @@ void ManagementServer::setNonBlocking(int fd)
 
 //Loop sur tout les fd actifs pour les gérer individuellement
 //si une erreur arrive, le client est supprimé des clients actifs
-void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
-{
-	for (size_t i = 0; i < clientFds.size(); ++i)
-	{
-		if (FD_ISSET(clientFds[i], &readFds))
-		{
-			try
-			{
-				handleClient(clientFds[i]);
-			}
-			catch (const std::exception& e)
-			{
-				std::cerr << "Client error: " << e.what() << std::endl;
-				//FD_CLR removes the socket from the readFds set, 
-				//so select() will no longer monitor it.
-				FD_CLR(clientFds[i], &readFds);
-				close(clientFds[i]);
-				clientFds.erase(clientFds.begin() + i);
-				--i;
-			}
-		}
-	}
-}
+// void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
+// {
+// 	for (size_t i = 0; i < clientFds.size(); ++i)
+// 	{
+// 		if (FD_ISSET(clientFds[i], &readFds))
+// 		{
+// 			try
+// 			{
+// 				handleClient(clientFds[i]);
+// 			}
+// 			catch (const std::exception& e)
+// 			{
+// 				std::cerr << "Client error: " << e.what() << std::endl;
+// 				//FD_CLR removes the socket from the readFds set, 
+// 				//so select() will no longer monitor it.
+// 				FD_CLR(clientFds[i], &readFds);
+// 				close(clientFds[i]);
+// 				clientFds.erase(clientFds.begin() + i);
+// 				--i;
+// 			}
+// 		}
+// 	}
+// }
 
 // getpeername() et getsockname() ne servent qu'à 
 //construire la classe Client, à partir de laquelle 
@@ -305,39 +360,71 @@ void ManagementServer::handleClient(int clientSocket)
 // 	return requestData;
 // }
 
+// std::string ManagementServer::readRawData(int clientSocket) {
+//     const size_t buffer_size = 1024;
+//     char buffer[buffer_size];
+//     std::string requestData;
+//     ssize_t bytesReceived;
+
+//     try {
+//         while ((bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0)) > 0) {
+//     buffer[bytesReceived] = '\0';
+//     std::cout << "Bytes received: " << bytesReceived << std::endl;
+//     std::cout << "Data received so far: " << buffer << std::endl;
+//     requestData.append(buffer);
+//     if (requestData.find("\r\n\r\n") != std::string::npos) {
+//         break;
+//     }
+// }
+
+
+//         if (bytesReceived == 0) {
+//             // Client closed the connection gracefully
+//             std::cerr << "Client closed connection." << std::endl;
+//         }
+
+//     } catch (const HttpException& e) {
+//     std::cerr << "Erreur pendant le parsing de la requête : " << e.what() << std::endl;
+//     std::string errorResponse = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
+//     send(clientSocket, errorResponse.c_str(), errorResponse.size(), 0);
+//     close(clientSocket);
+//     return "";
+// }
+// 	return requestData;
+
+// }
+
 std::string ManagementServer::readRawData(int clientSocket) {
     const size_t buffer_size = 1024;
     char buffer[buffer_size];
     std::string requestData;
     ssize_t bytesReceived;
 
-    try {
-        while ((bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0)) > 0) {
-    buffer[bytesReceived] = '\0';
-    std::cout << "Bytes received: " << bytesReceived << std::endl;
-    std::cout << "Data received so far: " << buffer << std::endl;
-    requestData.append(buffer);
-    if (requestData.find("\r\n\r\n") != std::string::npos) {
-        break;
-    }
-}
+    while ((bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0)) > 0) {
+        // N'ajoutez que le nombre de bytes reçus, sans '\0' implicite
+        requestData.append(buffer, bytesReceived);
+        
+        // Affiche les données reçues pour debug
+        std::cout << "Bytes received: " << bytesReceived << std::endl;
+        std::cout << "Data received so far: " << requestData << std::endl;
 
-
-        if (bytesReceived == 0) {
-            // Client closed the connection gracefully
-            std::cerr << "Client closed connection." << std::endl;
+        // Vérifier si on a atteint la fin des en-têtes
+        if (requestData.find("\r\n\r\n") != std::string::npos) {
+            break;
         }
+    }
 
-    } catch (const HttpException& e) {
-    std::cerr << "Erreur pendant le parsing de la requête : " << e.what() << std::endl;
-    std::string errorResponse = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
-    send(clientSocket, errorResponse.c_str(), errorResponse.size(), 0);
-    close(clientSocket);
-    return "";
-}
-	return requestData;
+    if (bytesReceived < 0) {
+        perror("Error reading from socket");
+        throw std::runtime_error("Error reading from socket");
+    } else if (bytesReceived == 0) {
+        // Si le client ferme la connexion
+        std::cerr << "Client closed connection before sending the full request." << std::endl;
+    }
 
+    return requestData;
 }
+
 
 int ManagementServer::getPort(std::vector<_server>::iterator it)
 {

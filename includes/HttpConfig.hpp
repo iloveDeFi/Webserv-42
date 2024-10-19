@@ -49,7 +49,7 @@ public:
     ~HttpConfig();
 
     void loadConfigFromFile(const std::string& configPath);
-    std::vector<ServerConfig>& getParsedServers();
+	const std::vector<ServerConfig>& getParsedServers() const;
 	static bool isCgiScript(const Location& location, const std::string& filename);
     static bool shouldListDirectory(const Location& location, const std::string& path);
 
