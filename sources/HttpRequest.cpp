@@ -298,6 +298,82 @@ std::ostream& operator<<(std::ostream& os, const std::map<std::string, std::stri
     return os;
 }
 
+// CGI
+void HttpRequest::executeCGI(const HttpConfig::Location &location, std::string &response) {
+    int input_pipe[2];
+    int output_pipe[2];
+
+    if (pipe(input_pipe) < 0 || pipe(output_pipe) < 0) {
+        throw std::runtime_error("Failed to create pipes for CGI execution");
+    }
+
+    pid_t pid = fork();
+
+    if (pid == 0) {  // Child process
+        // Set up environment variables
+        setenv("REQUEST_METHOD", _method.c_str(), 1);
+        setenv("QUERY_STRING", getQueryString().c_str(), 1);
+        setenv("CONTENT_TYPE", _headers["Content-Type"].c_str(), 1);
+        setenv("CONTENT_LENGTH", _headers["Content-Length"].c_str(), 1);
+        
+        // Redirect stdin to input pipe
+        dup2(input_pipe[0], STDIN_FILENO);
+        close(input_pipe[1]);
+        close(input_pipe[0]);
+
+        // Redirect stdout to output pipe
+        dup2(output_pipe[1], STDOUT_FILENO);
+        close(output_pipe[0]);
+        close(output_pipe[1]);
+
+        // Execute the CGI script
+        std::string script_path = location.root + _uri;
+        execl(location.cgiHandler.c_str(), location.cgiHandler.c_str(), script_path.c_str(), NULL);
+
+        // If execl fails
+        perror("Error executing CGI script");
+        exit(1);
+    } else if (pid > 0) {  // Parent process
+        close(input_pipe[0]);
+        close(output_pipe[1]);
+
+        // Write request body to input pipe
+        write(input_pipe[1], _body.c_str(), _body.length());
+        close(input_pipe[1]);
+
+        // Read CGI output from output pipe
+        char buffer[4096];
+        ssize_t bytes_read;
+        while ((bytes_read = read(output_pipe[0], buffer, sizeof(buffer))) > 0) {
+            response.append(buffer, bytes_read);
+        }
+        close(output_pipe[0]);
+
+        // Wait for child process to finish
+        int status;
+        waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+            throw std::runtime_error("CGI script execution failed");
+        }
+    } else {
+        throw std::runtime_error("Failed to fork for CGI execution");
+    }
+}
+
+std::string HttpRequest::getQueryString() const {
+    std::string query_string;
+    for (std::map<std::string, std::string>::const_iterator it = _queryParameters.begin(); it != _queryParameters.end(); ++it) {
+        if (!query_string.empty()) {
+            query_string += "&";
+        }
+        query_string += it->first + "=" + it->second;
+    }
+    return query_string;
+}
+
+
+// REQUEST CONTROLLER
 void HttpRequest::requestController(HttpResponse &response)
 {
     HttpConfig::Location locationConfig;

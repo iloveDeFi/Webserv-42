@@ -4,13 +4,19 @@
 class HttpRequest;
 class HttpResponse;
 
+#include "HttpResponse.hpp"
+#include "HttpController.hpp"
+#include "HttpConfig.hpp"
 #include <iostream>
 #include <map>
 #include <vector>
-#include <set>
-#include "HttpResponse.hpp"
-#include "HttpController.hpp"
 #include <sstream>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <cstdlib>
+#include <cstring>
+#include <stdexcept>
 
 #define MAX_BODY_SIZE 1024 * 1024 // 1MB
 
@@ -51,6 +57,11 @@ public:
 	HttpRequest(const std::string &rawData);
     ~HttpRequest();
     HttpRequest& operator=(const HttpRequest& src);
+
+	// CGI
+    std::string getQueryString() const;
+	void executeCGI(const HttpConfig::Location &location, std::string &response);
+
 
     // Getters
     std::string getMethod() const;
