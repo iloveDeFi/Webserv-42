@@ -336,18 +336,13 @@ void HttpRequest::executeCGI(const HttpConfig::Location &location, HttpResponse 
 
     pid_t pid = fork();
 
-    if (pid == 0) {  // Processus enfant
-        // Configuration des variables d'environnement
+    if (pid == 0) {
+        // Code pour le processus enfant
         setenv("REQUEST_METHOD", _method.c_str(), 1);
         setenv("QUERY_STRING", getQueryString().c_str(), 1);
-        if (_headers.find("Content-Type") != _headers.end()) {
-            setenv("CONTENT_TYPE", _headers["Content-Type"].c_str(), 1);
-        }
-        if (_headers.find("Content-Length") != _headers.end()) {
-            setenv("CONTENT_LENGTH", _headers["Content-Length"].c_str(), 1);
-        }
+        setenv("CONTENT_TYPE", _headers["Content-Type"].c_str(), 1);
+        setenv("CONTENT_LENGTH", _headers["Content-Length"].c_str(), 1);
         
-        // Redirection des pipes
         dup2(input_pipe[0], STDIN_FILENO);
         close(input_pipe[1]);
         close(input_pipe[0]);
@@ -356,14 +351,13 @@ void HttpRequest::executeCGI(const HttpConfig::Location &location, HttpResponse 
         close(output_pipe[0]);
         close(output_pipe[1]);
 
-        // Exécution du script CGI
         std::string script_path = location.root + _uri;
         execl(location.cgiHandler.c_str(), location.cgiHandler.c_str(), script_path.c_str(), NULL);
 
-        // Si execl échoue
         perror("Error executing CGI script");
         exit(1);
-    } else if (pid > 0) {  // Processus parent
+    } else if (pid > 0) {
+        // Code pour le processus parent
         close(input_pipe[0]);
         close(output_pipe[1]);
 
@@ -371,32 +365,25 @@ void HttpRequest::executeCGI(const HttpConfig::Location &location, HttpResponse 
         write(input_pipe[1], _body.c_str(), _body.length());
         close(input_pipe[1]);
 
-        // Lire la sortie CGI depuis le pipe de sortie
+        // Lire la sortie du script CGI
         char buffer[4096];
         ssize_t bytes_read;
-        std::string cgiOutput;
-
         while ((bytes_read = read(output_pipe[0], buffer, sizeof(buffer))) > 0) {
-            cgiOutput.append(buffer, bytes_read);
+            response.appendBody(buffer, bytes_read);  // Utiliser appendBody ici
         }
         close(output_pipe[0]);
 
-        // Attendre que le processus enfant se termine
         int status;
         waitpid(pid, &status, 0);
 
         if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
             throw std::runtime_error("CGI script execution failed");
         }
-
-        // Construire la réponse HTTP
-        response.generate200OK("text/html", cgiOutput);
-        response.setHTTPVersion("HTTP/1.1"); // ou version appropriée selon la requête
-        response.ensureContentLength();
     } else {
         throw std::runtime_error("Failed to fork for CGI execution");
     }
 }
+
 
 std::string HttpRequest::getQueryString() const {
     std::string query_string;
@@ -433,37 +420,62 @@ HttpConfig::Location HttpRequest::determineLocation(const HttpConfig& config) co
 // RequestController
 void HttpRequest::requestController(HttpResponse &response, const HttpConfig &config) {
     try {
-        // Obtenez la location appropriée en utilisant une méthode existante de `HttpConfig`.
+        // Étape de détermination de la location
+        std::cout << "[DEBUG] Début de requestController pour l'URI : " << _uri << std::endl;
         HttpConfig::Location locationConfig = determineLocation(config);
+        std::cout << "[DEBUG] Location déterminée : " << locationConfig.path << std::endl;
 
-        if (HttpConfig::isCgiScript(locationConfig, _uri)) {
+        // Vérification si la requête est une requête CGI
+        bool isCgi = HttpConfig::isCgiScript(locationConfig, _uri);
+        std::cout << "[DEBUG] CGI détecté ? " << (isCgi ? "Oui" : "Non") << " pour l'URI : " << _uri << std::endl;
+
+        if (isCgi) {
+            // Exécution de la requête CGI
+            std::cout << "[DEBUG] Requête CGI détectée pour l'URI : " << _uri << std::endl;
             executeCGI(locationConfig, response);
+            std::cout << "[DEBUG] Requête CGI exécutée avec succès pour l'URI : " << _uri << std::endl;
         } else {
-            // Gestion des requêtes normales (GET, POST, DELETE).
+            // Gestion des requêtes normales (GET, POST, DELETE)
+            std::cout << "[DEBUG] Requête normale détectée : méthode " << _method << std::endl;
+
             GetRequestHandler getHandler(locationConfig);
             PostRequestHandler postHandler(locationConfig);
             DeleteRequestHandler deleteHandler(locationConfig);
             UnknownRequestHandler unknownHandler(locationConfig);
 
+            // Ajout des gestionnaires de méthode dans une map
             std::map<std::string, RequestController *> handlerMap;
             handlerMap["GET"] = &getHandler;
             handlerMap["POST"] = &postHandler;
             handlerMap["DELETE"] = &deleteHandler;
 
+            // Recherche du gestionnaire pour la méthode courante
             std::string method = getMethod();
+            std::cout << "[DEBUG] Recherche du gestionnaire pour la méthode : " << method << std::endl;
+
             std::map<std::string, RequestController *>::iterator it = handlerMap.find(method);
 
             if (it != handlerMap.end()) {
                 RequestController *handler = it->second;
+                std::cout << "[DEBUG] Gestionnaire trouvé pour la méthode : " << method << std::endl;
                 handler->handle(*this, response);
+                std::cout << "[DEBUG] Gestionnaire exécuté avec succès pour la méthode : " << method << std::endl;
             } else {
+                std::cout << "[DEBUG] Méthode inconnue : " << method << ". Utilisation du gestionnaire par défaut." << std::endl;
                 unknownHandler.handle(*this, response);
+                std::cout << "[DEBUG] Gestionnaire de méthode inconnue exécuté avec succès." << std::endl;
             }
         }
     } catch (const std::exception &e) {
+        std::cerr << "[ERROR] Erreur dans requestController : " << e.what() << std::endl;
         response.generate500InternalServerError("500 Internal Server Error: " + std::string(e.what()));
     }
+
+    // Fin de la fonction
+    std::cout << "[DEBUG] Fin de requestController pour l'URI : " << _uri << std::endl;
 }
+
+
 
 
 

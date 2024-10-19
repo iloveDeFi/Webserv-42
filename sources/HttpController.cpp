@@ -69,7 +69,7 @@ void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 
 bool RequestController::hasReadPermissions(const std::string &filePath)
 {
-    if (access(filePath.c_str(), R_OK) == 0)
+    if (access(filePath.c_str(), R_OK | X_OK) == 0)
     {
         struct stat fileStat;
         if (stat(filePath.c_str(), &fileStat) == 0)

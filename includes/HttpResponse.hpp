@@ -21,6 +21,9 @@ public:
     HttpResponse(const HttpResponse &src);
     HttpResponse &operator=(const HttpResponse &src);
 
+	void appendBody(const char* data, size_t length);
+    std::string getBody() const;
+
     void generate200OK(const std::string &contentType, const std::string &bodyContent);
     void generate201Created(const std::string &location);
     void generate202Accepted(const std::string &deletionInfo);

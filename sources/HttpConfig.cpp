@@ -453,9 +453,12 @@ bool HttpConfig::isCgiScript(const Location& location, const std::string& filena
     if (location.cgiExtensions.empty()) {
         return false;
     }
-    std::string extension = filename.substr(filename.find_last_of(".") + 1);
-    return std::find(location.cgiExtensions.begin(), location.cgiExtensions.end(), "." + extension) != location.cgiExtensions.end();
+    std::string extension = filename.substr(filename.find_last_of("."));
+    bool isCgi = std::find(location.cgiExtensions.begin(), location.cgiExtensions.end(), extension) != location.cgiExtensions.end();
+    std::cout << "[DEBUG] Vérification CGI pour " << filename << " avec extension " << extension << ": " << (isCgi ? "true" : "false") << std::endl;
+    return isCgi;
 }
+
 
 bool HttpConfig::shouldListDirectory(const Location& location, const std::string& path) {
     return location.autoindex && directoryExists(path);

@@ -241,3 +241,11 @@ std::ostream &HttpResponse::print(std::ostream &os) const
     os << "Body chunked: " << _isChunked << "\n";
     return os;
 }
+
+void HttpResponse::appendBody(const char* data, size_t length) {
+	_body.append(data, length);
+}
+
+std::string HttpResponse::getBody() const {
+	return _body;
+}
