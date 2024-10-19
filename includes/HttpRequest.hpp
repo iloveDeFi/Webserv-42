@@ -1,23 +1,26 @@
 #ifndef HTTPREQUEST_HPP
 #define HTTPREQUEST_HPP
 
+class HttpRequest;
+class HttpResponse;
+
 #include <iostream>
 #include <map>
 #include <vector>
 #include <set>
-#include "HttpRequestException.hpp"
-
-const size_t MAX_BODY_SIZE = 2 * 1024 * 1024; // 2 MB
-
-class HttpRequest {
+#include "HttpResponse.hpp"
+#include "HttpController.hpp"
+#include <sstream>
+class HttpRequest
+{
 private:
     std::string _method;
     std::string _uri;
     std::string _version;
     std::map<std::string, std::string> _headers;
     std::string _body;
-    std::map<std::string, std::string> _queryParameters;
-    bool _isChunked;
+    std::string _queryParameters;
+    std::set<std::string> initMethods();
     std::set<std::string> _allowedMethods;
 
     static const std::set<std::string> initMethods();

@@ -1,0 +1,55 @@
+- server:
+    server_name: myserver.com
+    port: 8080
+    client_max_body_size: 10M
+    root: ./test_db
+
+
+    error_pages:
+        404: test_db/errors/404.html
+        500: test_db/errors/500.html
+        403: test_db/errors/403.html
+
+    locations:
+        - path: /
+          methods: GET
+          handler: test_db/index/index.html
+          allow_uploads: false
+          content_type: text/html
+            
+        - path: /index
+          methods: GET
+          handler: test_db/index/index1.html
+          allow_uploads: false
+          content_type: text/html
+
+        - path: /upload
+          methods: POST
+          handler: test_db/upload/upload.php
+          allow_uploads: true
+          max_upload_size: 5M
+
+- server:
+    server_name: secondserver.com
+    port: 80
+    client_max_body_size: 1M
+    root: ./test_db
+
+
+    error_pages:
+        404: test_db/errors/404.html
+        500: test_db/errors/500.html
+
+    locations:
+        - path: /images
+          methods: GET
+          handler: test_db/images/
+          allow_uploads: false
+          content_type: image/jpeg
+
+        - path: /videos
+          methods: GET
+          handler: test_db/videos/
+          allow_uploads: false
+          content_type: video/mp4
+

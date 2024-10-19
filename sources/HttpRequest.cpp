@@ -9,11 +9,13 @@ HttpRequest::HttpRequest()
 
 HttpRequest::~HttpRequest() {}
 
-HttpRequest::HttpRequest(const HttpRequest& src) 
-    : _method(src._method), _uri(src._uri), _version(src._version), _headers(src._headers), _body(src._body), _queryParameters(src._queryParameters), _isChunked(src._isChunked), _allowedMethods(src._allowedMethods) {}
+HttpRequest::HttpRequest(const HttpRequest &src)
+    : _method(src._method), _uri(src._uri), _version(src._version), _headers(src._headers), _body(src._body), _queryParameters(src._queryParameters), _allowedMethods(src._allowedMethods) {}
 
-HttpRequest& HttpRequest::operator=(const HttpRequest& src) {
-    if (this != &src) {
+HttpRequest &HttpRequest::operator=(const HttpRequest &src)
+{
+    if (this != &src)
+    {
         _method = src._method;
         _uri = src._uri;
         _version = src._version;
@@ -21,7 +23,6 @@ HttpRequest& HttpRequest::operator=(const HttpRequest& src) {
         _body = src._body;
         _queryParameters = src._queryParameters;
         _allowedMethods = src._allowedMethods;
-        _isChunked = src._isChunked;
     }
     return *this;
 }
@@ -290,6 +291,8 @@ std::ostream& operator<<(std::ostream& os, const HttpRequest& req) {
         os << "  " << it->first << ": " << it->second << "\n";
     }
     os << "Body: " << req.getBody() << "\n";
+    os << "Query Parameters: " << req.getQueryParameters() << "\n";
+    os << "Chunked: " << (req.isChunked() ? "Yes" : "No") << "\n";
     return os;
 }
 

@@ -1,0 +1,10 @@
+# Ignore VS Code settings
+.vscode/settings.json
+.vscode/
+*.o
+
+# Autres règles d'ignore
+*.log
+*.tmp
+*.DS_Store
+.sources/.DS_Store
