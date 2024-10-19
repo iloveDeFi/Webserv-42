@@ -8,6 +8,7 @@
 #include "Location.hpp"
 #include "MngmtServers.hpp"
 #include <arpa/inet.h>
+#include <cerrno>
 
 struct _server;
 

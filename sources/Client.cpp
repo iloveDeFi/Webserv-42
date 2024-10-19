@@ -5,32 +5,43 @@ Client::Client(int fd, const struct sockaddr_in &address)
 
 Client::~Client() {}
 
-void Client::readRequest(const std::string &rawData) {
+void Client::readRequest(const std::string &rawData)
+{
     _request = HttpRequest(rawData);
 }
 
-void Client::processRequest(const _server &serverInfo) {
+void Client::processRequest(const _server &serverInfo)
+{
     HttpResponse response;
     bool requestHandled = false;
     std::string uri = _request.getURI();
 
-    for (size_t i = 0; i < serverInfo._locations.size(); ++i) {
+    for (size_t i = 0; i < serverInfo._locations.size(); ++i)
+    {
         const HttpConfig::Location &location = serverInfo._locations[i];
 
-        if (uri.find(location.path) == 0) {
-            if (_request.getMethod() == "GET") {
+        if (uri.find(location.path) == 0)
+        {
+            if (_request.getMethod() == "GET")
+            {
                 GetRequestHandler getHandler(location);
                 getHandler.handle(_request, response);
                 requestHandled = true;
-            } else if (_request.getMethod() == "POST") {
+            }
+            else if (_request.getMethod() == "POST")
+            {
                 PostRequestHandler postHandler(location);
                 postHandler.handle(_request, response);
                 requestHandled = true;
-            } else if (_request.getMethod() == "DELETE") {
+            }
+            else if (_request.getMethod() == "DELETE")
+            {
                 DeleteRequestHandler deleteHandler(location);
                 deleteHandler.handle(_request, response);
                 requestHandled = true;
-            } else {
+            }
+            else
+            {
                 UnknownRequestHandler unknownHandler(location);
                 unknownHandler.handle(_request, response);
                 requestHandled = true;
@@ -39,12 +50,16 @@ void Client::processRequest(const _server &serverInfo) {
         }
     }
 
-    if (requestHandled) {
+    if (requestHandled)
+    {
         int statusCode = response.getStatusCode();
-        if (statusCode >= 400) {
+        if (statusCode >= 400)
+        {
             std::cerr << "Erreur lors de la gestion de la requête : " << statusCode << std::endl;
         }
-    } else {
+    }
+    else
+    {
         response.setStatusCode(404);
         response.setBody("404 Not Found");
         response.setHeader("Content-Type", "text/plain");
@@ -52,49 +67,66 @@ void Client::processRequest(const _server &serverInfo) {
     }
 
     _response = response;
-    sendResponse();
 }
 
-void Client::sendResponse() {
+void Client::sendResponse()
+{
     std::string response = _response.toString();
     const char *data = response.c_str();
     size_t total = response.size();
     size_t sent = 0;
     ssize_t n;
 
-    while (sent < total) {
+    while (sent < total)
+    {
         n = send(_socket, data + sent, total - sent, 0);
         if (n == -1)
-            throw std::runtime_error("Error sending response.");
-        sent += n;
+        {
+            if (errno == EINTR)
+            {
+                continue; // Réessayer si l'envoi a été interrompu par un signal
+            }
+            else
+            {
+                throw std::runtime_error("Error sending response: " + std::string(strerror(errno)));
+            }
+        }
+        sent += n; // Ajouter le nombre d'octets envoyés avec succès
     }
 }
 
-void Client::setHttpRequest(const HttpRequest &request) {
+void Client::setHttpRequest(const HttpRequest &request)
+{
     _request = request;
 }
 
-void Client::setHttpResponse(const HttpResponse &response) {
+void Client::setHttpResponse(const HttpResponse &response)
+{
     _response = response;
 }
 
-HttpRequest &Client::getHttpRequest() {
+HttpRequest &Client::getHttpRequest()
+{
     return _request;
 }
 
-HttpResponse &Client::getHttpResponse() {
+HttpResponse &Client::getHttpResponse()
+{
     return _response;
 }
 
-int Client::getClientSocket() {
+int Client::getClientSocket()
+{
     return _socket;
 }
 
-std::string Client::getIPaddress() {
+std::string Client::getIPaddress()
+{
     char *cString = inet_ntoa(_address.sin_addr);
     return std::string(cString);
 }
 
-bool Client::isConnected() const {
+bool Client::isConnected() const
+{
     return _socket >= 0;
 }
