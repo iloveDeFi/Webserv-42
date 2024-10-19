@@ -13,6 +13,14 @@
 
 int main(int ac, char **av)
 {
+	// std::string rawRequestGet = 
+    // "GET /index.html HTTP/1.1\r\n"
+    // "Host: localhost:8081\r\n"
+    // "User-Agent: curl/7.81.0\r\n"
+    // "Accept: */*\r\n"
+    // "\r\n";
+
+	// testRequest(rawRequestGet);
     if (ac != 2)
     {
         std::cout << "Binary must be: ./webserv [configuration file]" << std::endl;

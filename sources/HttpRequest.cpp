@@ -117,14 +117,41 @@ std::string HttpRequest::toLower(const std::string& str) {
 }
 
 bool HttpRequest::isValidRequest(const std::string& raw_request) {
+    std::cout << "Raw request received: " << raw_request << std::endl;
+
     size_t method_end = raw_request.find(' ');
-    size_t uri_end = raw_request.find(' ', method_end + 1);
-    size_t version_end = raw_request.find("\r\n", uri_end + 1);
-    if (method_end == std::string::npos || uri_end == std::string::npos || version_end == std::string::npos) {
+    if (method_end == std::string::npos) {
+        std::cout << "Error: Method end not found. Raw request: " << raw_request << std::endl;
         return false;
     }
+
+    std::string method = raw_request.substr(0, method_end);
+    if (method != "GET" && method != "POST" && method != "DELETE" && method != "PUT") {
+        std::cout << "Error: Unsupported HTTP method: " << method << std::endl;
+        return false;
+    }
+
+    size_t uri_end = raw_request.find(' ', method_end + 1);
+    if (uri_end == std::string::npos) {
+        std::cout << "Error: URI end not found." << std::endl;
+        return false;
+    }
+
+    size_t version_end = raw_request.find("\r\n", uri_end + 1);
+    if (version_end == std::string::npos) {
+        std::cout << "Error: HTTP version end not found." << std::endl;
+        return false;
+    }
+
+    if (raw_request.find("\r\n\r\n") == std::string::npos) {
+        std::cout << "Error: End of headers not found." << std::endl;
+        return false;
+    }
+
+    std::cout << "Request is valid." << std::endl;
     return true;
 }
+
 
 bool HttpRequest::hasBody(const std::string& raw_request) {
     size_t body_start = raw_request.find("\r\n\r\n");

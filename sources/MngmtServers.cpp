@@ -1,4 +1,6 @@
 #include "MngmtServers.hpp"
+#include "HttpException.hpp"
+
 
 //fichier fdConfig imaginé sans retour à la ligne à part pour différents serveurs:
 //server1: root:/html index:index.html,index.htm error:404,not_found.html
@@ -283,24 +285,58 @@ void ManagementServer::handleClient(int clientSocket)
 	client.sendResponse();
 }
 
-std::string ManagementServer::readRawData(int clientSocket)
-{
-	const size_t buffer_size = 1024;
-	char buffer[buffer_size];
-	std::string requestData;
-	ssize_t bytesReceived;
+// std::string ManagementServer::readRawData(int clientSocket)
+// {
+// 	const size_t buffer_size = 1024;
+// 	char buffer[buffer_size];
+// 	std::string requestData;
+// 	ssize_t bytesReceived;
 
-	while ((bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0)) > 0)
-	{
-		buffer[bytesReceived] = '\0';
-		requestData.append(buffer);
-		if (requestData.find("\r\n\r\n") != std::string::npos)
-			break;
-	}
-	if (bytesReceived < 0)
-		throw std::runtime_error("Error reading from socket");
+// 	while ((bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0)) > 0)
+// 	{
+// 		buffer[bytesReceived] = '\0';
+// 		requestData.append(buffer);
+// 		if (requestData.find("\r\n\r\n") != std::string::npos)
+// 			break;
+// 	}
+// 	if (bytesReceived < 0)
+// 		throw std::runtime_error("Error reading from socket");
 	
+// 	return requestData;
+// }
+
+std::string ManagementServer::readRawData(int clientSocket) {
+    const size_t buffer_size = 1024;
+    char buffer[buffer_size];
+    std::string requestData;
+    ssize_t bytesReceived;
+
+    try {
+        while ((bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0)) > 0) {
+    buffer[bytesReceived] = '\0';
+    std::cout << "Bytes received: " << bytesReceived << std::endl;
+    std::cout << "Data received so far: " << buffer << std::endl;
+    requestData.append(buffer);
+    if (requestData.find("\r\n\r\n") != std::string::npos) {
+        break;
+    }
+}
+
+
+        if (bytesReceived == 0) {
+            // Client closed the connection gracefully
+            std::cerr << "Client closed connection." << std::endl;
+        }
+
+    } catch (const HttpException& e) {
+    std::cerr << "Erreur pendant le parsing de la requête : " << e.what() << std::endl;
+    std::string errorResponse = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
+    send(clientSocket, errorResponse.c_str(), errorResponse.size(), 0);
+    close(clientSocket);
+    return "";
+}
 	return requestData;
+
 }
 
 int ManagementServer::getPort(std::vector<_server>::iterator it)
