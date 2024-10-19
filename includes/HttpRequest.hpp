@@ -6,7 +6,6 @@
 #include <vector>
 #include <set>
 #include "HttpRequestException.hpp"
-#include "HttpConfig.hpp"  // Assurez-vous d'inclure ce fichier pour la structure Location
 
 const size_t MAX_BODY_SIZE = 2 * 1024 * 1024; // 2 MB
 
