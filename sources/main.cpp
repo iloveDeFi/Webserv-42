@@ -78,8 +78,5 @@ int main() {
     std::cout << "\nTesting raw_request_4:\n";
     testRequest(raw_request_4);
 
-	std::cout << "\nTesting CGI:\n";
-    testCGI();
-
     return 0;
 }

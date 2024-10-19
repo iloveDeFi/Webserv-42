@@ -49,9 +49,6 @@ public:
     // Méthode de parsing principale
     void parse(const std::string& raw_request);
 
-    // Méthode d'exécution CGI
-    void executeCGI(const HttpConfig::Location& location, std::string& response);
-
     // Getters
     std::string getMethod() const;
     std::string getURI() const;
@@ -78,6 +75,5 @@ std::ostream& operator<<(std::ostream& os, const HttpRequest& req);
 
 // Fonction de test
 void testRequest(const std::string& raw_request);
-void testCGI();
 
 #endif
