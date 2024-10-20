@@ -14,6 +14,10 @@ std::string HttpRequest::trim(const std::string &str)
 HttpRequest::HttpRequest(const std::string &rawData)
     : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods())
 {
+
+    // rawData is good here!
+    std::cout << "Raw request data: " << rawData << std::endl;
+
     std::istringstream requestStream(rawData);
     std::string requestLine;
 

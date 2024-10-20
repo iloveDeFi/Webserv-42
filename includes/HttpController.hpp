@@ -4,6 +4,8 @@
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 #include "HttpConfig.hpp"
+#include "Logger.hpp"
+#include "Templates.hpp"
 #include <fstream>
 #include <stdexcept>
 #include <string>

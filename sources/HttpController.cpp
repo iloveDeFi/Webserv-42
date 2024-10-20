@@ -137,6 +137,7 @@ bool RequestController::isMethodAllowed(const std::string &method) const
 
 void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res)
 {
+    Logger logger("server.log"); // local not in class
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
 
@@ -158,9 +159,12 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
     {
         std::string resourceContent = loadResource(resourcePath);
         res.generate200OK("text/plain", resourceContent);
+        logger.log("Response Status Code: " + to_string(res.getStatusCode()));
+        logger.log("Response Body Length: " + to_string(resourceContent.length()));
     }
     catch (const std::exception &e)
     {
+        logger.log("Error occurred while loading resource: " + std::string(e.what()));
         res.generate500InternalServerError("Internal error 500: An error occurred while processing the request: " + std::string(e.what()));
     }
 

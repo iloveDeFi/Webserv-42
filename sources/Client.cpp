@@ -15,6 +15,12 @@ void Client::processRequest(const _server &serverInfo)
     HttpResponse response;
     bool requestHandled = false;
     std::string uri = _request.getURI();
+    // TO DO : URI value is good here
+    // std::cout << "Requested URI: " << uri << std::endl;
+    std::string method = _request.getMethod();
+
+    // Instantiate Logger (logs will be written to "server.log") use cat
+    Logger logger("server.log");
 
     for (size_t i = 0; i < serverInfo._locations.size(); ++i)
     {
@@ -24,6 +30,7 @@ void Client::processRequest(const _server &serverInfo)
         {
             if (_request.getMethod() == "GET")
             {
+                // std::cout << "------- Processing request - Method: " << method << ", URI: " << uri << std::endl; good here
                 GetRequestHandler getHandler(location);
                 getHandler.handle(_request, response);
                 requestHandled = true;
@@ -53,9 +60,10 @@ void Client::processRequest(const _server &serverInfo)
     if (requestHandled)
     {
         int statusCode = response.getStatusCode();
+        logger.logRequest(method, uri, statusCode);
         if (statusCode >= 400)
         {
-            std::cerr << "Erreur lors de la gestion de la requête : " << statusCode << std::endl;
+            logger.logError("Request resulted in error: " + to_string(statusCode));
         }
     }
     else
@@ -64,6 +72,7 @@ void Client::processRequest(const _server &serverInfo)
         response.setBody("404 Not Found");
         response.setHeader("Content-Type", "text/plain");
         response.ensureContentLength();
+        logger.logError("404 Not Found for URI: " + uri);
     }
 
     _response = response;

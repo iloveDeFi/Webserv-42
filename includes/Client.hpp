@@ -7,10 +7,16 @@
 #include "HttpResponse.hpp"
 #include "Location.hpp"
 #include "MngmtServers.hpp"
+#include "Logger.hpp"
+#include "Templates.hpp"
+#include <iostream>
 #include <arpa/inet.h>
+#include <sstream>
 #include <cerrno>
 
 struct _server;
+
+class Logger;
 
 class Client
 {
