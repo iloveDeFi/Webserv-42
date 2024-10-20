@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <string>
+#include "Logger.hpp"
 
 template <typename T>
 std::string to_string(const T &value)

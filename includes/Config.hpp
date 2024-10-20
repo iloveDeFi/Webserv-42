@@ -1,26 +1,27 @@
 #pragma once
 #ifndef CONFIG_HPP
-# define CONFIG_HPP
-# include "Location.hpp"
-# include <iostream>
-# include <fstream>
- 
+#define CONFIG_HPP
+#include "Location.hpp"
+#include "Logger.hpp"
+#include <iostream>
+#include <fstream>
+
 class Config
 {
-	private:
-		std::vector<std::map<std::string, Location> >* _locations;
-		std::ifstream _config;
-		void parseLocation(std::istringstream &configLine);
+private:
+    std::vector<std::map<std::string, Location> > *_locations; // Ajout d'un espace entre les chevrons
+    std::ifstream _config;
+    void parseLocation(std::istringstream &configLine);
 
-	public:
-		Config(std::ifstream &originalConfig);
-		~Config();
-		Config(const Config &other);
-		Config& operator=(const Config &other);
+public:
+    Config(std::ifstream &originalConfig);
+    ~Config();
+    Config(const Config &other);
+    Config &operator=(const Config &other);
 
-		const std::vector<std::map<std::string, Location> >& getLocations() const;
-		std::ifstream& getFdConfig();
-		const std::ifstream& getFdConfig() const;
+    const std::vector<std::map<std::string, Location> > &getLocations() const; // Ajout d'un espace entre les chevrons
+    std::ifstream &getFdConfig();
+    const std::ifstream &getFdConfig() const;
 };
 
 #endif

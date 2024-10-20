@@ -20,7 +20,7 @@ void Client::processRequest(const _server &serverInfo)
     std::string method = _request.getMethod();
 
     // Instantiate Logger (logs will be written to "server.log") use cat
-    Logger logger("server.log");
+    Logger &logger = Logger::getInstance("server.log");
 
     for (size_t i = 0; i < serverInfo._locations.size(); ++i)
     {

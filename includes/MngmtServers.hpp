@@ -19,6 +19,7 @@
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 #include "Client.hpp" // just to print rawData
+#include "Logger.hpp"
 
 struct _server
 {

@@ -1,8 +1,9 @@
 #ifndef UTILS_HPP
-# define UTILS_HPP
-# include <iostream>
+#define UTILS_HPP
+#include <iostream>
+#include "Logger.hpp"
 
-# define MAX_CONNECTIONS 500
+#define MAX_CONNECTIONS 500
 
 typedef enum
 {
@@ -10,7 +11,7 @@ typedef enum
 	POST,
 	DELETE,
 	UNKNOWN,
-}   httpRequestMethod;
+} httpRequestMethod;
 
 typedef enum
 {
@@ -28,5 +29,5 @@ typedef enum
 	METHODE_NOT_ALLOWED = 405,
 	INTERNAL_SERVER_ERROR = 500,
 	NOT_IMPLEMENTED = 501
-}	HttpStatusCode;
+} HttpStatusCode;
 #endif

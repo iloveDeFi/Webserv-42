@@ -1,17 +1,16 @@
 #include "Logger.hpp"
-#include <ctime>
 
-// Constructor that opens the log file
+Logger *Logger::_instance = nullptr;
+
 Logger::Logger(const std::string &filename)
 {
-    _logFile.open(filename.c_str(), std::ios::app); // Append mode
+    _logFile.open(filename.c_str(), std::ios::app);
     if (!_logFile.is_open())
     {
         std::cerr << "Failed to open log file: " << filename << std::endl;
     }
 }
 
-// Destructor that closes the log file
 Logger::~Logger()
 {
     if (_logFile.is_open())
@@ -20,7 +19,15 @@ Logger::~Logger()
     }
 }
 
-// Get current time as a string for the log entries
+Logger &Logger::getInstance(const std::string &filename)
+{
+    if (_instance == nullptr)
+    {
+        _instance = new Logger(filename);
+    }
+    return *_instance;
+}
+
 std::string Logger::getCurrentTime()
 {
     std::time_t now = std::time(0);
@@ -29,7 +36,6 @@ std::string Logger::getCurrentTime()
     return std::string(buf);
 }
 
-// General log function
 void Logger::log(const std::string &message)
 {
     if (_logFile.is_open())
@@ -38,14 +44,12 @@ void Logger::log(const std::string &message)
     }
 }
 
-// Specific function to log errors
 void Logger::logError(const std::string &errorMessage)
 {
     log("ERROR: " + errorMessage);
 }
 
-// Function to log details of HTTP requests
 void Logger::logRequest(const std::string &method, const std::string &uri, int statusCode)
 {
-    log("REQUEST: Method=" + method + ", URI=" + uri + ", Status Code=" + std::to_string(statusCode));
+    log("REQUEST: Method=" + method + ", URI=" + uri + ", Status Code=" + to_string(statusCode));
 }

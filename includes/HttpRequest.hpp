@@ -10,6 +10,7 @@ class HttpResponse;
 #include <set>
 #include "HttpResponse.hpp"
 #include "HttpController.hpp"
+#include "Logger.hpp"
 #include <sstream>
 class HttpRequest
 {

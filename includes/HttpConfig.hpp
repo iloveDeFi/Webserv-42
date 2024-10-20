@@ -1,4 +1,5 @@
 #pragma once
+#include "Logger.hpp"
 #include <fstream>
 #include <sstream>
 #include <stdexcept>

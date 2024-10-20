@@ -6,7 +6,7 @@
 #include <map>
 #include "Utils.hpp"
 #include <sstream>
-
+#include "Logger.hpp"
 class Location
 {
 private:

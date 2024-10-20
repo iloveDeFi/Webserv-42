@@ -137,7 +137,7 @@ bool RequestController::isMethodAllowed(const std::string &method) const
 
 void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res)
 {
-    Logger logger("server.log"); // local not in class
+    Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
 
