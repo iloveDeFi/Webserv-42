@@ -77,10 +77,10 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage)
     setStatusCode(403);
     setReasonMessage("Forbidden");
     setHeader("Content-Type", "text/plain");
-    std::string body = "403 Forbidden: You don't have permission to access this resource.";
+    // std::string body = "403 Forbidden: You don't have permission to access this resource.";
+    std::string body = errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
-    (void)errorMessage;
 }
 
 void HttpResponse::generate404NotFound(const std::string &errorMessage)

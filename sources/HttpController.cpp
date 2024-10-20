@@ -69,14 +69,19 @@ void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 
 bool RequestController::hasReadPermissions(const std::string &filePath)
 {
+    Logger &logger = Logger::getInstance("server.log");
+    logger.log("Checking read permissions for: " + filePath);
+
     if (access(filePath.c_str(), R_OK) == 0)
     {
         struct stat fileStat;
         if (stat(filePath.c_str(), &fileStat) == 0)
         {
+            logger.log("File exists and is accessible.");
             return S_ISREG(fileStat.st_mode);
         }
     }
+    logger.log("Access denied or file does not exist.");
     return false;
 }
 
@@ -147,18 +152,37 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         return;
     }
 
-    std::string resourcePath = _locationConfig.root + uri;
+    // TO DO : FIX HERE resourcePath = /
+    std::string resourcePath = _locationConfig.root;
+
+    // S'assurer que la racine se termine par un '/'
+    if (resourcePath[resourcePath.length() - 1] != '/')
+    {
+        resourcePath += '/';
+    }
+
+    // Traiter l'URI
+    if (uri == "/")
+    {
+        resourcePath = "./test_db/index/index.html";
+    }
+    else
+    {
+        resourcePath += uri; // Ajouter l'URI au chemin de la racine
+    }
 
     if (!hasReadPermissions(resourcePath))
     {
-        res.generate403Forbidden("Access to the resource is forbidden");
+        res.generate403Forbidden("403 Forbidden : Error = Access to the resource is forbidden");
+        logger.log("Error occurred because of read permissions of resourcePath");
+        logger.log("resourcePath is: " + resourcePath);
         return;
     }
 
     try
     {
         std::string resourceContent = loadResource(resourcePath);
-        res.generate200OK("text/plain", resourceContent);
+        res.generate200OK("text/html", resourceContent);
         logger.log("Response Status Code: " + to_string(res.getStatusCode()));
         logger.log("Response Body Length: " + to_string(resourceContent.length()));
     }
@@ -186,7 +210,7 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
 
     if (!hasPermissionToCreate(uri))
     {
-        res.generate403Forbidden("Forbidden: You do not have permission to create a resource at this location.");
+        res.generate403Forbidden("403 Forbidden Error: You do not have permission to create a resource at this location.");
         return;
     }
     try
