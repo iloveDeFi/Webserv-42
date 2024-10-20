@@ -78,8 +78,13 @@
         500: test_db/errors/500.html
 
     locations:
-        - path: /cgi-bin
-          methods: [GET, POST]
-          root: /home/alex/webServ/www/cgi-bin
-          cgi_extensions: [.cgi, .py]
-          cgi_handler: /usr/bin/python3
+     - path: /
+       methods: [GET]
+       root: /home/alex/webServ/test_db/index
+       index: index.html  # Fichier index par défaut
+       
+     - path: /cgi-bin
+       methods: [GET, POST]
+       root: /home/alex/webServ/www/cgi-bin
+       cgi_extensions: [.cgi, .py]
+       cgi_handler: /usr/bin/python3

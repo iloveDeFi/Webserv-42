@@ -85,8 +85,10 @@ std::string RequestController::loadResource(const std::string &filePath)
     std::ifstream file(filePath.c_str(), std::ios::in);
     if (!file.is_open())
     {
+        std::cerr << "Error: Unable to open file: " << filePath << std::endl;
         throw std::runtime_error("Unable to open file: " + filePath);
     }
+    
     std::string content;
     std::string line;
 
@@ -97,6 +99,7 @@ std::string RequestController::loadResource(const std::string &filePath)
 
     if (file.bad())
     {
+        std::cerr << "Error: Issue while reading the file: " << filePath << std::endl;
         throw std::runtime_error("Error reading file: " + filePath);
     }
 
@@ -156,7 +159,9 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
 
     try
     {
+		std::cout << "Trying to load resource from: " << resourcePath << std::endl;
         std::string resourceContent = loadResource(resourcePath);
+		std::cout << "Trying to load resource from2: " << resourcePath << std::endl;
         res.generate200OK("text/plain", resourceContent);
     }
     catch (const std::exception &e)

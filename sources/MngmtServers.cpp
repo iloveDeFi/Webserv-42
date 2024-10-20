@@ -174,7 +174,7 @@ void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<int> &cl
                 // Créer l'objet HttpRequest
                 HttpRequest request(rawRequest);
                 std::cout << "Request successfully parsed." << std::endl;
-
+				std::cout << request.getURI() << std::endl;
                 // Traiter la requête (exemple: renvoyer une réponse HTTP)
                 HttpResponse response;
                 request.requestController(response, config);  // Passez `config` ici

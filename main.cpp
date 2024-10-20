@@ -37,15 +37,13 @@ int main(int ac, char **av)
     HttpConfig config(av[1]);
     ManagementServer webserv(config);
 
-    try
-    {
-        webserv.handleRequest(config);
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return (1);
-    }
+try {
+    webserv.handleRequest(config); // Continuer avec la gestion des requêtes
+}
+catch (const std::exception &e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+    return (1);
+}
 
     return (0);
 }
