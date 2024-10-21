@@ -53,3 +53,9 @@
           allow_uploads: false
           content_type: video/mp4
 
+        - path: /
+          methods: GET
+          handler: test_db/index/index.html
+          allow_uploads: false
+          content_type: text/html
+

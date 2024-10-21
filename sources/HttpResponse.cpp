@@ -38,7 +38,7 @@ void HttpResponse::generate201Created(const std::string &location)
     setReasonMessage("Created");
     setHeader("Location", location);
     setHeader("Content-Type", "text/plain");
-    std::string body = "Resource created at " + location;
+    std::string body = "201 Created : Resource successfully created at " + location;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
 }
@@ -58,7 +58,8 @@ void HttpResponse::generate204NoContent(const std::string &errorMessage)
     setStatusCode(204);
     setReasonMessage("No Content");
     setHeader("Content-Type", "text/plain");
-    setBody("");
+    std::string body = "204 error no content: " + errorMessage;
+    setBody(body); // or setBody("");
     (void)errorMessage;
 }
 
@@ -88,10 +89,9 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage)
     setStatusCode(404);
     setReasonMessage("Not Found");
     setHeader("Content-Type", "text/plain");
-    std::string body = "404 Not Found: The requested resource could not be found.";
+    std::string body = errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
-    (void)errorMessage;
 }
 
 void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods)
@@ -120,7 +120,7 @@ void HttpResponse::generate500InternalServerError(const std::string &errorMessag
     setStatusCode(500);
     setReasonMessage("Internal Server Error");
     setHeader("Content-Type", "text/plain");
-    std::string body = "500 Internal Server Error: The server encountered an error.";
+    std::string body = "500 Internal Server Error: The server encountered an error. " + errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
     (void)errorMessage;
@@ -131,7 +131,7 @@ void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
     setStatusCode(501);
     setReasonMessage("Not Implemented");
     setHeader("Content-Type", "text/plain");
-    std::string body = "501 Not Implemented: The server does not recognize the HTTP method used.";
+    std::string body = "501 Not Implemented: The server does not recognize the HTTP method used. " + errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
     (void)errorMessage;
