@@ -29,8 +29,10 @@ public:
     void log(const std::string &message);
     void logError(const std::string &errorMessage);
     void logRequest(const std::string &method, const std::string &uri, int statusCode);
+    void logAccess(const std::string &path);
 
 private:
+    std::string filename;
     std::string getCurrentTime();
 };
 

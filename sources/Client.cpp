@@ -21,6 +21,8 @@ void Client::processRequest(const _server &serverInfo)
 
     // Instantiate Logger (logs will be written to "server.log") use cat
     Logger &logger = Logger::getInstance("server.log");
+    // TO DO : print path favic
+    // logger.logAccess("test_db/favicon.png");
 
     for (size_t i = 0; i < serverInfo._locations.size(); ++i)
     {

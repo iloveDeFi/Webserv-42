@@ -53,3 +53,18 @@ void Logger::logRequest(const std::string &method, const std::string &uri, int s
 {
     log("REQUEST: Method=" + method + ", URI=" + uri + ", Status Code=" + to_string(statusCode));
 }
+
+void Logger::logAccess(const std::string &path)
+{
+    std::ofstream logFile;
+    logFile.open(filename, std::ios_base::app);
+    if (logFile.is_open())
+    {
+        logFile << "[" << getCurrentTime() << "] Accessing path: " << path << std::endl;
+        logFile.close();
+    }
+    else
+    {
+        log("Accessing path: " + path);
+    }
+}

@@ -29,6 +29,18 @@
           allow_uploads: true
           max_upload_size: 5M
 
+        - path: /images
+          methods: GET
+          handler: test_db/images/
+          allow_uploads: false
+          content_type: image/png, image/jpeg
+
+        - path: /favicon.ico
+          methods: GET
+          handler: /
+          allow_uploads: false
+          content_type: image/x-icon
+
 - server:
     server_name: secondserver.com
     port: 80
@@ -45,7 +57,7 @@
           methods: GET
           handler: test_db/images/
           allow_uploads: false
-          content_type: image/jpeg
+          content_type: image/png, image/jpeg
 
         - path: /videos
           methods: GET
@@ -58,4 +70,9 @@
           handler: test_db/index/index.html
           allow_uploads: false
           content_type: text/html
-
+          
+        - path: /favicon.ico
+          methods: GET
+          handler: /
+          allow_uploads: false
+          content_type: image/x-icon

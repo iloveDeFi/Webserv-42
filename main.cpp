@@ -10,6 +10,7 @@
 #include "HttpController.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
+#include "Logger.hpp"
 
 int main(int ac, char **av)
 {
