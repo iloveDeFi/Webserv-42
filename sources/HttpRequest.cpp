@@ -174,3 +174,24 @@ void HttpRequest::requestController(HttpResponse &response)
         unknownHandler.handle(*this, response);
     }
 }
+
+void HttpRequest::logHttpRequest(Logger &logger)
+{
+    std::ostringstream logMessage;
+
+    logMessage << "HTTP Request:\n";
+    logMessage << "Method: " << _method << "\n";
+    logMessage << "URI: " << _uri << "\n";
+    logMessage << "HTTP Version: " << _version << "\n";
+
+    logMessage << "Headers:\n";
+    for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
+    {
+        logMessage << it->first << ": " << it->second << "\n";
+    }
+
+    logMessage << "Body: " << _body << "\n";
+    logMessage << "Query Parameters: " << _queryParameters << "\n";
+
+    logger.log(logMessage.str());
+}

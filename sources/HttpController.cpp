@@ -149,6 +149,7 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
     if (version != "HTTP/1.1" && version != "HTTP/1.0")
     {
         res.generate400BadRequest("Invalid HTTP version");
+        logger.log("Invalid HTTP version received: " + version);
         return;
     }
 
@@ -161,21 +162,19 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         resourcePath += '/';
     }
 
-    // Traiter l'URI
     if (uri == "/")
     {
         resourcePath = "./test_db/index/index.html";
     }
     else
     {
-        resourcePath += uri; // Ajouter l'URI au chemin de la racine
+        resourcePath += uri;
     }
 
     if (!hasReadPermissions(resourcePath))
     {
         res.generate403Forbidden("403 Forbidden : Error = Access to the resource is forbidden");
-        logger.log("Error occurred because of read permissions of resourcePath");
-        logger.log("resourcePath is: " + resourcePath);
+        logger.log("Error: Access to the resource is forbidden for resourcePath: " + resourcePath);
         return;
     }
 
@@ -185,6 +184,8 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         res.generate200OK("text/html", resourceContent);
         logger.log("Response Status Code: " + to_string(res.getStatusCode()));
         logger.log("Response Body Length: " + to_string(resourceContent.length()));
+        // To do : test cors headers
+        setCorsHeaders(res);
     }
     catch (const std::exception &e)
     {
@@ -194,6 +195,8 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
 
     res.setHTTPVersion(version);
     res.ensureContentLength();
+    // PRINT MY RESPONSE
+    res.logHttpResponse(logger);
 }
 
 void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res)
@@ -260,4 +263,11 @@ void RequestController::handleUnknownResponse(const HttpRequest &req, HttpRespon
 
     res.generate405MethodNotAllowed("405 Method Not Allowed: The method " + method + " is not allowed.");
     res.setHTTPVersion(version);
+}
+
+void RequestController::setCorsHeaders(HttpResponse &res)
+{
+    res.setHeader("Access-Control-Allow-Origin", "*");                  // Permet toutes les origines
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE"); // Méthodes autorisées
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");      // En-têtes autorisés
 }

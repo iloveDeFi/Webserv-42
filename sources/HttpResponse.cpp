@@ -26,10 +26,15 @@ void HttpResponse::generate200OK(const std::string &contentType, const std::stri
 {
     setStatusCode(200);
     setReasonMessage("OK");
+
     setHeader("Content-Type", contentType);
-    setBody(bodyContent);
-    ensureContentLength();
+
+    // TO DO : fix ensure function reset content-length to 0
+    // ensureContentLength();
     setHeader("Content-Length", to_string(bodyContent.size()));
+    setHeader("Cache-Control", "no-store");
+
+    setBody(bodyContent);
 }
 
 void HttpResponse::generate201Created(const std::string &location)
@@ -58,8 +63,8 @@ void HttpResponse::generate204NoContent(const std::string &errorMessage)
     setStatusCode(204);
     setReasonMessage("No Content");
     setHeader("Content-Type", "text/plain");
-    std::string body = "204 error no content: " + errorMessage;
-    setBody(body); // or setBody("");
+    setHeader("Content-Length", "0");
+    setBody("");
     (void)errorMessage;
 }
 
@@ -89,7 +94,7 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage)
     setStatusCode(404);
     setReasonMessage("Not Found");
     setHeader("Content-Type", "text/plain");
-    std::string body = errorMessage;
+    std::string body = "404 Not Found : " + errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
 }
@@ -120,10 +125,10 @@ void HttpResponse::generate500InternalServerError(const std::string &errorMessag
     setStatusCode(500);
     setReasonMessage("Internal Server Error");
     setHeader("Content-Type", "text/plain");
+    // TO DO : safety check no expose important info in errorMessage
     std::string body = "500 Internal Server Error: The server encountered an error. " + errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
-    (void)errorMessage;
 }
 
 void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
@@ -134,7 +139,6 @@ void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
     std::string body = "501 Not Implemented: The server does not recognize the HTTP method used. " + errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
-    (void)errorMessage;
 }
 
 std::string HttpResponse::getFullResponse()
@@ -229,4 +233,24 @@ std::ostream &HttpResponse::print(std::ostream &os) const
     os << "Body is: " << _body << "\n";
     os << "Body chunked: " << _isChunked << "\n";
     return os;
+}
+
+void HttpResponse::logHttpResponse(Logger &logger)
+{
+    std::ostringstream logMessage;
+
+    logMessage << "HTTP Response:\n";
+    logMessage << "HTTP Version: " << _httpVersion << "\n";
+    logMessage << "Status Code: " << _statusCode << "\n";
+    logMessage << "Reason Message: " << _reasonMessage << "\n";
+
+    logMessage << "Headers:\n";
+    for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
+    {
+        logMessage << it->first << ": " << it->second << "\n";
+    }
+
+    logMessage << "Body: " << _body << "\n";
+
+    logger.log(logMessage.str());
 }

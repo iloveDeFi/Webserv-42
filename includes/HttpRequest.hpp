@@ -45,6 +45,8 @@ public:
     bool isSupportedContentType(const std::string &contentType) const;
     void requestController(HttpResponse &response);
     std::string trim(const std::string &str);
+
+    void logHttpRequest(Logger &logger);
 };
 
 std::ostream &operator<<(std::ostream &os, const HttpRequest &re);

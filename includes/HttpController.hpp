@@ -40,6 +40,9 @@ public:
     virtual ~RequestController();
 
     virtual void handle(const HttpRequest &req, HttpResponse &res) = 0;
+
+    // test cors headers
+    void setCorsHeaders(HttpResponse &res);
 };
 
 class GetRequestHandler : public RequestController
