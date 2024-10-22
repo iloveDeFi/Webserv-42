@@ -150,17 +150,6 @@ bool RequestController::isDirectory(const std::string &path)
     return S_ISDIR(statbuf.st_mode);
 }
 
-// Function to check if a path is a directory
-bool isDirectory(const std::string &path)
-{
-    struct stat statbuf;
-    if (stat(path.c_str(), &statbuf) != 0)
-    {
-        return false;
-    }
-    return S_ISDIR(statbuf.st_mode);
-}
-
 std::string RequestController::resolveResourcePath(const std::string &uri)
 {
     std::string resourcePath = "./test_db";
@@ -197,7 +186,7 @@ void RequestController::serveResource(const std::string &resourcePath, HttpRespo
     try
     {
         std::string resourceContent = loadResource(resourcePath);
-        res.generate200OK("text/html", resourceContent); // Par défaut "text/html", ajustable si nécessaire
+        res.generate200OK("text/html", resourceContent);
         logger.log("Response Status Code: " + to_string(res.getStatusCode()));
         logger.log("Response Body Length: " + to_string(resourceContent.length()));
         setCorsHeaders(res);
