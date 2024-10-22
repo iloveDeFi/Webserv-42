@@ -140,12 +140,85 @@ bool RequestController::isMethodAllowed(const std::string &method) const
     return std::find(_locationConfig.methods.begin(), _locationConfig.methods.end(), method) != _locationConfig.methods.end();
 }
 
+bool RequestController::isDirectory(const std::string &path)
+{
+    struct stat statbuf;
+    if (stat(path.c_str(), &statbuf) != 0)
+    {
+        return false;
+    }
+    return S_ISDIR(statbuf.st_mode);
+}
+
+// Function to check if a path is a directory
+bool isDirectory(const std::string &path)
+{
+    struct stat statbuf;
+    if (stat(path.c_str(), &statbuf) != 0)
+    {
+        return false;
+    }
+    return S_ISDIR(statbuf.st_mode);
+}
+
+std::string RequestController::resolveResourcePath(const std::string &uri)
+{
+    std::string resourcePath = "./test_db";
+
+    if (resourcePath[resourcePath.length() - 1] != '/')
+        resourcePath += '/';
+
+    std::string finalUri = uri;
+    if (finalUri[0] == '/')
+        finalUri = finalUri.substr(1);
+
+    if (finalUri.empty())
+    {
+        resourcePath += "index/index.html";
+    }
+    else
+    {
+        resourcePath += finalUri;
+        if (isDirectory(resourcePath))
+        {
+            if (resourcePath[resourcePath.length() - 1] != '/')
+                resourcePath += '/';
+            resourcePath += "index.html";
+        }
+    }
+
+    return (resourcePath);
+}
+
+void RequestController::serveResource(const std::string &resourcePath, HttpResponse &res)
+{
+    Logger &logger = Logger::getInstance("server.log");
+
+    try
+    {
+        std::string resourceContent = loadResource(resourcePath);
+        res.generate200OK("text/html", resourceContent); // Par défaut "text/html", ajustable si nécessaire
+        logger.log("Response Status Code: " + to_string(res.getStatusCode()));
+        logger.log("Response Body Length: " + to_string(resourceContent.length()));
+        setCorsHeaders(res);
+    }
+    catch (const std::exception &e)
+    {
+        logger.log("Error occurred while loading resource: " + std::string(e.what()));
+        res.generate500InternalServerError("Internal error 500: " + std::string(e.what()));
+    }
+
+    res.ensureContentLength();
+    res.logHttpResponse(logger);
+}
+
 void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
-    std::string version = req.getHTTPVersion();
+    logger.log("Received URI: " + uri);
 
+    std::string version = req.getHTTPVersion();
     if (version != "HTTP/1.1" && version != "HTTP/1.0")
     {
         res.generate400BadRequest("Invalid HTTP version");
@@ -153,50 +226,17 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         return;
     }
 
-    // TO DO : FIX HERE resourcePath = /
-    std::string resourcePath = _locationConfig.root;
-
-    // S'assurer que la racine se termine par un '/'
-    if (resourcePath[resourcePath.length() - 1] != '/')
-    {
-        resourcePath += '/';
-    }
-
-    if (uri == "/")
-    {
-        resourcePath = "./test_db/index/index.html";
-    }
-    else
-    {
-        resourcePath += uri;
-    }
+    std::string resourcePath = resolveResourcePath(uri);
+    logger.log("Resolved resource path: " + resourcePath);
 
     if (!hasReadPermissions(resourcePath))
     {
-        res.generate403Forbidden("403 Forbidden : Error = Access to the resource is forbidden");
+        res.generate403Forbidden("403 Forbidden: Access to the resource is forbidden");
         logger.log("Error: Access to the resource is forbidden for resourcePath: " + resourcePath);
         return;
     }
 
-    try
-    {
-        std::string resourceContent = loadResource(resourcePath);
-        res.generate200OK("text/html", resourceContent);
-        logger.log("Response Status Code: " + to_string(res.getStatusCode()));
-        logger.log("Response Body Length: " + to_string(resourceContent.length()));
-        // To do : test cors headers
-        setCorsHeaders(res);
-    }
-    catch (const std::exception &e)
-    {
-        logger.log("Error occurred while loading resource: " + std::string(e.what()));
-        res.generate500InternalServerError("Internal error 500: An error occurred while processing the request: " + std::string(e.what()));
-    }
-
-    res.setHTTPVersion(version);
-    res.ensureContentLength();
-    // PRINT MY RESPONSE
-    res.logHttpResponse(logger);
+    serveResource(resourcePath, res);
 }
 
 void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res)

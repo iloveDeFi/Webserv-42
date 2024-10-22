@@ -43,6 +43,9 @@ public:
 
     // test cors headers
     void setCorsHeaders(HttpResponse &res);
+    bool isDirectory(const std::string &path);
+    std::string resolveResourcePath(const std::string &uri);
+    void serveResource(const std::string &resourcePath, HttpResponse &res);
 };
 
 class GetRequestHandler : public RequestController

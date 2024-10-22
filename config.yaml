@@ -19,7 +19,7 @@
             
         - path: /index
           methods: GET
-          handler: test_db/index/index1.html
+          handler: test_db/index/index.html
           allow_uploads: false
           content_type: text/html
 
