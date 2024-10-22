@@ -227,6 +227,7 @@ void ManagementServer::acceptNewClients(std::vector<int> &clientFds, fd_set &rea
 //  Permet la modification dynamique des propriétés de descripteurs de fichiers.
 void ManagementServer::setNonBlocking(int fd)
 {
+<<<<<<< HEAD
 	int flags;
 
 	// Set O_NONBLOCK
@@ -240,7 +241,23 @@ void ManagementServer::setNonBlocking(int fd)
 		throw std::runtime_error("Failed to get fd flags");
 	if (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1)
 		throw std::runtime_error("Failed to set FD_CLOEXEC");
+=======
+    int flags;
+
+    // Set O_NONBLOCK
+    if ((flags = fcntl(fd, F_GETFL, 0)) == -1)
+        throw std::runtime_error("Failed to get file flags");
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+        throw std::runtime_error("Failed to set non-blocking mode");
+
+    // Set FD_CLOEXEC
+    if ((flags = fcntl(fd, F_GETFD)) == -1)
+        throw std::runtime_error("Failed to get fd flags");
+    if (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1)
+        throw std::runtime_error("Failed to set FD_CLOEXEC");
+>>>>>>> develop
 }
+
 
 // Loop sur tout les fd actifs pour les gérer individuellement
 // si une erreur arrive, le client est supprimé des clients actifs
