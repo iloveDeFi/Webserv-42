@@ -1,0 +1,139 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: white;
+    color: black;
+    text-align: center;
+    padding: 20px;
+}
+
+.main-header {
+    margin-bottom: 50px;
+}
+
+.main-header h1 {
+    font-size: 3rem;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.main-header p {
+    font-size: 1.2rem;
+    color: #555;
+}
+
+
+.index-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background-color: #32CD32;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.index-button:hover {
+    background-color: #28A428;
+}
+
+
+.action-button {
+    background-color: #32CD32;
+    color: white;
+    padding: 15px 30px;
+    text-decoration: none;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+    border: none;
+}
+
+.action-button:hover {
+    background-color: #28A428;
+}
+
+.form-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 50px;
+}
+
+.upload-form, .delete-form {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    font-size: 1.2rem;
+    display: block;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+
+select {
+    width: 100%;
+    padding: 10px;
+    font-size: 1.2rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background-color: #fff;
+    color: #333;
+    cursor: pointer;
+}
+
+select:hover {
+    border-color: #32CD32;
+}
+
+input[type="text"],
+input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+input[type="file"] {
+    padding: 5px;
+}
+
+
+#responseMessage {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.main-footer {
+    margin-top: 50px;
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.main-footer p {
+    margin-top: 20px;
+}
+
+

@@ -20,6 +20,7 @@ protected:
     const HttpConfig::Location &_locationConfig;
     std::set<std::string> _deletionInProgress;
     std::set<std::string> _validMethods;
+    std::string _serverRoot;
 
     bool hasReadPermissions(const std::string &filePath);
     std::string loadResource(const std::string &filePath);
@@ -34,7 +35,7 @@ protected:
     void handleUnknownResponse(const HttpRequest &req, HttpResponse &res);
 
 public:
-    RequestController(const HttpConfig::Location &locationConfig);
+    RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
     RequestController(const RequestController &src);
     RequestController &operator=(const RequestController &src);
     virtual ~RequestController();
@@ -43,12 +44,15 @@ public:
 
     // test cors headers
     void setCorsHeaders(HttpResponse &res);
+    bool isDirectory(const std::string &path);
+    std::string resolveResourcePath(const std::string &uri);
+    void serveResource(const std::string &resourcePath, HttpResponse &res);
 };
 
 class GetRequestHandler : public RequestController
 {
 public:
-    GetRequestHandler(const HttpConfig::Location &locationConfig);
+    GetRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
     virtual ~GetRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -56,7 +60,7 @@ public:
 class PostRequestHandler : public RequestController
 {
 public:
-    PostRequestHandler(const HttpConfig::Location &locationConfig);
+    PostRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
     virtual ~PostRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -64,7 +68,7 @@ public:
 class DeleteRequestHandler : public RequestController
 {
 public:
-    DeleteRequestHandler(const HttpConfig::Location &locationConfig);
+    DeleteRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
     virtual ~DeleteRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -72,7 +76,7 @@ public:
 class UnknownRequestHandler : public RequestController
 {
 public:
-    UnknownRequestHandler(const HttpConfig::Location &locationConfig);
+    UnknownRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
     virtual ~UnknownRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };

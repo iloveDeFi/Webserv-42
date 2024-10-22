@@ -5,7 +5,6 @@
 #include "HttpController.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
-#include "Location.hpp"
 #include "MngmtServers.hpp"
 #include "Logger.hpp"
 #include "Templates.hpp"
@@ -43,6 +42,7 @@ public:
     int getClientSocket();
     std::string getIPaddress();
     bool isConnected() const;
+    struct sockaddr_in& getClientAddr();
 };
 
 #endif

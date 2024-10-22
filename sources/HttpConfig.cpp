@@ -51,7 +51,6 @@ void HttpConfig::parseConfigurationFile() {
         throw std::runtime_error("No valid server configuration found");
     }
 }
-
 bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
     ServerConfig serverData;
     std::string configLine, currentSection;
@@ -93,6 +92,54 @@ bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
 
     return false;
 }
+
+void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
+    Location location;
+    std::string configLine;
+    bool isFirstLocation = true;
+    std::set<std::string> locationPaths;
+
+    while (std::getline(configStream, configLine)) {
+        trimWhitespace(configLine);
+        if (configLine.empty() || configLine[0] == '#') continue;
+
+        if (configLine == "- server:" || configLine.find("server_name:") != std::string::npos) {
+            configStream.seekg(-static_cast<int>(configLine.length()) - 1, std::ios::cur); // Revenir en arrière pour que cette ligne soit relue
+            break;
+        }
+
+        if (configLine.find("- path:") != std::string::npos) {
+            if (!isFirstLocation) {
+                // Valider la location précédente avant de la stocker
+                validateLocation(location, serverData);
+                serverData.locations.push_back(location);
+            }
+            location = Location();
+            location.path = configLine.substr(configLine.find(":") + 1);
+            trimWhitespace(location.path);
+            isFirstLocation = false;
+        } else if (!isFirstLocation) {
+            // Parser les attributs de la location
+            size_t separatorPosition = configLine.find(": ");
+            if (separatorPosition != std::string::npos) {
+                std::string key = configLine.substr(0, separatorPosition);
+                std::string value = configLine.substr(separatorPosition + 2);
+                trimWhitespace(key);
+                trimWhitespace(value);
+                parseLocationAttribute(key, value, location, serverData);
+            } else {
+                throw std::runtime_error("Invalid location attribute format: " + configLine);
+            }
+        }
+    }
+
+    // Ajouter la dernière location
+    if (!location.path.empty()) {
+        validateLocation(location, serverData);
+        serverData.locations.push_back(location);
+    }
+}
+
 
 
 void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerConfig& serverData, std::set<std::string>& definedAttributes) {
@@ -189,14 +236,14 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
         throw std::runtime_error("Error page path cannot be empty for error code: " + errorCodeString);
     }
 
-    if (!fileExists(errorPagePath)) {
+    if (!fileExists(serverData.root + "/" + errorPagePath)) {
         throw std::runtime_error("Error page file does not exist: " + errorPagePath);
     }
 
     serverData.errorPages[errorCode] = errorPagePath;
 }
 
-void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
+/* void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
     Location location;
     std::string configLine;
     bool isFirstLocation = true;
@@ -228,10 +275,16 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
         serverData.locations.push_back(location);
     }
 
-}
+} */
 void HttpConfig::parseLocationAttribute(const std::string& key, const std::string& value, Location& location, const ServerConfig& serverData) {
     if (key == "methods") {
-        std::vector<std::string> methodsVector = split(value.substr(1, value.length() - 2), ',');
+        std::string methodsValue = value;
+        // Vérifier si la valeur commence par '[' et se termine par ']'
+        if (!methodsValue.empty() && methodsValue.front() == '[' && methodsValue.back() == ']') {
+            // Supprimer les crochets
+            methodsValue = methodsValue.substr(1, methodsValue.length() - 2);
+        }
+        std::vector<std::string> methodsVector = split(methodsValue, ',');
         location.methods.clear();
         for (std::vector<std::string>::iterator it = methodsVector.begin(); it != methodsVector.end(); ++it) {
             std::string method = *it;
@@ -396,6 +449,7 @@ bool HttpConfig::directoryExists(const std::string& path) {
 
 bool HttpConfig::fileExists(const std::string& path) {
     struct stat info;
+    //std::cout << path << std::endl;
     if (stat(path.c_str(), &info) != 0) {
         return false;
     }

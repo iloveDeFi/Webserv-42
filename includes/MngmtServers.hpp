@@ -30,9 +30,11 @@ struct _server
 	int _maxSize;
 	std::map<int, std::string> _errorPages;
 	std::vector<HttpConfig::Location> _locations;
+	std::string _root;
 };
 
 #include "Client.hpp"
+class Client;
 
 class ManagementServer
 {
@@ -46,13 +48,13 @@ public:
 	Server& operator=(const Server &other) = delete; */
 	~ManagementServer();
 	void setNonBlocking(int fd);
-	Location &parseLocation(std::ifstream config, std::string &value, std::string key);
+	HttpConfig::Location &parseLocation(std::ifstream config, std::string &value, std::string key);
 	void handleRequest();
 	void prepareFdSets(fd_set &readFds,
-					   const std::vector<int> &clientFds, int &maxFd);
-	void acceptNewClients(std::vector<int> &clientFds, fd_set &readFds);
-	void handleActiveClients(fd_set &readFds, std::vector<int> &clientFds);
-	void handleClient(int clientSocket);
+					   std::vector<Client> &clients, int &maxFd);
+	void acceptNewClients(std::vector<Client> &clients, fd_set &readFds);
+	void handleActiveClients(fd_set &readFds, std::vector<Client> &clients);
+	void handleClient(Client &client);
 	std::string readRawData(int clientSocket);
 
 	int getPort(std::vector<_server>::iterator it);

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete a File</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <!-- Index button to return to the homepage -->
+    <a href="../index.html" class="index-button">Index</a>
+
+    <header class="main-header">
+        <h1>Delete a File</h1>
+        <p>Select a file to delete it from the server</p>
+    </header>
+
+    <section class="form-section">
+        <div class="form-group">
+            <label for="filename">Select a File:</label>
+            <select id="filename" name="filename">
+                <!-- Options will be populated by the PHP script -->
+            </select>
+        </div>
+
+        <button onclick="deleteResource()" class="action-button">Delete File</button>
+        
+        <!-- Response Message -->
+        <p id="responseMessage"></p>
+    </section>
+
+    <footer class="main-footer">
+        <p>&copy; 2024 Webserv. Alex, Baptiste et Hélène.</p>
+    </footer>
+
+    <!-- JavaScript to dynamically load the files into the select menu and handle deletion -->
+    <script>
+        // Load files dynamically into the dropdown
+        fetch('/cgi-bin/list_files.php')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('filename').innerHTML = data;
+            })
+            .catch(error => {
+                console.error('Error loading file list:', error);
+                document.getElementById('filename').innerHTML = '<option disabled>Error loading files</option>';
+            });
+
+        // Function to delete the selected file
+        function deleteResource() {
+            const resource = document.getElementById('filename').value;
+            
+            fetch('/cgi-bin/delete_resource.php?resource=' + encodeURIComponent(resource), {
+                method: 'DELETE',
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('responseMessage').innerText = data;
+                // Optionally, refresh the file list after deletion
+                loadFileList();
+            })
+            .catch(error => {
+                document.getElementById('responseMessage').innerText = 'Error deleting file: ' + error;
+            });
+        }
+
+        // Function to load the file list
+        function loadFileList() {
+            fetch('/cgi-bin/list_files.php')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('filename').innerHTML = data;
+                })
+                .catch(error => {
+                    console.error('Error loading file list:', error);
+                    document.getElementById('filename').innerHTML = '<option disabled>Error loading files</option>';
+                });
+        }
+
+        // Call loadFileList when the page loads
+        window.onload = loadFileList;
+    </script>
+</body>
+</html>

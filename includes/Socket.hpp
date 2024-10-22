@@ -13,6 +13,7 @@ class Socket
 private:
 	int _fdSocket;
 	struct sockaddr_in _address;
+	struct sockaddr_in _clientAddr;
 	socklen_t _len;
 
 public:
@@ -29,7 +30,7 @@ public:
 
 	void Bind();
 	void Listen();
-	int Accept();
+	int Accept(struct sockaddr_in &clientAddr);
 
 	ssize_t Send(int client_socket, const char *buffer, size_t buffer_length, int flags);
 	ssize_t Receive(int client_socket, char *buffer, size_t buffer_length, int flags);

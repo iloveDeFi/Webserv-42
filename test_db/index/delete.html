@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Supprimer un fichier</title>
+</head>
+<body>
+  <h1>Sélectionnez un fichier à supprimer</h1>
+  <form id="deleteForm">
+    <select id="fileSelect">
+      <!-- Les options seront ajoutées dynamiquement par JavaScript -->
+    </select>
+    <button type="submit">Supprimer</button>
+  </form>
+  <script>
+    // Récupérer la liste des fichiers et remplir le menu déroulant
+    fetch('/file-list')
+      .then(response => response.json())
+      .then(data => {
+        const fileSelect = document.getElementById('fileSelect');
+        data.files.forEach(function(file) {
+          const option = document.createElement('option');
+          option.value = file;
+          option.text = file;
+          fileSelect.add(option);
+        });
+      })
+      .catch(error => console.error('Erreur lors de la récupération de la liste des fichiers:', error));
+
+    // Gérer la soumission du formulaire
+    document.getElementById('deleteForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const selectedFile = document.getElementById('fileSelect').value;
+      // Envoyer une requête DELETE au serveur
+      fetch('/files/' + encodeURIComponent(selectedFile), {
+        method: 'DELETE'
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('Fichier supprimé avec succès');
+          // Optionnel : retirer le fichier supprimé du menu déroulant
+          const fileSelect = document.getElementById('fileSelect');
+          fileSelect.remove(fileSelect.selectedIndex);
+        } else {
+          alert('Échec de la suppression du fichier');
+        }
+      })
+      .catch(error => console.error('Erreur lors de la suppression du fichier:', error));
+    });
+  </script>
+</body>
+</html>
+

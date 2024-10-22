@@ -148,7 +148,7 @@ std::ostream &operator<<(std::ostream &os, const HttpRequest &req)
     return os;
 }
 
-void HttpRequest::requestController(HttpResponse &response)
+/* void HttpRequest::requestController(HttpResponse &response)
 {
     HttpConfig::Location locationConfig;
     GetRequestHandler getHandler(locationConfig);
@@ -173,7 +173,7 @@ void HttpRequest::requestController(HttpResponse &response)
     {
         unknownHandler.handle(*this, response);
     }
-}
+} */
 
 void HttpRequest::logHttpRequest(Logger &logger)
 {

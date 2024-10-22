@@ -61,6 +61,7 @@ void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 		newServer._maxSize = server.clientMaxBodySize;
 		newServer._errorPages = server.errorPages;
 		newServer._locations = server.locations;
+		newServer._root = server.root;
 
 		newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
 		addrLen = sizeof(newServer._serverSocket->getAddress());
@@ -132,12 +133,12 @@ void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 void ManagementServer::handleRequest()
 {
 	fd_set readFds;
-	std::vector<int> clientFds;
+	std::vector<Client> clients;
 	int maxFd = 0;
 
 	while (true)
 	{
-		prepareFdSets(readFds, clientFds, maxFd);
+		prepareFdSets(readFds, clients, maxFd);
 
 		// Attendre 5 secondes (et 0microscd) pour un événement sur les
 		// sockets surveillés avant de retourner.
@@ -148,8 +149,8 @@ void ManagementServer::handleRequest()
 		int selectRes = select(maxFd + 1, &readFds, NULL, NULL, &tv);
 		if (selectRes > 0)
 		{
-			acceptNewClients(clientFds, readFds);
-			handleActiveClients(readFds, clientFds);
+			acceptNewClients(clients, readFds);
+			handleActiveClients(readFds, clients);
 		}
 		else if (selectRes == -1)
 			throw std::runtime_error("Select error");
@@ -170,7 +171,7 @@ void ManagementServer::handleRequest()
 // FD_ZERO() initializes the set pointed to by fdset to be empty.
 // FD_SET() adds the file descriptor fd to the set pointed to by fdset.
 void ManagementServer::prepareFdSets(fd_set &readFds,
-									 const std::vector<int> &clientFds, int &maxFd)
+									std::vector<Client> &clients, int &maxFd)
 {
 
 	FD_ZERO(&readFds);
@@ -182,13 +183,13 @@ void ManagementServer::prepareFdSets(fd_set &readFds,
 			maxFd = serverFd;
 		std::cout << "server Maxfd " << maxFd << std::endl;
 	}
-	for (size_t i = 0; i < clientFds.size(); ++i)
-	{
-		FD_SET(clientFds[i], &readFds);
-		if (clientFds[i] > maxFd)
-			maxFd = clientFds[i];
-		std::cout << "client Maxfd " << maxFd << std::endl;
-	}
+    for (size_t i = 0; i < clients.size(); ++i)
+    {
+        int clientFd = clients[i].getClientSocket();
+        FD_SET(clientFd, &readFds);
+        if (clientFd > maxFd)
+            maxFd = clientFd;
+    }
 }
 
 // Si une connexion est repérée, elle doit être acceptée avant de pourvoir
@@ -196,25 +197,33 @@ void ManagementServer::prepareFdSets(fd_set &readFds,
 // afin de pouvoir être non bloquant cette socket aussi doit être en non bloquant
 // FD_ISSET() returns true if the file descFD_CLOEXECriptor fd is a
 // member of the set pointed to by fdset. (int FD_ISSET(int fd, fd_set *fdset))
-void ManagementServer::acceptNewClients(std::vector<int> &clientFds, fd_set &readFds)
+void ManagementServer::acceptNewClients(std::vector<Client> &clients, fd_set &readFds)
 {
-	for (size_t i = 0; i < _servers.size(); i++)
-	{
-		if (FD_ISSET(_servers[i]._serverSocket->getFdSocket(), &readFds))
-		{
-			std::cout << "Connection detected on server " << _servers[i]._name << std::endl;
-			int clientFd = _servers[i]._serverSocket->Accept();
-			if (clientFd != -1)
-			{
-				setNonBlocking(clientFd);
-				clientFds.push_back(clientFd);
-				std::cout << "New client connected on server " << _servers[i]._name << ": " << clientFd << std::endl;
-			}
-		}
-		else
-			std::cerr << "Error accepting client connection: " << strerror(errno) << std::endl;
-	}
+    for (size_t i = 0; i < _servers.size(); i++)
+    {
+        if (FD_ISSET(_servers[i]._serverSocket->getFdSocket(), &readFds))
+        {
+            std::cout << "Connection detected on server " << _servers[i]._name << std::endl;
+            struct sockaddr_in clientAddr;
+            try
+            {
+                int clientFd = _servers[i]._serverSocket->Accept(clientAddr);
+                setNonBlocking(clientFd);
+                Client newClient(clientFd, clientAddr);
+                clients.push_back(newClient);
+                std::cout << "New client connected on server " << _servers[i]._name << ": " << clientFd << std::endl;
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << "Error accepting client connection: " << e.what() << std::endl;
+            }
+        }
+    }
 }
+
+
+
+
 
 // Configure la socket en non bloquant
 //  FD_CLOEXEC : Ce flag est utilisé pour indiquer que
@@ -245,61 +254,70 @@ void ManagementServer::setNonBlocking(int fd)
 
 // Loop sur tout les fd actifs pour les gérer individuellement
 // si une erreur arrive, le client est supprimé des clients actifs
-void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<int> &clientFds)
+void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<Client> &clients)
 {
-	for (size_t i = 0; i < clientFds.size(); ++i)
-	{
-		if (FD_ISSET(clientFds[i], &readFds))
-		{
-			try
-			{
-				handleClient(clientFds[i]);
-			}
-			catch (const std::exception &e)
-			{
-				std::cerr << "Client error: " << e.what() << std::endl;
-				// FD_CLR removes the socket from the readFds set,
-				// so select() will no longer monitor it.
-				FD_CLR(clientFds[i], &readFds);
-				close(clientFds[i]);
-				clientFds.erase(clientFds.begin() + i);
-				--i;
-			}
-		}
-	}
+    for (size_t i = 0; i < clients.size(); ++i)
+    {
+        int clientFd = clients[i].getClientSocket();
+        if (FD_ISSET(clientFd, &readFds))
+        {
+            try
+            {
+                handleClient(clients[i]);
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << "Client error: " << e.what() << std::endl;
+                FD_CLR(clientFd, &readFds);
+                close(clientFd);
+                clients.erase(clients.begin() + i);
+                --i;
+            }
+        }
+    }
 }
 
-// getpeername() et getsockname() ne servent qu'à
-// construire la classe Client, à partir de laquelle
-// on appelle le parsing de la request puis son traitement
-// avant de renvoyer la response au client
-void ManagementServer::handleClient(int clientSocket)
+
+void ManagementServer::handleClient(Client &client)
 {
-	struct sockaddr_in clientAddr;
-	struct sockaddr_in serverAddr;
-	socklen_t addrLen = sizeof(clientAddr);
-	socklen_t serverAddrLen = sizeof(serverAddr);
+    int clientSocket = client.getClientSocket();
+    struct sockaddr_in serverAddr;
+    socklen_t serverAddrLen = sizeof(serverAddr);
 
-	if (getpeername(clientSocket, (struct sockaddr *)&clientAddr, &addrLen) == -1)
-		throw std::runtime_error("Error getting client IP address");
+    //détermine sur quel serveur le client est connecté
+    if (getsockname(clientSocket, (struct sockaddr *)&serverAddr, &serverAddrLen) == -1)
+    {
+        throw std::runtime_error("Error getting server socket information: " + std::string(strerror(errno)));
+    }
 
-	// déterminer le serveur sur lequel est le client
-	if (getsockname(clientSocket, (struct sockaddr *)&serverAddr, &serverAddrLen) == -1)
-		throw std::runtime_error("Error getting server socket information");
-	int serverPort = ntohs(serverAddr.sin_port);
-	_server currentServer;
-	for (std::vector<_server>::iterator it = _servers.begin(); it != _servers.end(); ++it)
-	{
-		if (it->_port == serverPort)
-		{
-			currentServer = *it;
-			break;
-		}
-	}
-	Client client(clientSocket, clientAddr);
+    int serverPort = ntohs(serverAddr.sin_port);
 
+    //trouver la conf du serveur correspondant à ce port
+    _server currentServer;
+    bool serverFound = false;
+    for (std::vector<_server>::iterator it = _servers.begin(); it != _servers.end(); ++it)
+    {
+        if (it->_port == serverPort)
+        {
+            currentServer = *it;
+            serverFound = true;
+            break;
+        }
+    }
+    if (!serverFound)
+    {
+        throw std::runtime_error("No server found for port " + std::to_string(serverPort));
+    }
+
+    // Lire la requête du client
+    std::string rawData = readRawData(clientSocket);
+    if (rawData.empty())
+    {
+        // Si aucune donnée n'a été lue, le client a peut-être fermé la connexion
+        throw std::runtime_error("No data received from client.");
+    }
 	// TO DO : delete?
-	client.readRequest(readRawData(clientSocket)); // parser renvoyé à Alex
+	client.readRequest(rawData); // parser renvoyé à Alex
 	// il ajoute a client sont attribut _request;
 
 	// TO CHECK : yes rawData values are GOOD here
@@ -312,25 +330,48 @@ void ManagementServer::handleClient(int clientSocket)
 	client.sendResponse();
 }
 
+
+
 std::string ManagementServer::readRawData(int clientSocket)
 {
-	const size_t buffer_size = 1024;
-	char buffer[buffer_size];
-	std::string requestData;
-	ssize_t bytesReceived;
+    const size_t buffer_size = 1024;
+    char buffer[buffer_size];
+    std::string requestData;
+    ssize_t bytesReceived;
 
-	while ((bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0)) > 0)
-	{
-		buffer[bytesReceived] = '\0';
-		requestData.append(buffer);
-		if (requestData.find("\r\n\r\n") != std::string::npos)
-			break;
-	}
-	if (bytesReceived < 0)
-		throw std::runtime_error("Error reading from socket");
+    while (true)
+    {
+        bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0);
+        if (bytesReceived > 0)
+        {
+            buffer[bytesReceived] = '\0';
+            requestData.append(buffer, bytesReceived);
+            if (requestData.find("\r\n\r\n") != std::string::npos)
+                break; // Fin des en-têtes
+        }
+        else if (bytesReceived == 0)
+        {
+            // Le client a fermé la connexion
+            break;
+        }
+        else
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                // Pas de données disponibles pour le moment, réessayer plus tard
+                continue;
+            }
+            else
+            {
+                // Une erreur réelle s'est produite
+                throw std::runtime_error("Error reading from socket: " + std::string(strerror(errno)));
+            }
+        }
+    }
 
-	return requestData;
+    return requestData;
 }
+
 
 int ManagementServer::getPort(std::vector<_server>::iterator it)
 {

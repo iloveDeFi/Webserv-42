@@ -49,13 +49,16 @@ void Socket::Listen()
 	std::cout << "Listening complete" << std::endl;
 }
 
-int Socket::Accept()
+int Socket::Accept(struct sockaddr_in &clientAddr)
 {
-	int socket = accept(_fdSocket, (struct sockaddr*)&_address, &_len);
-	if (socket < 0)
-		throw std::runtime_error("Error accepting socket.");
-	return (socket);
+    socklen_t clientLen = sizeof(clientAddr);
+    int clientSocket = accept(_fdSocket, (struct sockaddr*)&clientAddr, &clientLen);
+    if (clientSocket < 0)
+        throw std::runtime_error("Error accepting socket.");
+	_clientAddr = clientAddr;
+    return clientSocket;
 }
+
 
 ssize_t Socket::Send(int client_socket, const char* buffer, size_t buffer_length, int flags)
 {

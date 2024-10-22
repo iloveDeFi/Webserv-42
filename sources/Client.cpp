@@ -25,31 +25,32 @@ void Client::processRequest(const _server &serverInfo)
     for (size_t i = 0; i < serverInfo._locations.size(); ++i)
     {
         const HttpConfig::Location &location = serverInfo._locations[i];
-
+        std::cout << "HERE!!!!! =>" << location.handler << std::endl;
+    
         if (uri.find(location.path) == 0)
         {
             if (_request.getMethod() == "GET")
             {
                 // std::cout << "------- Processing request - Method: " << method << ", URI: " << uri << std::endl; good here
-                GetRequestHandler getHandler(location);
+                GetRequestHandler getHandler(location, serverInfo._root);
                 getHandler.handle(_request, response);
                 requestHandled = true;
             }
             else if (_request.getMethod() == "POST")
             {
-                PostRequestHandler postHandler(location);
+                PostRequestHandler postHandler(location, serverInfo._root);
                 postHandler.handle(_request, response);
                 requestHandled = true;
             }
             else if (_request.getMethod() == "DELETE")
             {
-                DeleteRequestHandler deleteHandler(location);
+                DeleteRequestHandler deleteHandler(location, serverInfo._root);
                 deleteHandler.handle(_request, response);
                 requestHandled = true;
             }
             else
             {
-                UnknownRequestHandler unknownHandler(location);
+                UnknownRequestHandler unknownHandler(location, serverInfo._root);
                 unknownHandler.handle(_request, response);
                 requestHandled = true;
             }
@@ -139,3 +140,8 @@ bool Client::isConnected() const
 {
     return _socket >= 0;
 }
+
+ struct sockaddr_in& Client::getClientAddr()
+ {
+    return (_address);
+ }

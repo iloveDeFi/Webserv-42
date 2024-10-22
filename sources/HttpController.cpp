@@ -1,7 +1,7 @@
 #include "HttpController.hpp"
 
-RequestController::RequestController(const HttpConfig::Location &locationConfig)
-    : _locationConfig(locationConfig), _deletionInProgress()
+RequestController::RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
+    : _locationConfig(locationConfig), _deletionInProgress(), _serverRoot(serverRoot)
 {
     if (_validMethods.empty())
     {
@@ -27,8 +27,8 @@ RequestController &RequestController::operator=(const RequestController &src)
 
 RequestController::~RequestController() {}
 
-GetRequestHandler::GetRequestHandler(const HttpConfig::Location &locationConfig)
-    : RequestController(locationConfig) {}
+GetRequestHandler::GetRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
+    : RequestController(locationConfig, serverRoot) {}
 
 GetRequestHandler::~GetRequestHandler() {}
 
@@ -37,8 +37,8 @@ void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handleGetResponse(req, res);
 }
 
-PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfig)
-    : RequestController(locationConfig) {}
+PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
+    : RequestController(locationConfig, serverRoot) {}
 
 PostRequestHandler::~PostRequestHandler() {}
 
@@ -47,8 +47,8 @@ void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handlePostResponse(req, res);
 }
 
-DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationConfig)
-    : RequestController(locationConfig) {}
+DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
+    : RequestController(locationConfig, serverRoot) {}
 
 DeleteRequestHandler::~DeleteRequestHandler() {}
 
@@ -57,8 +57,8 @@ void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handleDeleteResponse(req, res);
 }
 
-UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig)
-    : RequestController(locationConfig) {}
+UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
+    : RequestController(locationConfig, serverRoot) {}
 
 UnknownRequestHandler::~UnknownRequestHandler() {}
 
@@ -140,43 +140,49 @@ bool RequestController::isMethodAllowed(const std::string &method) const
     return std::find(_locationConfig.methods.begin(), _locationConfig.methods.end(), method) != _locationConfig.methods.end();
 }
 
-void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res)
+bool RequestController::isDirectory(const std::string &path)
 {
-    Logger &logger = Logger::getInstance("server.log");
-    std::string uri = req.getURI();
-    std::string version = req.getHTTPVersion();
-
-    if (version != "HTTP/1.1" && version != "HTTP/1.0")
+    struct stat statbuf;
+    if (stat(path.c_str(), &statbuf) != 0)
     {
-        res.generate400BadRequest("Invalid HTTP version");
-        logger.log("Invalid HTTP version received: " + version);
-        return;
+        return false;
     }
+    return S_ISDIR(statbuf.st_mode);
+}
 
-    // TO DO : FIX HERE resourcePath = /
-    std::string resourcePath = _locationConfig.root;
-
-    // S'assurer que la racine se termine par un '/'
+std::string RequestController::resolveResourcePath(const std::string &uri)
+{
+    std::string resourcePath = _serverRoot;
     if (resourcePath[resourcePath.length() - 1] != '/')
-    {
         resourcePath += '/';
-    }
 
-    if (uri == "/")
-    {
-        resourcePath = "./test_db/index/index.html";
-    }
+    if (!_locationConfig.handler.empty())
+        resourcePath += _locationConfig.handler;
     else
     {
-        resourcePath += uri;
+        // Default behavior if no handler is specified
+        std::string finalUri = uri;
+        if (finalUri[0] == '/')
+            finalUri = finalUri.substr(1);
+
+        resourcePath += finalUri;
+
+        if (isDirectory(resourcePath))
+        {
+            if (resourcePath.back() != '/')
+                resourcePath += '/';
+            resourcePath += "index.html";
+        }
     }
 
-    if (!hasReadPermissions(resourcePath))
-    {
-        res.generate403Forbidden("403 Forbidden : Error = Access to the resource is forbidden");
-        logger.log("Error: Access to the resource is forbidden for resourcePath: " + resourcePath);
-        return;
-    }
+    return resourcePath;
+}
+
+
+
+void RequestController::serveResource(const std::string &resourcePath, HttpResponse &res)
+{
+    Logger &logger = Logger::getInstance("server.log");
 
     try
     {
@@ -184,19 +190,43 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         res.generate200OK("text/html", resourceContent);
         logger.log("Response Status Code: " + to_string(res.getStatusCode()));
         logger.log("Response Body Length: " + to_string(resourceContent.length()));
-        // To do : test cors headers
         setCorsHeaders(res);
     }
     catch (const std::exception &e)
     {
         logger.log("Error occurred while loading resource: " + std::string(e.what()));
-        res.generate500InternalServerError("Internal error 500: An error occurred while processing the request: " + std::string(e.what()));
+        res.generate500InternalServerError("Internal error 500: " + std::string(e.what()));
     }
 
-    res.setHTTPVersion(version);
     res.ensureContentLength();
-    // PRINT MY RESPONSE
     res.logHttpResponse(logger);
+}
+
+void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res)
+{
+    Logger &logger = Logger::getInstance("server.log");
+    std::string uri = req.getURI();
+    logger.log("Received URI: " + uri);
+
+    std::string version = req.getHTTPVersion();
+    if (version != "HTTP/1.1" && version != "HTTP/1.0")
+    {
+        res.generate400BadRequest("Invalid HTTP version");
+        logger.log("Invalid HTTP version received: " + version);
+        return;
+    }
+
+    std::string resourcePath = resolveResourcePath(uri);
+    logger.log("Resolved resource path: " + resourcePath);
+
+    if (!hasReadPermissions(resourcePath))
+    {
+        res.generate403Forbidden("403 Forbidden: Access to the resource is forbidden");
+        logger.log("Error: Access to the resource is forbidden for resourcePath: " + resourcePath);
+        return;
+    }
+
+    serveResource(resourcePath, res);
 }
 
 void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res)
