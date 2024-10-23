@@ -22,16 +22,21 @@ void Client::processRequest(const _server &serverInfo)
     Logger &logger = Logger::getInstance("server.log");
 
     const HttpConfig::Location *bestMatch = NULL;
+    size_t bestMatchLength = 0;
 
     // Find the location with the longest matching prefix
     for (size_t i = 0; i < serverInfo._locations.size(); ++i)
     {
         const HttpConfig::Location &location = serverInfo._locations[i];
 
-        if (uri == location.path)
+        if (uri.find(location.path) == 0)
         {
-            bestMatch = &location;
-            break;
+            size_t matchLength = location.path.length();
+            if (matchLength > bestMatchLength)
+            {
+                bestMatch = &location;
+                bestMatchLength = matchLength;
+            }
         }
     }
 
@@ -55,7 +60,7 @@ void Client::processRequest(const _server &serverInfo)
             DeleteRequestHandler deleteHandler(location, serverInfo._root);
             deleteHandler.handle(_request, response);
         }
-        else if (method == "OPTIONS")  // Add this block
+        else if (method == "OPTIONS")
         {
             OptionsRequestHandler OptionsHandler(location, serverInfo._root);
             OptionsHandler.handle(_request, _response);
@@ -79,6 +84,7 @@ void Client::processRequest(const _server &serverInfo)
         response.setBody("404 Not Found");
         response.setHeader("Content-Type", "text/plain");
         response.ensureContentLength();
+        logger.logError("Method: " + method);
         logger.logError("404 Not Found for URI: " + uri);
     }
 

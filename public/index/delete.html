@@ -112,12 +112,11 @@
       .catch(error => console.error('Erreur lors de la récupération de la liste des fichiers:', error));
 
     // Gérer la soumission du formulaire
-    // Gérer la soumission du formulaire
     document.getElementById('deleteForm').addEventListener('submit', function(event) {
     event.preventDefault();
     const selectedFile = document.getElementById('fileSelect').value;
     // Envoyer une requête DELETE au serveur
-    fetch('/files/' + encodeURIComponent(selectedFile), {
+    fetch('./public/index/files/' + encodeURIComponent(selectedFile), {
         method: 'DELETE'
     })
     .then(response => {
