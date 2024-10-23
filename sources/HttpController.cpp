@@ -320,8 +320,19 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
             return;
         }
 
-        // Save the file to the uploads directory
+        // Check if the file already exists
         std::string filePath = uploadsDir + fileName;
+        std::ifstream existingFile(filePath.c_str());
+        if (existingFile.good())
+        {
+            existingFile.close(); // Close the file if it exists
+            res.generate409Conflict("Conflict: The file already exists.");
+            logger.log("409 Conflict: File already exists: " + filePath);
+            return; // Early return to avoid writing the file
+        }
+        existingFile.close(); // Close the file if it was opened
+
+        // Save the file to the uploads directory
         std::ofstream outFile(filePath.c_str(), std::ios::binary);
         if (!outFile.is_open())
         {

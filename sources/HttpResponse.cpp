@@ -115,7 +115,7 @@ void HttpResponse::generate409Conflict(const std::string &conflictInfo)
     setStatusCode(409);
     setReasonMessage("Conflict");
     setHeader("Content-Type", "text/plain");
-    std::string body = "409 Conflict: The request could not be completed due to a conflict with the current state of the resource.\n" + conflictInfo;
+    std::string body = conflictInfo;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
 }

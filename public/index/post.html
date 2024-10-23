@@ -112,6 +112,8 @@
             if (response.ok) {
                 alert('Fichier téléversé avec succès');
                 fileInput.value = ''; // Reset file input after successful upload
+            } else if (response.status === 409) {
+                alert('Échec du téléversement : le fichier existe déjà.');
             } else {
                 alert('Échec du téléversement du fichier');
             }

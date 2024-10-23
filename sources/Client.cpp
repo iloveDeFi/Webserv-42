@@ -17,6 +17,11 @@ void Client::readRequest(const std::string &rawData)
     std::cout << "Version: " << _request.getHTTPVersion() << std::endl; */
 }
 
+bool Client::checkFileExists(const std::string &filePath) {
+    struct stat buffer;
+    return (stat(filePath.c_str(), &buffer) == 0); // Renvoie true si le fichier existe
+}
+
 void Client::processRequest(const _server &serverInfo)
 {
     HttpResponse response;
@@ -62,6 +67,16 @@ void Client::processRequest(const _server &serverInfo)
             }
             else if (method == "POST")
             {
+                // TO DO : check 409 moved to handlePostResponse
+                // std::string filePath = serverInfo._root + uri;
+                // logger.log("FilePath for Post 409 already exists check is " + filePath);
+                // if (checkFileExists(filePath)) 
+                // {
+                //     logger.log("409 error detected. File already exists");
+                //     response.generate409Conflict("409 Conflict: The request could not be completed due to a conflict with the current state of the resource.\n");
+			    //     return;
+		        // }
+                
                 PostRequestHandler postHandler(location, serverInfo._root);
                 postHandler.handle(_request, response);
             }
