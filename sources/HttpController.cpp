@@ -1,4 +1,5 @@
 #include "HttpController.hpp"
+#include <dirent.h>
 
 RequestController::RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
     : _locationConfig(locationConfig), _deletionInProgress(), _serverRoot(serverRoot)
@@ -8,6 +9,7 @@ RequestController::RequestController(const HttpConfig::Location &locationConfig,
         _validMethods.insert("GET");
         _validMethods.insert("POST");
         _validMethods.insert("DELETE");
+        _validMethods.insert("OPTIONS");
         _validMethods.insert("UNKNOWN");
     }
 }
@@ -55,6 +57,16 @@ DeleteRequestHandler::~DeleteRequestHandler() {}
 void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 {
     handleDeleteResponse(req, res);
+}
+
+OptionsRequestHandler::OptionsRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
+    : RequestController(locationConfig, serverRoot) {}
+
+OptionsRequestHandler::~OptionsRequestHandler() {}
+
+void OptionsRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+{
+    handleOptionsResponse(req, res);
 }
 
 UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
@@ -127,8 +139,10 @@ bool RequestController::hasPermissionToCreate(const std::string &uri)
 bool RequestController::hasPermissionToDelete(const std::string &uri) const
 {
     (void)uri;
+    // Check if DELETE is allowed for this location
     return std::find(_locationConfig.methods.begin(), _locationConfig.methods.end(), "DELETE") != _locationConfig.methods.end();
 }
+
 
 bool RequestController::isValidHttpMethod(const std::string &method) const
 {
@@ -219,6 +233,13 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         return;
     }
 
+    // Check if handler is "internal"
+    if (_locationConfig.handler == "internal")
+    {
+        handleInternalRequest(req, res);
+        return;
+    }
+
     std::string resourcePath = resolveResourcePath(uri);
     logger.log("Resolved resource path: " + resourcePath);
 
@@ -266,22 +287,46 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
 {
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
-
+    Logger &logger = Logger::getInstance("server.log");
+    logger.log("Received DELETE request for URI: " + uri);
+    
     if (!hasPermissionToDelete(uri))
     {
         res.generate403Forbidden("403 Forbidden: You do not have permission to delete this resource.");
         return;
     }
-    std::string resourcePath = _locationConfig.root + uri;
+
+    // Expected format: /files/filename
+    const std::string prefix = "/files/";
+    if (uri.compare(0, prefix.length(), prefix) != 0)
+    {
+        res.generate404NotFound("Invalid URI for DELETE operation: " + uri);
+        return;
+    }
+
+    std::string filename = uri.substr(prefix.length());
+
+    // Security check to prevent directory traversal attacks
+    if (filename.find("..") != std::string::npos)
+    {
+        res.generate403Forbidden("Forbidden: Invalid filename");
+        return;
+    }
+
+    // Construct the full path to the file in the files directory
+    std::string resourcePath = _serverRoot + "/index/files/" + filename;
+
+    // Attempt to delete the file
     if (remove(resourcePath.c_str()) != 0)
     {
         res.generate404NotFound("404 Not Found: Resource not found: " + uri);
         return;
     }
-
+    logger.log("File deleted successfully: " + resourcePath);
     res.generate204NoContent("204 No Content: Delete success");
     res.setHTTPVersion(version);
 }
+
 
 void RequestController::handleUnknownResponse(const HttpRequest &req, HttpResponse &res)
 {
@@ -301,6 +346,82 @@ void RequestController::handleUnknownResponse(const HttpRequest &req, HttpRespon
 void RequestController::setCorsHeaders(HttpResponse &res)
 {
     res.setHeader("Access-Control-Allow-Origin", "*");                  // Permet toutes les origines
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE"); // Méthodes autorisées
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS"); // Méthodes autorisées
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");      // En-têtes autorisés
 }
+
+
+void RequestController::handleInternalRequest(const HttpRequest &req, HttpResponse &res)
+{
+    Logger &logger = Logger::getInstance("server.log");
+    std::string uri = req.getURI();
+    logger.log("Handling internal request for URI: " + uri);
+
+    if (uri == "/file-list")
+    {
+        std::string filesDir = _serverRoot + "/index/files";
+        std::vector<std::string> files = listFilesInDirectory(filesDir);
+
+        // Generate JSON response
+        std::string jsonResponse = "{\"files\":[";
+        for (size_t i = 0; i < files.size(); ++i)
+        {
+            jsonResponse += "\"" + files[i] + "\"";
+            if (i < files.size() - 1)
+                jsonResponse += ",";
+        }
+        jsonResponse += "]}";
+
+        res.setStatusCode(200);
+        res.setReasonMessage("OK");
+        res.setHeader("Content-Type", "application/json");
+        res.setBody(jsonResponse);
+        res.ensureContentLength();
+    }
+    else
+    {
+        res.generate404NotFound("Invalid internal URI: " + uri);
+        logger.log("Invalid internal URI: " + uri);
+    }
+}
+
+
+std::vector<std::string> RequestController::listFilesInDirectory(const std::string &directoryPath)
+{
+    std::vector<std::string> files;
+    DIR *dir = opendir(directoryPath.c_str());
+    if (dir == NULL)
+    {
+        Logger &logger = Logger::getInstance("server.log");
+        logger.log("Unable to open directory: " + directoryPath);
+        return files;
+    }
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        std::string fileName = entry->d_name;
+        if (fileName != "." && fileName != "..")
+        {
+            files.push_back(fileName);
+        }
+    }
+    closedir(dir);
+    return files;
+}
+
+
+void RequestController::handleOptionsResponse(const HttpRequest &req, HttpResponse &res)
+{
+    (void)req;
+    res.setStatusCode(204);  // No Content
+    res.setReasonMessage("No Content");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Max-Age", "86400"); 
+    res.setBody("");
+}
+
+
+
+

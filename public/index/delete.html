@@ -112,25 +112,27 @@
       .catch(error => console.error('Erreur lors de la récupération de la liste des fichiers:', error));
 
     // Gérer la soumission du formulaire
+    // Gérer la soumission du formulaire
     document.getElementById('deleteForm').addEventListener('submit', function(event) {
-      event.preventDefault();
-      const selectedFile = document.getElementById('fileSelect').value;
-      // Envoyer une requête DELETE au serveur
-      fetch('/files/' + encodeURIComponent(selectedFile), {
+    event.preventDefault();
+    const selectedFile = document.getElementById('fileSelect').value;
+    // Envoyer une requête DELETE au serveur
+    fetch('/files/' + encodeURIComponent(selectedFile), {
         method: 'DELETE'
-      })
-      .then(response => {
+    })
+    .then(response => {
         if (response.ok) {
-          alert('Fichier supprimé avec succès');
-          // Retirer le fichier supprimé du menu déroulant
-          const fileSelect = document.getElementById('fileSelect');
-          fileSelect.remove(fileSelect.selectedIndex);
+        alert('Fichier supprimé avec succès');
+        // Remove the deleted file from the dropdown
+        const fileSelect = document.getElementById('fileSelect');
+        fileSelect.remove(fileSelect.selectedIndex);
         } else {
-          alert('Échec de la suppression du fichier');
+        alert('Échec de la suppression du fichier');
         }
-      })
-      .catch(error => console.error('Erreur lors de la suppression du fichier:', error));
+    })
+    .catch(error => console.error('Erreur lors de la suppression du fichier:', error));
     });
+
 </script>
 
 </body>

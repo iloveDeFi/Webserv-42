@@ -384,12 +384,24 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
         throw std::runtime_error("Error page path cannot be empty for error code: " + errorCodeString);
     }
 
-    if (!fileExists(serverData.root + "/" + errorPagePath)) {
-        throw std::runtime_error("Error page file does not exist: " + errorPagePath);
+    // Adjust file path checking: use relative path for errors outside root
+    std::string fullPath;
+    if (errorPagePath[0] == '/') {
+        // Treat as relative to the project directory (not system root)
+        fullPath = "." + errorPagePath;  // Relative to the project root
+    } else {
+        // Treat as relative to the server's root directory
+        fullPath = serverData.root + "/" + errorPagePath;
+    }
+
+    if (!fileExists(fullPath)) {
+        //std::cout << "Checking file path: " << fullPath << std::endl;
+        throw std::runtime_error("Error page file does not exist: " + fullPath);
     }
 
     serverData.errorPages[errorCode] = errorPagePath;
 }
+
 
 /* void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
     Location location;
@@ -1975,3 +1987,274 @@ socklen_t Socket::getLen()
 
 
 
+.
+├── Default.config
+├── Makefile
+├── README.md
+├── config.yaml
+├── config1.yaml
+├── errors
+│   ├── 403.html
+│   ├── 404.html
+│   └── 500.html
+├── fr.subject.pdf
+├── includes
+│   ├── Client.hpp
+│   ├── Config.hpp
+│   ├── HttpConfig.hpp
+│   ├── HttpController.hpp
+│   ├── HttpException.hpp
+│   ├── HttpMessage.hpp
+│   ├── HttpRequest.hpp
+│   ├── HttpResponse.hpp
+│   ├── Location.hpp
+│   ├── Logger.hpp
+│   ├── MngmtServers.hpp
+│   ├── Socket.hpp
+│   ├── Templates.hpp
+│   └── Utils.hpp
+├── main.cpp
+├── public
+│   ├── css
+│   │   └── style.css
+│   ├── images
+│   └── index
+│       ├── cgi-bin
+│       │   ├── delete_resource.php
+│       │   ├── delete_resource.py
+│       │   ├── list_files.php
+│       │   └── list_files.py
+│       ├── delete.html
+│       ├── delete_cgi.html
+│       ├── favicon.png
+│       ├── get.html
+│       ├── index.html
+│       ├── index2.html
+│       ├── index3.html
+│       ├── post.html
+│       ├── upload.php
+│       └── uploads
+│           └── coucou.txt
+├── server.log
+└── sources
+    ├── Client.cpp
+    ├── HttpConfig.cpp
+    ├── HttpController.cpp
+    ├── HttpMessage.cpp
+    ├── HttpRequest.cpp
+    ├── HttpResponse.cpp
+    ├── Logger.cpp
+    ├── MngmtServers.cpp
+    ├── Socket.cpp
+    └── test.txt
+
+10 directories, 50 files
+
+config.yaml
+- server:
+    server_name: myserver.com
+    port: 8080
+    client_max_body_size: 10M
+    root: ./public
+
+    error_pages:
+        404: /errors/404.html
+        500: /errors/500.html
+        403: /errors/403.html
+
+    locations:
+        - path: /
+          methods: GET
+          handler: /index/index.html
+          allow_uploads: false
+          content_type: text/html
+
+        - path: /upload
+          methods: POST
+          cgi_handler: /index/upload.php
+          cgi_extensions: [.php]
+          allow_uploads: true
+
+        - path: /delete
+          methods: GET, DELETE
+          handler: /index/delete.html
+          allow_uploads: false
+          content_type: text/html
+
+        - path: /file-list
+          methods: GET
+          handler: internal
+          allow_uploads: false
+
+        - path: /files
+          methods: DELETE
+          handler: internal
+          allow_uploads: false
+
+- server:
+    server_name: secondserver.com
+    port: 80
+    client_max_body_size: 1M
+    root: ./public
+
+    error_pages:
+        404: /errors/404.html
+        500: /errors/500.html
+
+    locations:
+        - path: /images
+          methods: GET
+          handler: images/
+          allow_uploads: false
+          content_type: image/jpeg
+
+        - path: /videos
+          methods: GET
+          handler: videos/
+          allow_uploads: false
+          content_type: video/mp4
+
+        - path: /
+          methods: GET
+          handler: index/index.html
+          allow_uploads: false
+          content_type: text/html
+
+delete.html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supprimer un fichier</title>
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #595959;
+            color: #333;
+        }
+
+        header {
+            background: #35424a;
+            color: #ffffff;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .content {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .content select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .content button {
+            padding: 10px 20px;
+            background: #d9534f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .content button:hover {
+            background: #c9302c;
+        }
+
+        footer {
+            margin-top: 20px;
+            padding: 10px 0;
+            text-align: center;
+            background: #000000;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1> 🗑️ Supprimer un fichier</h1>
+</header>
+
+<div class="container">
+    <div class="content">
+        <h2> Sélectionnez un fichier à supprimer </h2>
+        <form id="deleteForm">
+            <select id="fileSelect">
+                <!-- Les options seront ajoutées dynamiquement par JavaScript -->
+            </select>
+            <button type="submit">Supprimer</button>
+        </form>
+    </div>
+</div>
+
+<footer>
+    <p>&copy; 2024 Gestion des fichiers - Webserv42. Tous droits réservés.</p>
+</footer>
+
+<script>
+    // Récupérer la liste des fichiers et remplir le menu déroulant
+    fetch('/file-list')
+      .then(response => response.json())
+      .then(data => {
+        const fileSelect = document.getElementById('fileSelect');
+        data.files.forEach(function(file) {
+          const option = document.createElement('option');
+          option.value = file;
+          option.text = file;
+          fileSelect.add(option);
+        });
+      })
+      .catch(error => console.error('Erreur lors de la récupération de la liste des fichiers:', error));
+
+    // Gérer la soumission du formulaire
+    document.getElementById('deleteForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const selectedFile = document.getElementById('fileSelect').value;
+      // Envoyer une requête DELETE au serveur
+      fetch('/files/' + encodeURIComponent(selectedFile), {
+        method: 'DELETE'
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('Fichier supprimé avec succès');
+          // Retirer le fichier supprimé du menu déroulant
+          const fileSelect = document.getElementById('fileSelect');
+          fileSelect.remove(fileSelect.selectedIndex);
+        } else {
+          alert('Échec de la suppression du fichier');
+        }
+      })
+      .catch(error => console.error('Erreur lors de la suppression du fichier:', error));
+    });
+</script>
+
+</body>
+</html>

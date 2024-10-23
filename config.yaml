@@ -12,19 +12,19 @@
     locations:
         - path: /
           methods: GET
-          handler: /index/index.html
+          handler: index/index.html
           allow_uploads: false
           content_type: text/html
 
         - path: /upload
           methods: POST
-          cgi_handler: /index/upload.php
+          cgi_handler: index/upload.php
           cgi_extensions: [.php]
           allow_uploads: true
 
-        - path: /delete
+        - path: /deletePage
           methods: GET, DELETE
-          handler: /index/delete.html
+          handler: index/delete.html
           allow_uploads: false
           content_type: text/html
 
@@ -34,7 +34,7 @@
           allow_uploads: false
 
         - path: /files
-          methods: DELETE
+          methods: DELETE, OPTIONS
           handler: internal
           allow_uploads: false
 

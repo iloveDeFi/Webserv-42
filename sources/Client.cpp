@@ -55,6 +55,11 @@ void Client::processRequest(const _server &serverInfo)
             DeleteRequestHandler deleteHandler(location, serverInfo._root);
             deleteHandler.handle(_request, response);
         }
+        else if (method == "OPTIONS")  // Add this block
+        {
+            OptionsRequestHandler OptionsHandler(location, serverInfo._root);
+            OptionsHandler.handle(_request, _response);
+        }
         else
         {
             UnknownRequestHandler unknownHandler(location, serverInfo._root);

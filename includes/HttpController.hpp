@@ -32,6 +32,7 @@ protected:
     void handleGetResponse(const HttpRequest &req, HttpResponse &res);
     void handlePostResponse(const HttpRequest &req, HttpResponse &res);
     void handleDeleteResponse(const HttpRequest &req, HttpResponse &res);
+    void handleOptionsResponse(const HttpRequest &req, HttpResponse &res);
     void handleUnknownResponse(const HttpRequest &req, HttpResponse &res);
 
 public:
@@ -47,6 +48,9 @@ public:
     bool isDirectory(const std::string &path);
     std::string resolveResourcePath(const std::string &uri);
     void serveResource(const std::string &resourcePath, HttpResponse &res);
+    void handleInternalRequest(const HttpRequest &req, HttpResponse &res);
+    std::vector<std::string> listFilesInDirectory(const std::string &directoryPath);
+    
 };
 
 class GetRequestHandler : public RequestController
@@ -71,6 +75,14 @@ class DeleteRequestHandler : public RequestController
 public:
     DeleteRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
     virtual ~DeleteRequestHandler();
+    virtual void handle(const HttpRequest &req, HttpResponse &res);
+};
+
+class OptionsRequestHandler : public RequestController
+{
+public:
+    OptionsRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
+    virtual ~OptionsRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
 
