@@ -80,6 +80,16 @@ void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handleUnknownResponse(req, res);
 }
 
+CgiRequestHandler::CgiRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
+    : RequestController(locationConfig, serverRoot) {}
+
+CgiRequestHandler::~CgiRequestHandler() {}
+
+void CgiRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+{
+    handleCgiResponse(req, res);
+}
+
 bool RequestController::hasReadPermissions(const std::string &filePath)
 {
     Logger &logger = Logger::getInstance("server.log");
@@ -497,7 +507,7 @@ void RequestController::handleOptionsResponse(const HttpRequest &req, HttpRespon
     res.setBody("");
 }
 
-// TO DO : ADD CGI HANDLER
+// >>>>>>>>> TO DO : ADD CGI HANDLER
 void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res) 
 {
     Logger &logger = Logger::getInstance("server.log");

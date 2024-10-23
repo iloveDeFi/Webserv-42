@@ -45,6 +45,7 @@ public:
 
     std::string getMethod() const;
     std::string getURI() const;
+    std::string getBody() const;
     std::string getHTTPVersion() const;
     std::string getContentType() const;
     std::string getQueryParameters() const;
@@ -53,8 +54,6 @@ public:
     std::string getHeader(const std::string &name) const;
     std::string getFileName() const;
 
-    std::string getBody() const;
-    std::string getQueryParameters() const;
     bool isChunked() const;
 
     bool isMethodAllowed(const std::string &method) const;
