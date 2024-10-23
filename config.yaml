@@ -2,29 +2,29 @@
     server_name: myserver.com
     port: 8080
     client_max_body_size: 10M
-    root: ./test_db
+    root: ./public
 
     error_pages:
-        404: errors/404.html
-        500: errors/500.html
-        403: errors/403.html
+        404: /errors/404.html
+        500: /errors/500.html
+        403: /errors/403.html
 
     locations:
         - path: /
           methods: GET
-          handler: index/index.html
+          handler: /index/index.html
           allow_uploads: false
           content_type: text/html
 
         - path: /upload
           methods: POST
-          cgi_handler: /usr/bin/php-cgi
+          cgi_handler: /index/upload.php
           cgi_extensions: [.php]
           allow_uploads: true
 
         - path: /delete
           methods: GET, DELETE
-          handler: index/delete.html
+          handler: /index/delete.html
           allow_uploads: false
           content_type: text/html
 
@@ -42,11 +42,11 @@
     server_name: secondserver.com
     port: 80
     client_max_body_size: 1M
-    root: ./test_db
+    root: ./public
 
     error_pages:
-        404: errors/404.html
-        500: errors/500.html
+        404: /errors/404.html
+        500: /errors/500.html
 
     locations:
         - path: /images

@@ -236,12 +236,24 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
         throw std::runtime_error("Error page path cannot be empty for error code: " + errorCodeString);
     }
 
-    if (!fileExists(serverData.root + "/" + errorPagePath)) {
-        throw std::runtime_error("Error page file does not exist: " + errorPagePath);
+    // Adjust file path checking: use relative path for errors outside root
+    std::string fullPath;
+    if (errorPagePath[0] == '/') {
+        // Treat as relative to the project directory (not system root)
+        fullPath = "." + errorPagePath;  // Relative to the project root
+    } else {
+        // Treat as relative to the server's root directory
+        fullPath = serverData.root + "/" + errorPagePath;
+    }
+
+    if (!fileExists(fullPath)) {
+        //std::cout << "Checking file path: " << fullPath << std::endl;
+        throw std::runtime_error("Error page file does not exist: " + fullPath);
     }
 
     serverData.errorPages[errorCode] = errorPagePath;
 }
+
 
 /* void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
     Location location;
