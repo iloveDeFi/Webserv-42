@@ -33,7 +33,6 @@ struct _server
 	std::string _root;
 };
 
-#include "Client.hpp"
 class Client;
 
 class ManagementServer

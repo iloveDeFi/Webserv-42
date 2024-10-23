@@ -402,7 +402,7 @@ void RequestController::handleUnknownResponse(const HttpRequest &req, HttpRespon
         return;
     }
 
-    res.generate405MethodNotAllowed("405 Method Not Allowed: The method " + method + " is not allowed.");
+    res.generate501NotImplemented("501 Not Implemented: The server does not recognize the HTTP method used: " + method);
     res.setHTTPVersion(version);
 }
 

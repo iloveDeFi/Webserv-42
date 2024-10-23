@@ -9,6 +9,8 @@ Client::~Client() {}
 void Client::readRequest(const std::string &rawData)
 {
     //_request.parse(rawData);
+    Logger &logger = Logger::getInstance("server.log");
+    logger.log(">> rawData in readRequest to pass to HttpRequest(rawData) is " + rawData);
     _request = HttpRequest(rawData);
 /*     std::cout << "Method: " << _request.getMethod() << std::endl;
     std::cout << "URI: " << _request.getURI() << std::endl;
@@ -26,6 +28,7 @@ void Client::processRequest(const _server &serverInfo)
     try
     {
         uri = _request.getURI();
+        // TO DO : test
         method = _request.getMethod();
 
         const HttpConfig::Location *bestMatch = NULL;
@@ -74,6 +77,7 @@ void Client::processRequest(const _server &serverInfo)
             }
             else
             {
+                logger.log("UNKNOWN method detected.");
                 UnknownRequestHandler unknownHandler(location, serverInfo._root);
                 unknownHandler.handle(_request, response);
             }

@@ -1,0 +1,99 @@
+````<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Téléverser un fichier</title>
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #595959;
+            color: #333;
+        }
+
+        header {
+            background: #35424a;
+            color: #ffffff;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .content {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .content input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .content button {
+            padding: 10px 20px;
+            background: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .content button:hover {
+            background: #4cae4c;
+        }
+
+        footer {
+            margin-top: 20px;
+            padding: 10px 0;
+            text-align: center;
+            background: #000000;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1> 📤 Téléverser un fichier via CGI</h1>
+</header>
+
+<div class="container">
+    <div class="content">
+        <h2>Sélectionnez un fichier à téléverser</h2>
+        <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/cgi-bin/upload.py">
+            <input type="file" id="fileInput" name="file" required>
+            <button type="submit">Téléverser</button>
+        </form>
+    </div>
+</div>
+
+<footer>
+    <p>&copy; 2024 Gestion des fichiers - Webserv42. Tous droits réservés.</p>
+</footer>
+
+</body>
+</html>
+

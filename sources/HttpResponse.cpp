@@ -136,7 +136,7 @@ void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
     setStatusCode(501);
     setReasonMessage("Not Implemented");
     setHeader("Content-Type", "text/plain");
-    std::string body = "501 Not Implemented: The server does not recognize the HTTP method used. " + errorMessage;
+    std::string body = errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
 }
