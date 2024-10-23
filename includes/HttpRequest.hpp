@@ -12,8 +12,17 @@ class HttpResponse;
 #include "HttpController.hpp"
 #include "Logger.hpp"
 #include <sstream>
+
+
 class HttpRequest
 {
+
+public:
+    struct FormData
+    {
+        std::map<std::string, std::string> fields;
+        std::string fileName;
+    };
 private:
     std::string _method;
     std::string _uri;
@@ -23,8 +32,10 @@ private:
     std::string _queryParameters;
     std::set<std::string> initMethods();
     std::set<std::string> _allowedMethods;
+    std::string _fileName;
 
 public:
+    HttpRequest();
     HttpRequest(const std::string &rawData);
     ~HttpRequest();
     HttpRequest(const HttpRequest &src);
@@ -36,6 +47,7 @@ public:
 
     std::map<std::string, std::string> getHeaders() const;
     std::string getHeader(const std::string &name) const;
+    std::string getFileName() const;
 
     std::string getBody() const;
     std::string getQueryParameters() const;
@@ -51,6 +63,8 @@ public:
     void setMethod(std::string method);
     void setURI(std::string uri);
     void setVersion(std::string version);
+    std::string getBoundary() const;
+    FormData parseMultipartFormData() const;
 };
 
 std::ostream &operator<<(std::ostream &os, const HttpRequest &re);

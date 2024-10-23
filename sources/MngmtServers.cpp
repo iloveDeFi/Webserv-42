@@ -215,11 +215,12 @@ void ManagementServer::acceptNewClients(std::vector<Client> &clients, fd_set &re
             }
             catch (const std::exception &e)
             {
-                std::cerr << "Error accepting client connection: " << e.what() << std::endl;
+                std::cerr << "Error during client initialization: " << e.what() << std::endl;
             }
         }
     }
 }
+
 
 
 
@@ -311,6 +312,7 @@ void ManagementServer::handleClient(Client &client)
 
     // Lire la requête du client
     std::string rawData = readRawData(clientSocket);
+	
     if (rawData.empty())
     {
         // Si aucune donnée n'a été lue, le client a peut-être fermé la connexion
@@ -338,7 +340,10 @@ std::string ManagementServer::readRawData(int clientSocket)
     char buffer[buffer_size];
     std::string requestData;
     ssize_t bytesReceived;
+    size_t headerEndPos = std::string::npos;
+    size_t contentLength = 0;
 
+    // Read headers
     while (true)
     {
         bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0);
@@ -346,31 +351,67 @@ std::string ManagementServer::readRawData(int clientSocket)
         {
             buffer[bytesReceived] = '\0';
             requestData.append(buffer, bytesReceived);
-            if (requestData.find("\r\n\r\n") != std::string::npos)
-                break; // Fin des en-têtes
+
+            // Look for the end of the headers
+            headerEndPos = requestData.find("\r\n\r\n");
+            if (headerEndPos != std::string::npos)
+                break;
         }
-        else if (bytesReceived == 0)
-        {
-            // Le client a fermé la connexion
-            break;
-        }
+        else if (bytesReceived == 0) // Client closed the connection
+            return "";
         else
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                // Pas de données disponibles pour le moment, réessayer plus tard
                 continue;
-            }
             else
-            {
-                // Une erreur réelle s'est produite
                 throw std::runtime_error("Error reading from socket: " + std::string(strerror(errno)));
-            }
         }
     }
 
+    // Parse headers to find Content-Length
+    std::string headers = requestData.substr(0, headerEndPos + 2); // Include \r\n
+    std::istringstream headerStream(headers);
+    std::string line;
+    while (std::getline(headerStream, line))
+    {
+        if (!line.empty() && line.back() == '\r') // Remove \r
+            line.pop_back();
+
+        if (line.empty())
+            break; // End of headers
+
+        if (line.find("Content-Length:") != std::string::npos)
+        {
+            std::string value = line.substr(line.find(":") + 1);
+            contentLength = std::stoi(value);
+        }
+    }
+
+    // Read the body based on Content-Length
+    size_t totalBytesToRead = headerEndPos + 4 + contentLength;
+    while (requestData.size() < totalBytesToRead)
+    {
+        bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0);
+        if (bytesReceived > 0)
+        {
+            buffer[bytesReceived] = '\0';
+            requestData.append(buffer, bytesReceived);
+        }
+        else if (bytesReceived == 0) // Client closed the connection
+            break;
+        else
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                continue;
+            else
+                throw std::runtime_error("Error reading from socket: " + std::string(strerror(errno)));
+        }
+    }
+	//std::cout << "HERE!!!!! " << requestData << std::endl;
     return requestData;
 }
+
+
 
 
 int ManagementServer::getPort(std::vector<_server>::iterator it)

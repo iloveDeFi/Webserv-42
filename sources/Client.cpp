@@ -1,12 +1,14 @@
 #include "Client.hpp"
 
 Client::Client(int fd, const struct sockaddr_in &address)
-    : _socket(fd), _address(address), _request(""), _response() {}
+    : _socket(fd), _address(address), _request(), _response() {}
+
 
 Client::~Client() {}
 
 void Client::readRequest(const std::string &rawData)
 {
+    //_request.parse(rawData);
     _request = HttpRequest(rawData);
 /*     std::cout << "Method: " << _request.getMethod() << std::endl;
     std::cout << "URI: " << _request.getURI() << std::endl;
@@ -16,80 +18,96 @@ void Client::readRequest(const std::string &rawData)
 void Client::processRequest(const _server &serverInfo)
 {
     HttpResponse response;
-    std::string uri = _request.getURI();
-    std::string method = _request.getMethod();
+    std::string uri;
+    std::string method;
 
     Logger &logger = Logger::getInstance("server.log");
 
-    const HttpConfig::Location *bestMatch = NULL;
-    size_t bestMatchLength = 0;
-
-    // Find the location with the longest matching prefix
-    for (size_t i = 0; i < serverInfo._locations.size(); ++i)
+    try
     {
-        const HttpConfig::Location &location = serverInfo._locations[i];
+        uri = _request.getURI();
+        method = _request.getMethod();
 
-        if (uri.find(location.path) == 0)
+        const HttpConfig::Location *bestMatch = NULL;
+        size_t bestMatchLength = 0;
+
+        // Find the location with the longest matching prefix
+        for (size_t i = 0; i < serverInfo._locations.size(); ++i)
         {
-            size_t matchLength = location.path.length();
-            if (matchLength > bestMatchLength)
+            const HttpConfig::Location &location = serverInfo._locations[i];
+
+            if (uri.find(location.path) == 0)
             {
-                bestMatch = &location;
-                bestMatchLength = matchLength;
+                size_t matchLength = location.path.length();
+                if (matchLength > bestMatchLength)
+                {
+                    bestMatch = &location;
+                    bestMatchLength = matchLength;
+                }
             }
         }
-    }
 
-    if (bestMatch != NULL)
-    {
-        const HttpConfig::Location &location = *bestMatch;
-        std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
+        if (bestMatch != NULL)
+        {
+            const HttpConfig::Location &location = *bestMatch;
+            std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
 
-        if (_request.getMethod() == "GET")
-        {
-            GetRequestHandler getHandler(location, serverInfo._root);
-            getHandler.handle(_request, response);
-        }
-        else if (_request.getMethod() == "POST")
-        {
-            PostRequestHandler postHandler(location, serverInfo._root);
-            postHandler.handle(_request, response);
-        }
-        else if (_request.getMethod() == "DELETE")
-        {
-            DeleteRequestHandler deleteHandler(location, serverInfo._root);
-            deleteHandler.handle(_request, response);
-        }
-        else if (method == "OPTIONS")
-        {
-            OptionsRequestHandler OptionsHandler(location, serverInfo._root);
-            OptionsHandler.handle(_request, _response);
+            if (method == "GET")
+            {
+                GetRequestHandler getHandler(location, serverInfo._root);
+                getHandler.handle(_request, response);
+            }
+            else if (method == "POST")
+            {
+                PostRequestHandler postHandler(location, serverInfo._root);
+                postHandler.handle(_request, response);
+            }
+            else if (method == "DELETE")
+            {
+                DeleteRequestHandler deleteHandler(location, serverInfo._root);
+                deleteHandler.handle(_request, response);
+            }
+            else if (method == "OPTIONS")
+            {
+                OptionsRequestHandler optionsHandler(location, serverInfo._root);
+                optionsHandler.handle(_request, response);
+            }
+            else
+            {
+                UnknownRequestHandler unknownHandler(location, serverInfo._root);
+                unknownHandler.handle(_request, response);
+            }
+
+            int statusCode = response.getStatusCode();
+            logger.logRequest(method, uri, statusCode);
+            if (statusCode >= 400)
+            {
+                logger.logError("Request resulted in error: " + to_string(statusCode));
+            }
         }
         else
         {
-            UnknownRequestHandler unknownHandler(location, serverInfo._root);
-            unknownHandler.handle(_request, response);
+            response.setStatusCode(404);
+            response.setBody("404 Not Found");
+            response.setHeader("Content-Type", "text/plain");
+            response.ensureContentLength();
+            logger.logError("Method: " + method);
+            logger.logError("404 Not Found for URI: " + uri);
         }
 
-        int statusCode = response.getStatusCode();
-        logger.logRequest(method, uri, statusCode);
-        if (statusCode >= 400)
-        {
-            logger.logError("Request resulted in error: " + to_string(statusCode));
-        }
+        _response = response;
     }
-    else
+    catch (const std::exception &e)
     {
-        response.setStatusCode(404);
-        response.setBody("404 Not Found");
+        response.setStatusCode(400);
+        response.setBody("400 Bad Request: " + std::string(e.what()));
         response.setHeader("Content-Type", "text/plain");
         response.ensureContentLength();
-        logger.logError("Method: " + method);
-        logger.logError("404 Not Found for URI: " + uri);
+        logger.logError("Exception in processing request: " + std::string(e.what()));
+        _response = response;
     }
-
-    _response = response;
 }
+
 
 
 void Client::sendResponse()

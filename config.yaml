@@ -16,10 +16,14 @@
           allow_uploads: false
           content_type: text/html
 
+        - path: /uploadPage
+          methods: GET, POST
+          handler: index/post.html
+          allow_uploads: true
+
         - path: /upload
           methods: POST
-          cgi_handler: index/upload.php
-          cgi_extensions: [.php]
+          handler: internal
           allow_uploads: true
 
         - path: /deletePage

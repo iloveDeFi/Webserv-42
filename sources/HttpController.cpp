@@ -123,18 +123,22 @@ std::string RequestController::loadResource(const std::string &filePath)
 
 bool RequestController::hasPermissionToCreate(const std::string &uri)
 {
-    std::string path = uri;
-    size_t lastSlash = path.find_last_of('/');
-    std::string parentDir = (lastSlash != std::string::npos) ? path.substr(0, lastSlash) : ".";
-
-    struct stat dirStat;
-    if (stat(parentDir.c_str(), &dirStat) != 0)
+    (void)uri; // Not needed
+    // Check if uploads are allowed in the location configuration
+    if (!_locationConfig.allowUploads)
     {
         return false;
     }
-
-    return (access(parentDir.c_str(), W_OK) == 0);
+    // Check if the uploads directory exists and is writable
+    std::string uploadsDir = _serverRoot + "/index/files/";
+    struct stat dirStat;
+    if (stat(uploadsDir.c_str(), &dirStat) != 0 || !S_ISDIR(dirStat.st_mode))
+    {
+        return false;
+    }
+    return (access(uploadsDir.c_str(), W_OK) == 0);
 }
+
 
 bool RequestController::hasPermissionToDelete(const std::string &uri) const
 {
@@ -173,7 +177,6 @@ std::string RequestController::resolveResourcePath(const std::string &uri)
     if (!_locationConfig.handler.empty())
     {
          resourcePath += _locationConfig.handler;
-         //std::cout << "HERE!!!! " << _locationConfig.handler << std::endl; 
     }
     else
     {
@@ -255,33 +258,93 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
 
 void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res)
 {
+    Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
     std::string body = req.getBody();
+    logger.log("Received POST request for URI: " + uri);
 
     if (body.empty())
     {
-        res.generate400BadRequest("400 error : Bad Request: Empty body or malformed request.");
+        res.generate400BadRequest("Bad Request: Empty body or malformed request.");
         return;
     }
 
-    if (!hasPermissionToCreate(uri))
+    // Check if POST method is allowed for this location
+    if (!isMethodAllowed("POST"))
     {
-        res.generate403Forbidden("403 Forbidden Error: You do not have permission to create a resource at this location.");
+        res.generate405MethodNotAllowed("POST method not allowed for this location.");
         return;
     }
+
+    // Check if uploads are allowed in this location
+    if (!_locationConfig.allowUploads)
+    {
+        res.generate403Forbidden("Forbidden: Uploads are not allowed at this location.");
+        return;
+    }
+
+    // Check if the uploads directory exists and is writable
+    std::string uploadsDir = _serverRoot + "/uploads/";
+    struct stat dirStat;
+    if (stat(uploadsDir.c_str(), &dirStat) != 0 || !S_ISDIR(dirStat.st_mode) || access(uploadsDir.c_str(), W_OK) != 0)
+    {
+        res.generate500InternalServerError("Uploads directory does not exist or is not writable.");
+        return;
+    }
+
     try
     {
-        res.generate201Created(uri);
+        // Parse the multipart/form-data
+        std::string boundary = req.getBoundary();
+        if (boundary.empty())
+        {
+            throw std::runtime_error("No boundary found in Content-Type header");
+        }
+
+        HttpRequest::FormData formData = req.parseMultipartFormData();
+
+        // Assuming the file field is named "file"
+        if (formData.fields.find("file") == formData.fields.end())
+        {
+            throw std::runtime_error("No file found in form data");
+        }
+
+        std::string fileContent = formData.fields["file"];
+        std::string fileName = formData.fileName;
+
+        // Security check to prevent directory traversal attacks
+        if (fileName.find("..") != std::string::npos)
+        {
+            res.generate403Forbidden("Forbidden: Invalid filename");
+            return;
+        }
+
+        // Save the file to the uploads directory
+        std::string filePath = uploadsDir + fileName;
+        std::ofstream outFile(filePath.c_str(), std::ios::binary);
+        if (!outFile.is_open())
+        {
+            throw std::runtime_error("Failed to open file for writing: " + filePath);
+        }
+        outFile.write(fileContent.c_str(), fileContent.size());
+        outFile.close();
+
+        res.generate201Created("/files/" + fileName);
+        logger.log("File uploaded successfully: " + filePath);
     }
     catch (const std::exception &e)
     {
-        res.generate500InternalServerError("500 Internal Server Error: An error occurred while processing the request: " + std::string(e.what()));
+        res.generate500InternalServerError("Internal Server Error: " + std::string(e.what()));
+        logger.log("Error processing POST request: " + std::string(e.what()));
     }
 
     res.setHTTPVersion(version);
     res.ensureContentLength();
+    setCorsHeaders(res);
 }
+
+
 
 void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res)
 {

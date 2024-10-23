@@ -11,63 +11,91 @@ std::string HttpRequest::trim(const std::string &str)
     return str.substr(first, (last - first + 1));
 }
 
+HttpRequest::HttpRequest()
+    : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods())
+{
+    // Do nothing else; no parsing
+}
+
+
 // Constructeur pour analyser la raw data
 HttpRequest::HttpRequest(const std::string &rawData)
     : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods())
 {
-    // Convertit les données brutes en un flux de texte pour analyse
-    std::istringstream requestStream(rawData);
-    std::string requestLine;
-
-    // Analyse la première ligne de la requête (ligne de requête)
-    if (std::getline(requestStream, requestLine))
+    // Split the raw data into header and body
+    size_t headerEndPos = rawData.find("\r\n\r\n");
+    if (headerEndPos == std::string::npos)
     {
-        std::istringstream lineStream(requestLine);
-        lineStream >> _method >> _uri >> _version;
+        throw std::runtime_error("Invalid HTTP request: Missing headers");
+    }
+    std::string headerPart = rawData.substr(0, headerEndPos);
+    _body = rawData.substr(headerEndPos + 4);
 
-        // Validation de la ligne de requête
-        if (_method.empty() || _uri.empty() || _version.empty())
-        {
-            throw std::runtime_error("Invalid request line");
-        }
+    // Now parse the header lines
+    std::istringstream headerStream(headerPart);
+    std::string requestLine;
+    if (!std::getline(headerStream, requestLine))
+    {
+        throw std::runtime_error("Invalid request line");
+    }
+    // Remove any \r at the end of the line
+    if (!requestLine.empty() && requestLine.back() == '\r')
+    {
+        requestLine.pop_back();
+    }
+    std::istringstream requestLineStream(requestLine);
+    requestLineStream >> _method >> _uri >> _version;
 
-        // Si l'URI contient des paramètres de requête après un '?', les extraire
-        size_t queryPos = _uri.find('?');
-        if (queryPos != std::string::npos)
-        {
-            _queryParameters = _uri.substr(queryPos + 1); // Stocke les paramètres après '?'
-            _uri = _uri.substr(0, queryPos); // Récupère juste l'URI sans les paramètres
-        }
+    if (_method.empty() || _uri.empty() || _version.empty())
+    {
+        throw std::runtime_error("Invalid request line");
     }
 
-    // Analyse des headers
-    std::string headerLine;
-    while (std::getline(requestStream, headerLine) && !headerLine.empty())
+    // Handle query parameters
+    size_t queryPos = _uri.find('?');
+    if (queryPos != std::string::npos)
     {
+        _queryParameters = _uri.substr(queryPos + 1);
+        _uri = _uri.substr(0, queryPos);
+    }
+
+    // Parse headers
+    std::string headerLine;
+    while (std::getline(headerStream, headerLine))
+    {
+        if (!headerLine.empty() && headerLine.back() == '\r')
+            headerLine.pop_back();
+
+        if (headerLine.empty())
+            break; // End of headers
+
         size_t colonPos = headerLine.find(':');
         if (colonPos != std::string::npos)
         {
             std::string headerName = trim(headerLine.substr(0, colonPos));
             std::string headerValue = trim(headerLine.substr(colonPos + 1));
-            _headers[headerName] = headerValue; // Stocke les headers dans la map
+            _headers[headerName] = headerValue;
         }
     }
 
-    // Vérification de la longueur du corps (Content-Length) pour lire le corps de la requête
+    // Verify Content-Length
     std::map<std::string, std::string>::iterator contentLengthIt = _headers.find("Content-Length");
     if (contentLengthIt != _headers.end())
     {
-        int contentLength = atoi(contentLengthIt->second.c_str());
-        if (contentLength > 0)
+        size_t contentLength = std::stoi(contentLengthIt->second);
+        if (_body.size() < contentLength)
         {
-            char *bodyData = new char[contentLength + 1];
-            requestStream.read(bodyData, contentLength);
-            bodyData[contentLength] = '\0';
-            _body = std::string(bodyData); // Stocke le corps de la requête
-            delete[] bodyData;
+            throw std::runtime_error("Incomplete request body");
+        }
+        else if (_body.size() > contentLength)
+        {
+            // Trim the body to Content-Length
+            _body = _body.substr(0, contentLength);
         }
     }
+
 }
+
 
 HttpRequest::~HttpRequest() {}
 
@@ -153,4 +181,86 @@ void HttpRequest::setURI(std::string uri)
 void HttpRequest::setVersion(std::string version)
 {
     _version = version;
+}
+
+std::string HttpRequest::getBoundary() const
+{
+    std::string contentType = getHeader("Content-Type");
+    std::string boundaryPrefix = "boundary=";
+    size_t pos = contentType.find(boundaryPrefix);
+    if (pos != std::string::npos)
+    {
+        return "--" + contentType.substr(pos + boundaryPrefix.length());
+    }
+    return "";
+}
+
+HttpRequest::FormData HttpRequest::parseMultipartFormData() const
+{
+    FormData result;
+    std::map<std::string, std::string> formData;
+    std::string boundary = getBoundary();
+    if (boundary.empty())
+    {
+        throw std::runtime_error("No boundary found in Content-Type header");
+    }
+
+    size_t pos = 0;
+    while ((pos = _body.find(boundary, pos)) != std::string::npos)
+    {
+        size_t endPos = _body.find(boundary, pos + boundary.length());
+        if (endPos == std::string::npos)
+        {
+            endPos = _body.length();
+        }
+        std::string part = _body.substr(pos + boundary.length(), endPos - pos - boundary.length());
+        // Parse part headers and content
+        size_t headerEnd = part.find("\r\n\r\n");
+        if (headerEnd != std::string::npos)
+        {
+            std::string partHeaders = part.substr(0, headerEnd);
+            std::string partContent = part.substr(headerEnd + 4);
+
+            // Extract filename and field name
+            std::istringstream partHeaderStream(partHeaders);
+            std::string headerLine;
+            std::string disposition;
+            while (std::getline(partHeaderStream, headerLine))
+            {
+                if (!headerLine.empty() && headerLine.back() == '\r')
+                    headerLine.pop_back();
+
+                if (headerLine.find("Content-Disposition:") != std::string::npos)
+                {
+                    disposition = headerLine;
+                }
+            }
+
+            // Extract name and filename from Content-Disposition
+            size_t namePos = disposition.find("name=\"");
+            if (namePos != std::string::npos)
+            {
+                namePos += 6;
+                size_t nameEnd = disposition.find("\"", namePos);
+                std::string name = disposition.substr(namePos, nameEnd - namePos);
+
+                size_t filenamePos = disposition.find("filename=\"");
+                if (filenamePos != std::string::npos)
+                {
+                    filenamePos += 10;
+                    size_t filenameEnd = disposition.find("\"", filenamePos);
+                    result.fileName = disposition.substr(filenamePos, filenameEnd - filenamePos);
+                }
+
+                result.fields[name] = partContent;
+            }
+        }
+        pos = endPos;
+    }
+    return result;
+}
+
+std::string HttpRequest::getFileName() const
+{
+    return _fileName;
 }
