@@ -116,7 +116,7 @@
     event.preventDefault();
     const selectedFile = document.getElementById('fileSelect').value;
     // Envoyer une requête DELETE au serveur
-    fetch('./public/index/files/' + encodeURIComponent(selectedFile), {
+    fetch('/files/' + encodeURIComponent(selectedFile), {
         method: 'DELETE'
     })
     .then(response => {
