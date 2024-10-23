@@ -13,14 +13,12 @@ void Client::readRequest(const std::string &rawData)
 void Client::processRequest(const _server &serverInfo)
 {
     HttpResponse response;
+    Logger &logger = Logger::getInstance("server.log");
     bool requestHandled = false;
     std::string uri = _request.getURI();
+    logger.log("URI before process request is: " + uri);
     // TO DO : URI value is good here
-    // std::cout << "Requested URI: " << uri << std::endl;
     std::string method = _request.getMethod();
-
-    // Instantiate Logger (logs will be written to "server.log") use cat
-    Logger &logger = Logger::getInstance("server.log");
     // TO DO : print path favic
     // logger.logAccess("test_db/favicon.png");
 
@@ -32,25 +30,28 @@ void Client::processRequest(const _server &serverInfo)
         {
             if (_request.getMethod() == "GET")
             {
-                // std::cout << "------- Processing request - Method: " << method << ", URI: " << uri << std::endl; good here
+                logger.log("GET METHOD DETECTED");
                 GetRequestHandler getHandler(location);
                 getHandler.handle(_request, response);
                 requestHandled = true;
             }
             else if (_request.getMethod() == "POST")
             {
+                logger.log("POST METHOD DETECTED");
                 PostRequestHandler postHandler(location);
                 postHandler.handle(_request, response);
                 requestHandled = true;
             }
             else if (_request.getMethod() == "DELETE")
             {
+                logger.log("DELETE METHOD DETECTED");
                 DeleteRequestHandler deleteHandler(location);
                 deleteHandler.handle(_request, response);
                 requestHandled = true;
             }
             else
             {
+                logger.log("UNKNOWN METHOD DETECTED");
                 UnknownRequestHandler unknownHandler(location);
                 unknownHandler.handle(_request, response);
                 requestHandled = true;

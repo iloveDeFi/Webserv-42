@@ -18,7 +18,6 @@ private:
     /* 	•	Variable statique : Cela signifie que _instance est partagé entre toutes les instances de la classe Logger. Il n’est pas spécifique à une instance et est accessible à travers la classe elle-même.
     •	Pointeur : Le type de _instance est un pointeur vers Logger. Cela permet de différer l’initialisation de l’objet jusqu’à ce qu’il soit réellement nécessaire. Ainsi, _instance peut pointer vers un objet Logger ou rester nullptr tant que l’objet n’est pas créé.
 */
-
     static Logger *_instance;
 
 public:

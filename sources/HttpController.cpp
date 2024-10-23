@@ -179,14 +179,14 @@ std::string RequestController::resolveResourcePath(const std::string &uri)
     return (resourcePath);
 }
 
-void RequestController::serveResource(const std::string &resourcePath, HttpResponse &res)
+void RequestController::serveGetResource(const std::string &resourcePath, HttpResponse &res)
 {
     Logger &logger = Logger::getInstance("server.log");
 
     try
     {
         std::string resourceContent = loadResource(resourcePath);
-        res.generate200OK("text/html", resourceContent); // Par défaut "text/html", ajustable si nécessaire
+        res.generate200OK("text/html", resourceContent);
         logger.log("Response Status Code: " + to_string(res.getStatusCode()));
         logger.log("Response Body Length: " + to_string(resourceContent.length()));
         setCorsHeaders(res);
@@ -224,12 +224,13 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         logger.log("Error: Access to the resource is forbidden for resourcePath: " + resourcePath);
         return;
     }
-
-    serveResource(resourcePath, res);
+    serveGetResource(resourcePath, res);
 }
 
 void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res)
 {
+    Logger &logger = Logger::getInstance("server.log");
+    logger.log(">>> Handling POST request");
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
     std::string body = req.getBody();
@@ -256,6 +257,7 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
 
     res.setHTTPVersion(version);
     res.ensureContentLength();
+    logger.log(">>> Finished handling POST request");
 }
 
 void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res)
