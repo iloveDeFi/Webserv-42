@@ -8,58 +8,59 @@ Client::~Client() {}
 void Client::readRequest(const std::string &rawData)
 {
     _request = HttpRequest(rawData);
+/*     std::cout << "Method: " << _request.getMethod() << std::endl;
+    std::cout << "URI: " << _request.getURI() << std::endl;
+    std::cout << "Version: " << _request.getHTTPVersion() << std::endl; */
 }
 
 void Client::processRequest(const _server &serverInfo)
 {
     HttpResponse response;
-    bool requestHandled = false;
     std::string uri = _request.getURI();
-    // TO DO : URI value is good here
-    // std::cout << "Requested URI: " << uri << std::endl;
     std::string method = _request.getMethod();
 
-    // Instantiate Logger (logs will be written to "server.log") use cat
     Logger &logger = Logger::getInstance("server.log");
 
+    const HttpConfig::Location *bestMatch = NULL;
+
+    // Find the location with the longest matching prefix
     for (size_t i = 0; i < serverInfo._locations.size(); ++i)
     {
         const HttpConfig::Location &location = serverInfo._locations[i];
-        std::cout << "HERE!!!!! =>" << location.handler << std::endl;
-    
-        if (uri.find(location.path) == 0)
+
+        if (uri == location.path)
         {
-            if (_request.getMethod() == "GET")
-            {
-                // std::cout << "------- Processing request - Method: " << method << ", URI: " << uri << std::endl; good here
-                GetRequestHandler getHandler(location, serverInfo._root);
-                getHandler.handle(_request, response);
-                requestHandled = true;
-            }
-            else if (_request.getMethod() == "POST")
-            {
-                PostRequestHandler postHandler(location, serverInfo._root);
-                postHandler.handle(_request, response);
-                requestHandled = true;
-            }
-            else if (_request.getMethod() == "DELETE")
-            {
-                DeleteRequestHandler deleteHandler(location, serverInfo._root);
-                deleteHandler.handle(_request, response);
-                requestHandled = true;
-            }
-            else
-            {
-                UnknownRequestHandler unknownHandler(location, serverInfo._root);
-                unknownHandler.handle(_request, response);
-                requestHandled = true;
-            }
+            bestMatch = &location;
             break;
         }
     }
 
-    if (requestHandled)
+    if (bestMatch != NULL)
     {
+        const HttpConfig::Location &location = *bestMatch;
+        std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
+
+        if (_request.getMethod() == "GET")
+        {
+            GetRequestHandler getHandler(location, serverInfo._root);
+            getHandler.handle(_request, response);
+        }
+        else if (_request.getMethod() == "POST")
+        {
+            PostRequestHandler postHandler(location, serverInfo._root);
+            postHandler.handle(_request, response);
+        }
+        else if (_request.getMethod() == "DELETE")
+        {
+            DeleteRequestHandler deleteHandler(location, serverInfo._root);
+            deleteHandler.handle(_request, response);
+        }
+        else
+        {
+            UnknownRequestHandler unknownHandler(location, serverInfo._root);
+            unknownHandler.handle(_request, response);
+        }
+
         int statusCode = response.getStatusCode();
         logger.logRequest(method, uri, statusCode);
         if (statusCode >= 400)
@@ -78,6 +79,7 @@ void Client::processRequest(const _server &serverInfo)
 
     _response = response;
 }
+
 
 void Client::sendResponse()
 {

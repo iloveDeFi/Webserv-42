@@ -47,6 +47,10 @@ public:
     std::string trim(const std::string &str);
 
     void logHttpRequest(Logger &logger);
+
+    void setMethod(std::string method);
+    void setURI(std::string uri);
+    void setVersion(std::string version);
 };
 
 std::ostream &operator<<(std::ostream &os, const HttpRequest &re);

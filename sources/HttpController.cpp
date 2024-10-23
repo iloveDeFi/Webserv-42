@@ -157,7 +157,10 @@ std::string RequestController::resolveResourcePath(const std::string &uri)
         resourcePath += '/';
 
     if (!_locationConfig.handler.empty())
-        resourcePath += _locationConfig.handler;
+    {
+         resourcePath += _locationConfig.handler;
+         //std::cout << "HERE!!!! " << _locationConfig.handler << std::endl; 
+    }
     else
     {
         // Default behavior if no handler is specified

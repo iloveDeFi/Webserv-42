@@ -55,6 +55,7 @@ public:
     GetRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
     virtual ~GetRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
+    void handleInternalRequest(const HttpRequest &req, HttpResponse &res);
 };
 
 class PostRequestHandler : public RequestController
