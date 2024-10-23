@@ -41,6 +41,12 @@
           allow_uploads: false
           content_type: image/x-icon
 
+        - path: /files
+          methods: DELETE
+          handler: internal
+          allow_uploads: false
+          content_type: text/plain
+
 - server:
     server_name: secondserver.com
     port: 80
@@ -76,3 +82,9 @@
           handler: /
           allow_uploads: false
           content_type: image/x-icon
+
+        - path: /files
+          methods: DELETE
+          handler: internal
+          allow_uploads: false
+          content_type: text/plain

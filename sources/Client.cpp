@@ -16,11 +16,13 @@ void Client::processRequest(const _server &serverInfo)
     Logger &logger = Logger::getInstance("server.log");
     bool requestHandled = false;
     std::string uri = _request.getURI();
-    logger.log("URI before process request is: " + uri);
+   
     // TO DO : URI value is good here
     std::string method = _request.getMethod();
     // TO DO : print path favic
     // logger.logAccess("test_db/favicon.png");
+    logger.log("URI before process request is: " + uri);
+    logger.log("Method before process detected: " + method);
 
     for (size_t i = 0; i < serverInfo._locations.size(); ++i)
     {

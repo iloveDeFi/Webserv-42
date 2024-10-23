@@ -270,6 +270,8 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
         res.generate403Forbidden("403 Forbidden: You do not have permission to delete this resource.");
         return;
     }
+    // TO DO TEST EN DUR
+    // std::string resourcePath = ("./test_db" + uri);
     std::string resourcePath = _locationConfig.root + uri;
     if (remove(resourcePath.c_str()) != 0)
     {
