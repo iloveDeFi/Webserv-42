@@ -42,6 +42,12 @@
           handler: internal
           allow_uploads: false
 
+        - path: /cgi-bin
+          methods: GET, POST
+          handler: index/cgi-bin/
+          allow_uploads: false
+          content_type: text/html
+
 - server:
     server_name: secondserver.com
     port: 80
@@ -80,3 +86,9 @@
           methods: POST
           handler: internal
           allow_uploads: true
+
+        - path: /cgi-bin
+          methods: GET, POST
+          handler: index/cgi-bin/
+          allow_uploads: false
+          content_type: text/html
