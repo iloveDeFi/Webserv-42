@@ -20,7 +20,7 @@ HttpRequest::HttpRequest()
 
 // Constructeur pour analyser la raw data
 HttpRequest::HttpRequest(const std::string &rawData)
-    : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods())
+    : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods()), _contentType("")
 {
     // Split the raw data into header and body
     size_t headerEndPos = rawData.find("\r\n\r\n");
@@ -78,6 +78,9 @@ HttpRequest::HttpRequest(const std::string &rawData)
         }
     }
 
+    // Set _contentType from headers after parsing
+    _contentType = getHeader("Content-Type");
+
     // Verify Content-Length
     std::map<std::string, std::string>::iterator contentLengthIt = _headers.find("Content-Length");
     if (contentLengthIt != _headers.end())
@@ -133,7 +136,10 @@ std::string HttpRequest::getHeader(const std::string &name) const
 }
 std::string HttpRequest::getBody() const { return _body; }
 std::string HttpRequest::getQueryParameters() const { return _queryParameters; }
+std::string HttpRequest::getContentType() const { return getHeader("Content-Type"); }
 bool HttpRequest::isChunked() const { return false; }
+std::string HttpRequest::getFileName() const { return _fileName; }
+bool HttpRequest::isCgi() const { return isCgiRequest; }
 
 // Méthode pour valider si une méthode est autorisée
 bool HttpRequest::isMethodAllowed(const std::string &method) const
@@ -148,6 +154,8 @@ std::set<std::string> HttpRequest::initMethods()
     methods.insert("GET");
     methods.insert("POST");
     methods.insert("DELETE");
+    methods.insert("UNKOWN");
+    methods.insert("CGI");
     return methods;
 }
 
@@ -170,18 +178,10 @@ void HttpRequest::logHttpRequest(Logger &logger)
 }
 
 // Définir la méthode, URI, et version si besoin
-void HttpRequest::setMethod(std::string method)
-{
-    _method = method;
-}
-void HttpRequest::setURI(std::string uri)
-{
-    _uri = uri;
-}
-void HttpRequest::setVersion(std::string version)
-{
-    _version = version;
-}
+void HttpRequest::setMethod(std::string method) { _method = method; }
+void HttpRequest::setURI(std::string uri) { _uri = uri; }
+void HttpRequest::setVersion(std::string version) { _version = version; }
+void HttpRequest::setCgi(bool cgi) { isCgiRequest = cgi; }
 
 std::string HttpRequest::getBoundary() const
 {
@@ -258,9 +258,4 @@ HttpRequest::FormData HttpRequest::parseMultipartFormData() const
         pos = endPos;
     }
     return result;
-}
-
-std::string HttpRequest::getFileName() const
-{
-    return _fileName;
 }

@@ -11,6 +11,7 @@ RequestController::RequestController(const HttpConfig::Location &locationConfig,
         _validMethods.insert("DELETE");
         _validMethods.insert("OPTIONS");
         _validMethods.insert("UNKNOWN");
+        _validMethods.insert("CGI");
     }
 }
 
@@ -496,6 +497,90 @@ void RequestController::handleOptionsResponse(const HttpRequest &req, HttpRespon
     res.setBody("");
 }
 
+// TO DO : ADD CGI HANDLER
+void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res) 
+{
+    Logger &logger = Logger::getInstance("server.log");
+    std::string uri = req.getURI();
+    logger.log("Received CGI request for URI: " + uri);
 
+    // Resolve the path to the CGI script based on the request URI
+    std::string cgiScriptPath = _serverRoot + "/cgi-bin" + uri; // Adjust path as necessary
 
+    // Check if the CGI script exists and is executable
+    struct stat scriptStat;
+    if (stat(cgiScriptPath.c_str(), &scriptStat) != 0 || !S_ISREG(scriptStat.st_mode) || (scriptStat.st_mode & S_IXUSR) == 0) {
+        res.generate403Forbidden("403 Forbidden: CGI script is not accessible or does not exist");
+        logger.log("Error: CGI script not found or not executable: " + cgiScriptPath);
+        return;
+    }
 
+    // Set up the environment for the CGI script
+    std::vector<std::string> envVariables;
+    envVariables.push_back("REQUEST_METHOD=" + req.getMethod());
+    envVariables.push_back("QUERY_STRING=" + req.getQuery());
+    envVariables.push_back("CONTENT_TYPE=" + req.getContentType());
+    
+    std::string contentLength = "CONTENT_LENGTH=";
+    contentLength += std::to_string(req.getBody().length()); // C++98 compatible
+    envVariables.push_back(contentLength);
+    
+    envVariables.push_back("SCRIPT_NAME=" + uri);
+    envVariables.push_back("SCRIPT_PATH=" + cgiScriptPath);
+    // Add any other required environment variables
+
+    // Fork a new process to execute the CGI script
+    pid_t pid = fork();
+    if (pid < 0) {
+        res.generate500InternalServerError("500 Internal Server Error: Failed to fork process");
+        logger.log("Error: Failed to fork process for CGI execution");
+        return;
+    } else if (pid == 0) { // Child process
+        // Set the environment variables
+        for (size_t i = 0; i < envVariables.size(); ++i) {
+            putenv(const_cast<char*>(envVariables[i].c_str()));
+        }
+
+        // Redirect stdout and stderr to a pipe
+        int pipefd[2];
+        pipe(pipefd);
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[1]); // Close write end of pipe
+
+        // Execute the CGI script
+        const char *scriptPath = cgiScriptPath.c_str();
+        execl(scriptPath, scriptPath, (char *)nullptr);
+
+        // If execl fails
+        perror("execl failed");
+        exit(1);
+    } else { // Parent process
+        // Wait for the child process to finish
+        int status;
+        waitpid(pid, &status, 0);
+
+        // Read the output from the CGI script
+        char buffer[4096];
+        std::string output;
+        ssize_t bytesRead;
+
+        while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0) {
+            buffer[bytesRead] = '\0'; // Null-terminate the buffer
+            output += buffer; // Concatenate buffer to output
+        }
+        close(pipefd[0]); // Close read end of pipe
+
+        // Handle the output from the CGI script
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+            res.generate200OK("text/html", output); // You may want to set the correct content type
+            logger.log("CGI script executed successfully: " + cgiScriptPath);
+        } else {
+            res.generate500InternalServerError("500 Internal Server Error: CGI script execution failed");
+            logger.log("Error: CGI script execution failed with status: " + std::to_string(WEXITSTATUS(status)));
+        }
+    }
+
+    res.ensureContentLength();
+    setCorsHeaders(res);
+    res.logHttpResponse(logger);
+}

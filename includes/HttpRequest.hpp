@@ -33,6 +33,8 @@ private:
     std::set<std::string> initMethods();
     std::set<std::string> _allowedMethods;
     std::string _fileName;
+    bool isCgiRequest;
+    std::string _contentType;
 
 public:
     HttpRequest();
@@ -44,6 +46,8 @@ public:
     std::string getMethod() const;
     std::string getURI() const;
     std::string getHTTPVersion() const;
+    std::string getContentType() const;
+    std::string getQueryParameters() const;
 
     std::map<std::string, std::string> getHeaders() const;
     std::string getHeader(const std::string &name) const;
@@ -65,6 +69,9 @@ public:
     void setVersion(std::string version);
     std::string getBoundary() const;
     FormData parseMultipartFormData() const;
+    
+    bool isCgi() const;
+    void setCgi(bool cgi);
 };
 
 std::ostream &operator<<(std::ostream &os, const HttpRequest &re);

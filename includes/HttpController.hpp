@@ -6,13 +6,21 @@
 #include "HttpConfig.hpp"
 #include "Logger.hpp"
 #include "Templates.hpp"
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <unistd.h>
 #include <fstream>
 #include <stdexcept>
 #include <string>
 #include <set>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <algorithm>
+#include <iostream>
+#include <vector>
 
 struct FormData;
 
@@ -36,6 +44,7 @@ protected:
     void handleDeleteResponse(const HttpRequest &req, HttpResponse &res);
     void handleOptionsResponse(const HttpRequest &req, HttpResponse &res);
     void handleUnknownResponse(const HttpRequest &req, HttpResponse &res);
+    void handleCgiResponse(const HttpRequest &req, HttpResponse &res);
 
 public:
     RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
@@ -93,6 +102,14 @@ class UnknownRequestHandler : public RequestController
 public:
     UnknownRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
     virtual ~UnknownRequestHandler();
+    virtual void handle(const HttpRequest &req, HttpResponse &res);
+};
+
+class CgiRequestHandler : public RequestController
+{
+public:
+    CgiRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
+    virtual ~CgiRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
 
