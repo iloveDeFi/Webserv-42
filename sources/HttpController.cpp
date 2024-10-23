@@ -518,13 +518,13 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
     // Set up the environment for the CGI script
     std::vector<std::string> envVariables;
     envVariables.push_back("REQUEST_METHOD=" + req.getMethod());
-    envVariables.push_back("QUERY_STRING=" + req.getQuery());
+    envVariables.push_back("QUERY_STRING=" + req.getQueryParameters());
     envVariables.push_back("CONTENT_TYPE=" + req.getContentType());
-    
+
     std::string contentLength = "CONTENT_LENGTH=";
-    contentLength += std::to_string(req.getBody().length()); // C++98 compatible
+    contentLength += to_string(req.getBody().length()); // C++98 compatible
     envVariables.push_back(contentLength);
-    
+
     envVariables.push_back("SCRIPT_NAME=" + uri);
     envVariables.push_back("SCRIPT_PATH=" + cgiScriptPath);
     // Add any other required environment variables
@@ -536,16 +536,21 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
         logger.log("Error: Failed to fork process for CGI execution");
         return;
     } else if (pid == 0) { // Child process
+        // Set up the pipe before redirecting stdout
+        int pipefd[2];
+        if (pipe(pipefd) == -1) {
+            perror("pipe failed");
+            exit(1);
+        }
+
+        // Redirect stdout to the write end of the pipe
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[1]); // Close the write end of the pipe
+
         // Set the environment variables
         for (size_t i = 0; i < envVariables.size(); ++i) {
             putenv(const_cast<char*>(envVariables[i].c_str()));
         }
-
-        // Redirect stdout and stderr to a pipe
-        int pipefd[2];
-        pipe(pipefd);
-        dup2(pipefd[1], STDOUT_FILENO);
-        close(pipefd[1]); // Close write end of pipe
 
         // Execute the CGI script
         const char *scriptPath = cgiScriptPath.c_str();
@@ -555,6 +560,8 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
         perror("execl failed");
         exit(1);
     } else { // Parent process
+        // Set up the read end of the pipe
+        int pipefd[2];
         // Wait for the child process to finish
         int status;
         waitpid(pid, &status, 0);
@@ -568,7 +575,7 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
             buffer[bytesRead] = '\0'; // Null-terminate the buffer
             output += buffer; // Concatenate buffer to output
         }
-        close(pipefd[0]); // Close read end of pipe
+        close(pipefd[0]); // Close the read end of pipe
 
         // Handle the output from the CGI script
         if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
@@ -576,7 +583,7 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
             logger.log("CGI script executed successfully: " + cgiScriptPath);
         } else {
             res.generate500InternalServerError("500 Internal Server Error: CGI script execution failed");
-            logger.log("Error: CGI script execution failed with status: " + std::to_string(WEXITSTATUS(status)));
+            logger.log("Error: CGI script execution failed with status: " + to_string(WEXITSTATUS(status)));
         }
     }
 
