@@ -48,6 +48,12 @@
           allow_uploads: false
           content_type: text/html
 
+        - path: /cgi-bin/json
+          methods: GET
+          handler: index/cgi-bin/
+          allow_uploads: false
+          content_type: application/json  # Changer le content type selon retour requete
+
 - server:
     server_name: secondserver.com
     port: 80
@@ -91,4 +97,10 @@
           methods: GET, POST
           handler: index/cgi-bin/
           allow_uploads: false
-          content_type: text/html
+          content_type: text/html   # Pour les requêtes GET
+
+        - path: /cgi-bin/json
+          methods: GET
+          handler: index/cgi-bin/
+          allow_uploads: false
+          content_type: application/json  # Requêtes qui retournent des données JSON etc etc
