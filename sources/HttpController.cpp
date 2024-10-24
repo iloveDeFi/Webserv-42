@@ -274,6 +274,7 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
     std::string version = req.getHTTPVersion();
     std::string body = req.getBody();
     logger.log("Received POST request for URI: " + uri);
+    logger.log("Body: " + body);
 
     if (body.empty())
     {

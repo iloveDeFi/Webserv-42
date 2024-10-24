@@ -53,6 +53,22 @@
           handler: index/cgi-bin/
           allow_uploads: false
           content_type: application/json  # Changer le content type selon retour requete
+          
+         # Handler CGI pour le script Python 'simple.py' (GET)
+        - path: /cgi-bin/get
+          methods: GET
+          cgi_handler: /usr/bin/python3
+          handler: index/cgi-bin/simple.py
+          allow_uploads: false
+          content_type: text/html
+
+        # Handler CGI pour le script Python 'upload.py' (POST)
+        - path: /cgi-bin/upload
+          methods: POST
+          cgi_handler: /usr/bin/python3
+          handler: index/cgi-bin/upload.py
+          allow_uploads: true
+          content_type: application/json
 
 - server:
     server_name: secondserver.com
