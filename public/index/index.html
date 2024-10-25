@@ -46,19 +46,29 @@
         .content img {
             max-width: 100%;
             border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .button-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
         }
 
         .button {
             display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
+            width: calc(50% - 10px);
+            padding: 15px;
             background: #5cb85c;
             color: white;
             border: none;
             border-radius: 5px;
             text-decoration: none;
-            font-size: 1.1em;
+            font-size: 1em;
+            font-weight: bold;
             transition: background 0.3s;
+            text-align: center;
         }
 
         .button:hover {
@@ -82,8 +92,17 @@
 
 <div class="container">
     <div class="content">
-        <h2> 🐈‍⬛ Jolie Requête Amigo</h2>
+        <h2> 🐈‍⬛ Explorez les Endpoints CGI</h2>
+        
+        <!-- Image display -->
         <img src="https://images.pexels.com/photos/416160/pexels-photo-416160.jpeg" alt="Placeholder Image">
+        
+        <!-- Button grid for CGI endpoints -->
+        <div class="button-grid">
+            <a href="/comments" class="button">les CGI</a>
+            <a href="/uploadPage" class="button">le post sans CGI</a>
+            <a href="/deletePage" class="button">le delete</a>
+        </div>
     </div>
 </div>
 

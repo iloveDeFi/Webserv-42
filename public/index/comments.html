@@ -19,10 +19,26 @@
             color: #ffffff;
             padding: 20px 0;
             text-align: center;
+            position: relative;
         }
         header h1 {
             margin: 0;
             font-size: 2.5em;
+        }
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #5cb85c;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+        .back-button:hover {
+            background: #4cae4c;
         }
         .container {
             display: flex;
@@ -78,6 +94,7 @@
 <body>
 
 <header>
+    <a href="/" class="back-button">Retour à l'index</a>
     <h1>Commentaires</h1>
 </header>
 
@@ -134,8 +151,6 @@
             alert("Erreur lors de la récupération des commentaires: " + error);
         });
     }
-
-
 
     // Load comments when the page loads
     document.addEventListener("DOMContentLoaded", loadComments);

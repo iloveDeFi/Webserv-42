@@ -19,11 +19,29 @@
             color: #ffffff;
             padding: 20px 0;
             text-align: center;
+            position: relative;
         }
 
         header h1 {
             margin: 0;
             font-size: 2.5em;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #5cb85c;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        .back-button:hover {
+            background: #4cae4c;
         }
 
         .container {
@@ -77,15 +95,16 @@
 <body>
 
 <header>
-    <h1> 📤 Téléverser un fichier</h1>
+    <a href="/" class="back-button">Retour à l'index</a>
+    <h1> 📤 Upload un fichier</h1>
 </header>
 
 <div class="container">
     <div class="content">
-        <h2>Sélectionnez un fichier à téléverser</h2>
+        <h2>Sélectionnez un fichier à uploader</h2>
         <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/add">
             <input type="file" id="fileInput" name="file" required>
-            <button type="submit">Téléverser</button>
+            <button type="submit">Post</button>
         </form>        
     </div>
 </div>
