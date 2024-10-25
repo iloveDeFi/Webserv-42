@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Requête GET avec CGI</title>
-    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <title>Upload de fichier PHP</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,19 +12,6 @@
             background-color: #595959;
             color: #333;
         }
-
-        header {
-            background: #35424a;
-            color: #ffffff;
-            padding: 20px 0;
-            text-align: center;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 2.5em;
-        }
-
         .container {
             display: flex;
             flex-direction: column;
@@ -33,7 +19,6 @@
             justify-content: center;
             padding: 20px;
         }
-
         .content {
             background: #ffffff;
             border-radius: 8px;
@@ -42,13 +27,12 @@
             max-width: 600px;
             text-align: center;
         }
-
-        .content input[type="text"] {
+        .content input[type="file"] {
+            width: 100%;
             padding: 10px;
             margin-bottom: 20px;
             font-size: 1.1em;
         }
-
         .content button {
             padding: 10px 20px;
             background: #5cb85c;
@@ -59,39 +43,22 @@
             cursor: pointer;
             transition: background 0.3s;
         }
-
         .content button:hover {
             background: #4cae4c;
-        }
-
-        footer {
-            margin-top: 20px;
-            padding: 10px 0;
-            text-align: center;
-            background: #000000;
-            color: #ffffff;
         }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>Requête GET avec CGI</h1>
-</header>
-
 <div class="container">
     <div class="content">
-        <h2>Entrez votre nom pour une réponse personnalisée :</h2>
-        <form method="GET" action="/cgi-bin/simple.py">
-            <input type="text" name="name" placeholder="Votre nom" required>
-            <button type="submit">Envoyer</button>
+        <h2>Uploader un fichier en PHP</h2>
+        <form action="/cgi-bin/php" method="POST" enctype="multipart/form-data">
+            <input type="file" name="fileToUpload" required>
+            <button type="submit">Upload</button>
         </form>
     </div>
 </div>
-
-<footer>
-    <p>&copy; 2024 Webserv42. Tous droits réservés.</p>
-</footer>
 
 </body>
 </html>

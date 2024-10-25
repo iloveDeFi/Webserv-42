@@ -509,159 +509,6 @@ void RequestController::handleOptionsResponse(const HttpRequest &req, HttpRespon
 }
 
 
-
-// void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res) 
-// {
-//     Logger &logger = Logger::getInstance("server.log");
-//     std::string uri = req.getURI();
-//     std::string handler = getHandler();
-//     logger.log("Received CGI request for URI: " + uri);
-
-//     // Resolve the path to the CGI script based on the request URI
-//     std::string cgiScriptPath = _serverRoot + "/" + handler; // Adjust path as necessary
-
-//     // Check if the CGI script exists and is executable
-//     struct stat scriptStat;
-//     if (stat(cgiScriptPath.c_str(), &scriptStat) != 0 || !S_ISREG(scriptStat.st_mode) || (scriptStat.st_mode & S_IXUSR) == 0) {
-//         res.generate403Forbidden("403 Forbidden: CGI script is not accessible or does not exist");
-//         logger.log("Error: CGI script not found or not executable: " + cgiScriptPath);
-//         return;
-//     }
-
-//     // Set up the environment for the CGI script
-//     std::vector<std::string> envVariables;
-//     envVariables.push_back("REQUEST_METHOD=" + req.getMethod());
-//     envVariables.push_back("QUERY_STRING=" + req.getQueryParameters());
-//     envVariables.push_back("CONTENT_TYPE=" + req.getContentType());
-
-//     std::string contentLength = "CONTENT_LENGTH=";
-//     contentLength += to_string(req.getBody().length()); // C++98 compatible
-//     envVariables.push_back(contentLength);
-
-//     std::size_t lastSlash = handler.find_last_of("/\\");  // Find last slash or backslash
-//     std::string filename = handler.substr(lastSlash + 1);
-//     envVariables.push_back("SCRIPT_NAME=" + filename);
-//     envVariables.push_back("SCRIPT_PATH=" + cgiScriptPath);
-//     // Add any other required environment variables
-
-//     // Fork a new process to execute the CGI script
-// // Créer des pipes pour stdin et stdout
-//     int stdin_pipe[2];
-//     int stdout_pipe[2];
-
-//     if (pipe(stdin_pipe) == -1 || pipe(stdout_pipe) == -1) {
-//         res.generate500InternalServerError("500 Internal Server Error: Failed to create pipes");
-//         logger.log("Error: Failed to create pipes for CGI execution");
-//         return;
-//     }
-
-//     pid_t pid = fork();
-//     if (pid < 0) {
-//         res.generate500InternalServerError("500 Internal Server Error: Failed to fork process");
-//         logger.log("Error: Failed to fork process for CGI execution");
-//         return;
-//     } else if (pid == 0) { // Processus enfant
-//         // Rediriger stdin
-//         close(stdin_pipe[1]); // Fermer l'extrémité d'écriture du pipe stdin
-//         dup2(stdin_pipe[0], STDIN_FILENO);
-//         close(stdin_pipe[0]); // Fermer l'extrémité de lecture après dup2
-
-//         // Rediriger stdout
-//         close(stdout_pipe[0]); // Fermer l'extrémité de lecture du pipe stdout
-//         dup2(stdout_pipe[1], STDOUT_FILENO);
-//         close(stdout_pipe[1]); // Fermer l'extrémité d'écriture après dup2
-
-//         // Définir les variables d'environnement
-//         for (size_t i = 0; i < envVariables.size(); ++i) {
-//             putenv(const_cast<char*>(envVariables[i].c_str()));
-//         }
-
-//         // Exécuter le script CGI
-//         const char *scriptPath = cgiScriptPath.c_str();
-//         execl(scriptPath, scriptPath, (char *)nullptr);
-
-
-//         // Si execl échoue
-//         perror("execl failed");
-//         exit(1);
-//     } else { // Processus parent
-//         // Fermer les extrémités inutilisées
-//         close(stdin_pipe[0]); // Fermer l'extrémité de lecture du pipe stdin
-//         close(stdout_pipe[1]); // Fermer l'extrémité d'écriture du pipe stdout
-
-//         // Écrire le corps de la requête dans stdin du script CGI
-//         const std::string &requestBody = req.getBody();
-//         write(stdin_pipe[1], requestBody.c_str(), requestBody.size());
-//         close(stdin_pipe[1]); // Fermer l'extrémité d'écriture après écriture
-//         logger.log("request BODY : " + req.getBody());
-
-//         // Lire la sortie du script CGI
-//         char buffer[4096];
-//         std::string output;
-//         ssize_t bytesRead;
-
-//         while ((bytesRead = read(stdout_pipe[0], buffer, sizeof(buffer) - 1)) > 0) {
-//             buffer[bytesRead] = '\0'; // Terminer la chaîne
-//             output += buffer; // Ajouter au résultat
-//         }
-//         close(stdout_pipe[0]); // Fermer l'extrémité de lecture du pipe stdout
-
-//         // Attendre la fin du processus enfant
-//         int status;
-//         waitpid(pid, &status, 0);
-
-//         // Gérer la sortie du script CGI
-//         if (WIFEXITED(status) && WEXITSTATUS(status) == 0) 
-//         {
-//             // Analyser les en-têtes et le corps de la sortie du script CGI
-//             size_t headerEndPos = output.find("\r\n\r\n");
-//             if (headerEndPos == std::string::npos) {
-//                 headerEndPos = output.find("\n\n"); // Alternative
-//             }
-
-//             if (headerEndPos != std::string::npos) {
-//                 std::string headers = output.substr(0, headerEndPos);
-//                 std::string body = output.substr(headerEndPos + 4);
-//                 // Analyser les en-têtes
-//                 std::istringstream headerStream(headers);
-//                 std::string headerLine;
-//                 while (std::getline(headerStream, headerLine)) {
-//                     if (!headerLine.empty() && headerLine.back() == '\r')
-//                         headerLine.pop_back();
-
-//                     size_t colonPos = headerLine.find(':');
-//                     if (colonPos != std::string::npos) {
-//                         std::string headerName = headerLine.substr(0, colonPos);
-//                         std::string headerValue = headerLine.substr(colonPos + 1);
-//                         res.setHeader(headerName, headerValue);
-//                     }
-//                 }
-
-//                 res.setBody(body);
-//                 logger.log("BODY : " + body);
-//                 res.setStatusCode(200);
-//                 res.setReasonMessage("OK");
-//             } else {
-//                 // Pas d'en-têtes, supposer que toute la sortie est le corps
-//                 res.generate200OK("text/html", output);
-//             }
-//             logger.log("CGI script executed successfully: " + cgiScriptPath);
-//         } 
-//         else {
-//             res.generate500InternalServerError("500 Internal Server Error: CGI script execution failed");
-//             logger.log("Error: CGI script execution failed with status: " + to_string(WEXITSTATUS(status)));
-//         }
-//         logger.log("CGI output: " + output);
-//     }
-
-//     res.ensureContentLength();
-//     setCorsHeaders(res);
-//     //res.logHttpResponse(logger);
-// }
-
-
-
-// >>>>>>>>> TO DO : ADD CGI HANDLER
 void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res) {
     Logger &logger = Logger::getInstance("server.log");
     std::string cgiScriptPath = resolveCgiPath();
@@ -733,6 +580,7 @@ bool RequestController::createPipes(int stdin_pipe[2], int stdout_pipe[2], HttpR
 
 // Gère l'exécution du script CGI
 void RequestController::executeCgiScript(const std::string &cgiScriptPath, const std::vector<std::string> &envVariables, int stdin_pipe[2], int stdout_pipe[2]) {
+    Logger &logger = Logger::getInstance("server.log");
     close(stdin_pipe[1]);
     dup2(stdin_pipe[0], STDIN_FILENO);
     close(stdin_pipe[0]);
@@ -744,7 +592,7 @@ void RequestController::executeCgiScript(const std::string &cgiScriptPath, const
     for (size_t i = 0; i < envVariables.size(); ++i) {
         putenv(const_cast<char*>(envVariables[i].c_str()));
     }
-
+    logger.log("CGI cgiScriptPath: " + cgiScriptPath);
     execl(cgiScriptPath.c_str(), cgiScriptPath.c_str(), (char *)nullptr);
     perror("execl failed");
     exit(1);

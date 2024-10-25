@@ -21,6 +21,12 @@
           handler: index/comments.html
           allow_uploads: false
           content_type: text/html
+        
+        - path: /UploadCGI
+          methods: GET
+          handler: index/uploadcgi.html
+          allow_uploads: true
+          content_type: text/html
 
         # CGI handler for saving and retrieving comments
         - path: /cgi-bin/save_comment
@@ -28,6 +34,13 @@
           cgi_handler: /usr/bin/python3
           handler: index/cgi-bin/save_comment.py
           allow_uploads: false
+          content_type: application/json
+
+        - path: /cgi-bin/php
+          methods: POST
+          cgi_handler: /opt/homebrew/bin/php  # Chemin vers l'exécutable PHP
+          handler: index/cgi-bin/upload.php
+          allow_uploads: true
           content_type: application/json
 
         - path: /uploadPage
@@ -76,13 +89,9 @@
           allow_uploads: false
           content_type: text/html
 
-        # Handler CGI pour le script Python 'upload.py' (POST)
-        - path: /cgi-bin/upload
-          methods: POST
-          cgi_handler: /usr/bin/python3
-          handler: index/cgi-bin/upload.py
-          allow_uploads: true
-          content_type: application/json
+        
+
+
 
 - server:
     server_name: secondserver.com

@@ -5,7 +5,6 @@
 #include "HttpConfig.hpp"
 #include "Socket.hpp"
 #include "Client.hpp"
-#include "Config.hpp"
 #include "Utils.hpp"
 #include "HttpController.hpp"
 #include "HttpRequest.hpp"
