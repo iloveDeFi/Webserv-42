@@ -48,6 +48,7 @@ public:
     void setIsChunked(bool isChunked);
 
     int getStatusCode() const;
+    std::string getBody() const;
     std::string normalizeHeader(const std::string &header);
     void ensureContentLength();
     std::string toString();

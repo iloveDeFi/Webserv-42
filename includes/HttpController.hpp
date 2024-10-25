@@ -61,7 +61,15 @@ public:
     void handleInternalRequest(const HttpRequest &req, HttpResponse &res);
     std::vector<std::string> listFilesInDirectory(const std::string &directoryPath);
     std::string getHandler();
-    
+
+    std::string resolveCgiPath();
+    bool isCgiScriptValid(const std::string &cgiScriptPath, HttpResponse &res, Logger &logger);
+    std::vector<std::string> setupEnvironmentVariables(const HttpRequest &req, const std::string &cgiScriptPath);
+    bool createPipes(int stdin_pipe[2], int stdout_pipe[2], HttpResponse &res, Logger &logger);
+    void executeCgiScript(int stdin_pipe[2], int stdout_pipe[2], const std::string &cgiScriptPath, const std::vector<std::string> &envVariables);
+    std::string communicateWithCgi(int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req);
+    void processCgiOutput(const std::string &output, HttpResponse &res, Logger &logger);
+    void handleError(const std::string &errorMessage, HttpResponse &res, Logger &logger);
 };
 
 class GetRequestHandler : public RequestController

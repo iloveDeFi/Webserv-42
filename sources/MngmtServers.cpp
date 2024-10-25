@@ -371,7 +371,7 @@ std::string ManagementServer::readRawData(int clientSocket)
 
     // Parse headers to find Content-Length
     std::string headers = requestData.substr(0, headerEndPos + 2); // Include \r\n
-    logger.log("Reading raw data header: " + headers);
+    //logger.log("Reading raw data header: " + headers);
     std::istringstream headerStream(headers);
     std::string line;
     while (std::getline(headerStream, line))

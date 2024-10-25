@@ -105,38 +105,37 @@
 <script>
     // Function to fetch and display comments
     function loadComments() {
-        console.log("Loading comments...");
+    fetch('/cgi-bin/save_comment')
+        .then(response => {
+            console.log("Raw response:", response);
+            return response.text(); // Read as text first to examine raw content
+        })
+        .then(text => {
+            console.log("Raw JSON text:", text); // Log raw text
+            const data = JSON.parse(text); // Manually parse JSON
+            console.log("Parsed JSON data:", data); // Log parsed JSON data
 
-        fetch('/cgi-bin/save_comment')
-            .then(response => {
-                console.log("GET request response:", response);
-                if (!response.ok) {
-                    throw new Error("Failed to fetch comments: " + response.statusText);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Comments data:", data);  // Log the data received from the server
-                const commentsSection = document.getElementById('comments-section');
-                commentsSection.innerHTML = ''; // Clear existing comments
+            const commentsSection = document.getElementById('comments-section');
+            commentsSection.innerHTML = ''; // Clear existing comments
 
-                // Display each comment
-                if (data.comments && data.comments.length > 0) {
-                    data.comments.forEach(comment => {
-                        const commentDiv = document.createElement('div');
-                        commentDiv.className = 'comment';
-                        commentDiv.innerText = comment;
-                        commentsSection.appendChild(commentDiv);
-                    });
-                } else {
-                    commentsSection.innerHTML = "<p>Aucun commentaire pour le moment.</p>";
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors de la récupération des commentaires:', error);
-                alert("Erreur lors de la récupération des commentaires: " + error);
-            });
+            if (data.comments && data.comments.length > 0) {
+                data.comments.forEach(comment => {
+                    const commentDiv = document.createElement('div');
+                    commentDiv.className = 'comment';
+                    commentDiv.innerText = comment;
+                    commentsSection.appendChild(commentDiv);
+                });
+            } else {
+                commentsSection.innerHTML = "<p>Aucun commentaire pour le moment.</p>";
+            }
+        })
+        .catch(error => {
+            console.error("Erreur lors de la récupération des commentaires:", error);
+            alert("Erreur lors de la récupération des commentaires: " + error);
+        });
     }
+
+
 
     // Load comments when the page loads
     document.addEventListener("DOMContentLoaded", loadComments);

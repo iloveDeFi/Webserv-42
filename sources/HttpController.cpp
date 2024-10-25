@@ -579,6 +579,7 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
         const char *scriptPath = cgiScriptPath.c_str();
         execl(scriptPath, scriptPath, (char *)nullptr);
 
+
         // Si execl échoue
         perror("execl failed");
         exit(1);
@@ -591,6 +592,7 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
         const std::string &requestBody = req.getBody();
         write(stdin_pipe[1], requestBody.c_str(), requestBody.size());
         close(stdin_pipe[1]); // Fermer l'extrémité d'écriture après écriture
+        logger.log("request BODY : " + req.getBody());
 
         // Lire la sortie du script CGI
         char buffer[4096];
@@ -611,10 +613,13 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
         if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
             // Analyser les en-têtes et le corps de la sortie du script CGI
             size_t headerEndPos = output.find("\r\n\r\n");
+            if (headerEndPos == std::string::npos) {
+                headerEndPos = output.find("\n\n"); // Alternative
+            }
+
             if (headerEndPos != std::string::npos) {
                 std::string headers = output.substr(0, headerEndPos);
                 std::string body = output.substr(headerEndPos + 4);
-
                 // Analyser les en-têtes
                 std::istringstream headerStream(headers);
                 std::string headerLine;
@@ -631,6 +636,7 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
                 }
 
                 res.setBody(body);
+                logger.log("BODY : " + body);
                 res.setStatusCode(200);
                 res.setReasonMessage("OK");
             } else {
@@ -642,11 +648,12 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
             res.generate500InternalServerError("500 Internal Server Error: CGI script execution failed");
             logger.log("Error: CGI script execution failed with status: " + to_string(WEXITSTATUS(status)));
         }
+        logger.log("CGI output: " + output);
     }
 
     res.ensureContentLength();
     setCorsHeaders(res);
-    res.logHttpResponse(logger);
+    //res.logHttpResponse(logger);
 }
 
 std::string RequestController::getHandler()

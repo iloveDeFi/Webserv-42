@@ -254,3 +254,8 @@ void HttpResponse::logHttpResponse(Logger &logger)
 
     logger.log(logMessage.str());
 }
+
+ std::string HttpResponse::getBody() const
+ {
+    return (_body);
+ }
