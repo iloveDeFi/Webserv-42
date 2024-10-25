@@ -22,6 +22,23 @@ HttpResponse &HttpResponse::operator=(const HttpResponse &src)
     return *this;
 }
 
+std::string HttpResponse::readFile(const std::string &filePath)
+{
+    std::ifstream file(filePath);
+    if (!file.is_open())
+    {
+        std::cerr << "Error: Could not open file " << filePath << std::endl;
+        return "";
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    file.close();
+
+    return buffer.str();
+}
+
 void HttpResponse::generate200OK(const std::string &contentType, const std::string &bodyContent)
 {
     setStatusCode(200);
@@ -82,21 +99,39 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage)
 {
     setStatusCode(403);
     setReasonMessage("Forbidden");
-    setHeader("Content-Type", "text/plain");
-    // std::string body = "403 Forbidden: You don't have permission to access this resource.";
-    std::string body = errorMessage;
+    setHeader("Content-Type", "text/html");
+
+    std::string body = readFile("./public/errors/403.html");
+
+    if (body.empty())
+    {
+        std::cerr << "Warning: Could not read 403.html, using default error message." << std::endl;
+        body = "<html><body><h1>403 Forbidden</h1><p>" + errorMessage + "</p></body></html>";
+    }
+
     setBody(body);
-    setHeader("Content-Length", to_string(body.size()));
+    setHeader("Content-Length", std::to_string(body.size()));
 }
 
 void HttpResponse::generate404NotFound(const std::string &errorMessage)
 {
+    Logger &logger = Logger::getInstance("server.log");
     setStatusCode(404);
     setReasonMessage("Not Found");
-    setHeader("Content-Type", "text/plain");
-    std::string body = "404 Not Found : " + errorMessage;
+    setHeader("Content-Type", "text/html");
+
+    std::string body = readFile("./public/errors/404.html");
+    logger.log(" \n body is " + body);
+
+    if (body.empty())
+    {
+        std::cerr << "Warning: Could not read 404.html, using default error message." << std::endl;
+        body = "<html><body><h1>404 Not Found</h1><p>" + errorMessage + "</p></body></html>";
+    }
+
+    // Définir le corps et l'en-tête
     setBody(body);
-    setHeader("Content-Length", to_string(body.size()));
+    setHeader("Content-Length", std::to_string(body.size())); // Correction d'appel à to_string
 }
 
 void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods)
@@ -124,11 +159,15 @@ void HttpResponse::generate500InternalServerError(const std::string &errorMessag
 {
     setStatusCode(500);
     setReasonMessage("Internal Server Error");
-    setHeader("Content-Type", "text/plain");
-    // TO DO : safety check no expose important info in errorMessage
-    std::string body = "500 Internal Server Error: The server encountered an error. " + errorMessage;
+    setHeader("Content-Type", "text/html");
+    std::string body = readFile("./public/errors/500.html");
+    if (body.empty())
+    {
+        std::cerr << "Warning: Could not read 500.html, using default error message." << std::endl;
+        body = "<html><body><h1>500 Internal Server Error</h1><p>The server encountered an error. " + errorMessage + "</p></body></html>";
+    }
     setBody(body);
-    setHeader("Content-Length", to_string(body.size()));
+    setHeader("Content-Length", std::to_string(body.size()));
 }
 
 void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
@@ -255,7 +294,7 @@ void HttpResponse::logHttpResponse(Logger &logger)
     logger.log(logMessage.str());
 }
 
- std::string HttpResponse::getBody() const
- {
+std::string HttpResponse::getBody() const
+{
     return (_body);
- }
+}

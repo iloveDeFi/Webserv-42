@@ -3,7 +3,6 @@
 Client::Client(int fd, const struct sockaddr_in &address)
     : _socket(fd), _address(address), _request(), _response() {}
 
-
 Client::~Client() {}
 
 void Client::readRequest(const std::string &rawData)
@@ -12,12 +11,13 @@ void Client::readRequest(const std::string &rawData)
     Logger &logger = Logger::getInstance("server.log");
     logger.log(">> rawData in readRequest to pass to HttpRequest(rawData) is " + rawData);
     _request = HttpRequest(rawData);
-/*     std::cout << "Method: " << _request.getMethod() << std::endl;
-    std::cout << "URI: " << _request.getURI() << std::endl;
-    std::cout << "Version: " << _request.getHTTPVersion() << std::endl; */
+    /*     std::cout << "Method: " << _request.getMethod() << std::endl;
+        std::cout << "URI: " << _request.getURI() << std::endl;
+        std::cout << "Version: " << _request.getHTTPVersion() << std::endl; */
 }
 
-bool Client::checkFileExists(const std::string &filePath) {
+bool Client::checkFileExists(const std::string &filePath)
+{
     struct stat buffer;
     return (stat(filePath.c_str(), &buffer) == 0); // Renvoie true si le fichier existe
 }
@@ -33,37 +33,36 @@ void Client::processRequest(const _server &serverInfo)
     try
     {
         uri = _request.getURI();
-        // TO DO : test
         method = _request.getMethod();
 
-        const HttpConfig::Location *bestMatch = NULL;
-        size_t bestMatchLength = 0;
+        const HttpConfig::Location *exactMatch = NULL;
 
-        // Find the location with the longest matching prefix
+        // Chercher la location avec une correspondance exacte
         for (size_t i = 0; i < serverInfo._locations.size(); ++i)
         {
             const HttpConfig::Location &location = serverInfo._locations[i];
 
-            if (uri.find(location.path) == 0)
+            // Vérifiez si l'URI correspond exactement à la path
+            if (uri == location.path)
             {
-                size_t matchLength = location.path.length();
-                if (matchLength > bestMatchLength)
-                {
-                    bestMatch = &location;
-                    bestMatchLength = matchLength;
-                }
+                exactMatch = &location;
+                break; // Sortir dès qu'on trouve une correspondance exacte
             }
         }
 
-        if (bestMatch != NULL)
+        // Si aucune correspondance n'est trouvée, générer une réponse 404
+        if (exactMatch == NULL)
         {
-            const HttpConfig::Location &location = *bestMatch;
+            response.generate404NotFound("The requested URL " + uri + " was not found on this server.");
+            logger.logError("404 Not Found for URI: " + uri);
+        }
+        else
+        {
+            // Gestion des requêtes selon le type de méthode
+            const HttpConfig::Location &location = *exactMatch;
             std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
-            std::string boolee = "false";
-            if (bestMatch->iscgi)
-                boolee = "true";
-            logger.log("CGI stat: " + boolee);
-            if (bestMatch->iscgi == true)
+
+            if (location.iscgi)
             {
                 CgiRequestHandler cgiHandler(location, serverInfo._root);
                 cgiHandler.handle(_request, response);
@@ -75,16 +74,6 @@ void Client::processRequest(const _server &serverInfo)
             }
             else if (method == "POST")
             {
-                // TO DO : check 409 moved to handlePostResponse
-                // std::string filePath = serverInfo._root + uri;
-                // logger.log("FilePath for Post 409 already exists check is " + filePath);
-                // if (checkFileExists(filePath)) 
-                // {
-                //     logger.log("409 error detected. File already exists");
-                //     response.generate409Conflict("409 Conflict: The request could not be completed due to a conflict with the current state of the resource.\n");
-			    //     return;
-		        // }
-                
                 PostRequestHandler postHandler(location, serverInfo._root);
                 postHandler.handle(_request, response);
             }
@@ -104,22 +93,13 @@ void Client::processRequest(const _server &serverInfo)
                 UnknownRequestHandler unknownHandler(location, serverInfo._root);
                 unknownHandler.handle(_request, response);
             }
-
-            int statusCode = response.getStatusCode();
-            logger.logRequest(method, uri, statusCode);
-            if (statusCode >= 400)
-            {
-                logger.logError("Request resulted in error: " + to_string(statusCode));
-            }
         }
-        else
+
+        int statusCode = response.getStatusCode();
+        logger.logRequest(method, uri, statusCode);
+        if (statusCode >= 400)
         {
-            response.setStatusCode(404);
-            response.setBody("404 Not Found");
-            response.setHeader("Content-Type", "text/plain");
-            response.ensureContentLength();
-            logger.logError("Method: " + method);
-            logger.logError("404 Not Found for URI: " + uri);
+            logger.logError("Request resulted in error: " + to_string(statusCode));
         }
 
         _response = response;
@@ -134,8 +114,6 @@ void Client::processRequest(const _server &serverInfo)
         _response = response;
     }
 }
-
-
 
 void Client::sendResponse()
 {
@@ -199,7 +177,7 @@ bool Client::isConnected() const
     return _socket >= 0;
 }
 
- struct sockaddr_in& Client::getClientAddr()
- {
+struct sockaddr_in &Client::getClientAddr()
+{
     return (_address);
- }
+}

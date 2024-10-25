@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <fstream>
 #include <sstream>
 #include "Logger.hpp"
 class HttpResponse
@@ -57,6 +58,7 @@ public:
     std::ostream &print(std::ostream &os) const;
 
     void logHttpResponse(Logger &logger);
+    std::string readFile(const std::string &filePath);
 };
 
 #endif

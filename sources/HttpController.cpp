@@ -150,14 +150,12 @@ bool RequestController::hasPermissionToCreate(const std::string &uri)
     return (access(uploadsDir.c_str(), W_OK) == 0);
 }
 
-
 bool RequestController::hasPermissionToDelete(const std::string &uri) const
 {
     (void)uri;
     // Check if DELETE is allowed for this location
     return std::find(_locationConfig.methods.begin(), _locationConfig.methods.end(), "DELETE") != _locationConfig.methods.end();
 }
-
 
 bool RequestController::isValidHttpMethod(const std::string &method) const
 {
@@ -187,7 +185,7 @@ std::string RequestController::resolveResourcePath(const std::string &uri)
 
     if (!_locationConfig.handler.empty())
     {
-         resourcePath += _locationConfig.handler;
+        resourcePath += _locationConfig.handler;
     }
     else
     {
@@ -208,8 +206,6 @@ std::string RequestController::resolveResourcePath(const std::string &uri)
 
     return resourcePath;
 }
-
-
 
 void RequestController::serveResource(const std::string &resourcePath, HttpResponse &res)
 {
@@ -367,15 +363,13 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
     setCorsHeaders(res);
 }
 
-
-
 void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res)
 {
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
     Logger &logger = Logger::getInstance("server.log");
     logger.log("Received DELETE request for URI: " + uri);
-    
+
     if (!hasPermissionToDelete(uri))
     {
         res.generate403Forbidden("403 Forbidden: You do not have permission to delete this resource.");
@@ -413,7 +407,6 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
     res.setHTTPVersion(version);
 }
 
-
 void RequestController::handleUnknownResponse(const HttpRequest &req, HttpResponse &res)
 {
     std::string version = req.getHTTPVersion();
@@ -431,11 +424,10 @@ void RequestController::handleUnknownResponse(const HttpRequest &req, HttpRespon
 
 void RequestController::setCorsHeaders(HttpResponse &res)
 {
-    res.setHeader("Access-Control-Allow-Origin", "*");                  // Permet toutes les origines
+    res.setHeader("Access-Control-Allow-Origin", "*");                           // Permet toutes les origines
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS"); // Méthodes autorisées
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");      // En-têtes autorisés
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");               // En-têtes autorisés
 }
-
 
 void RequestController::handleInternalRequest(const HttpRequest &req, HttpResponse &res)
 {
@@ -471,7 +463,6 @@ void RequestController::handleInternalRequest(const HttpRequest &req, HttpRespon
     }
 }
 
-
 std::vector<std::string> RequestController::listFilesInDirectory(const std::string &directoryPath)
 {
     std::vector<std::string> files;
@@ -495,40 +486,46 @@ std::vector<std::string> RequestController::listFilesInDirectory(const std::stri
     return files;
 }
 
-
 void RequestController::handleOptionsResponse(const HttpRequest &req, HttpResponse &res)
 {
     (void)req;
-    res.setStatusCode(204);  // No Content
+    res.setStatusCode(204); // No Content
     res.setReasonMessage("No Content");
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    res.setHeader("Access-Control-Max-Age", "86400"); 
+    res.setHeader("Access-Control-Max-Age", "86400");
     res.setBody("");
 }
 
-
-void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res) {
+void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res)
+{
     Logger &logger = Logger::getInstance("server.log");
     std::string cgiScriptPath = resolveCgiPath();
     logger.log("Received CGI request for URI: " + req.getURI());
 
-    if (!isCgiExecutable(cgiScriptPath, res)) return;
+    if (!isCgiExecutable(cgiScriptPath, res))
+        return;
 
     std::vector<std::string> envVariables = setupEnvironmentVariables(req, cgiScriptPath);
 
     int stdin_pipe[2], stdout_pipe[2];
-    if (!createPipes(stdin_pipe, stdout_pipe, res, logger)) return;
+    if (!createPipes(stdin_pipe, stdout_pipe, res, logger))
+        return;
 
     pid_t pid = fork();
-    if (pid < 0) {
+    if (pid < 0)
+    {
         res.generate500InternalServerError("500 Internal Server Error: Failed to fork process");
         logger.log("Error: Failed to fork process for CGI execution");
         return;
-    } else if (pid == 0) {
+    }
+    else if (pid == 0)
+    {
         executeCgiScript(cgiScriptPath, envVariables, stdin_pipe, stdout_pipe);
-    } else {
+    }
+    else
+    {
         processCgiOutput(pid, stdin_pipe, stdout_pipe, req, res);
     }
 
@@ -537,15 +534,18 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
 }
 
 // Résolution du chemin CGI
-std::string RequestController::resolveCgiPath() {
+std::string RequestController::resolveCgiPath()
+{
     return _serverRoot + "/" + getHandler(); // Ajuste le chemin si nécessaire
 }
 
 // Vérifie si le script CGI est exécutable
-bool RequestController::isCgiExecutable(const std::string &cgiScriptPath, HttpResponse &res) {
+bool RequestController::isCgiExecutable(const std::string &cgiScriptPath, HttpResponse &res)
+{
     struct stat scriptStat;
     Logger &logger = Logger::getInstance("server.log");
-    if (stat(cgiScriptPath.c_str(), &scriptStat) != 0 || !S_ISREG(scriptStat.st_mode) || !(scriptStat.st_mode & S_IXUSR)) {
+    if (stat(cgiScriptPath.c_str(), &scriptStat) != 0 || !S_ISREG(scriptStat.st_mode) || !(scriptStat.st_mode & S_IXUSR))
+    {
         res.generate403Forbidden("403 Forbidden: CGI script is not accessible or does not exist");
         logger.log("Error: CGI script not found or not executable: " + cgiScriptPath);
         return false;
@@ -554,7 +554,8 @@ bool RequestController::isCgiExecutable(const std::string &cgiScriptPath, HttpRe
 }
 
 // Configure les variables d'environnement pour le script CGI
-std::vector<std::string> RequestController::setupEnvironmentVariables(const HttpRequest &req, const std::string &cgiScriptPath) {
+std::vector<std::string> RequestController::setupEnvironmentVariables(const HttpRequest &req, const std::string &cgiScriptPath)
+{
     std::vector<std::string> envVariables;
     envVariables.push_back("REQUEST_METHOD=" + req.getMethod());
     envVariables.push_back("QUERY_STRING=" + req.getQueryParameters());
@@ -569,8 +570,10 @@ std::vector<std::string> RequestController::setupEnvironmentVariables(const Http
 }
 
 // Crée les pipes pour stdin et stdout
-bool RequestController::createPipes(int stdin_pipe[2], int stdout_pipe[2], HttpResponse &res, Logger &logger) {
-    if (pipe(stdin_pipe) == -1 || pipe(stdout_pipe) == -1) {
+bool RequestController::createPipes(int stdin_pipe[2], int stdout_pipe[2], HttpResponse &res, Logger &logger)
+{
+    if (pipe(stdin_pipe) == -1 || pipe(stdout_pipe) == -1)
+    {
         res.generate500InternalServerError("500 Internal Server Error: Failed to create pipes");
         logger.log("Error: Failed to create pipes for CGI execution");
         return false;
@@ -579,7 +582,8 @@ bool RequestController::createPipes(int stdin_pipe[2], int stdout_pipe[2], HttpR
 }
 
 // Gère l'exécution du script CGI
-void RequestController::executeCgiScript(const std::string &cgiScriptPath, const std::vector<std::string> &envVariables, int stdin_pipe[2], int stdout_pipe[2]) {
+void RequestController::executeCgiScript(const std::string &cgiScriptPath, const std::vector<std::string> &envVariables, int stdin_pipe[2], int stdout_pipe[2])
+{
     Logger &logger = Logger::getInstance("server.log");
     close(stdin_pipe[1]);
     dup2(stdin_pipe[0], STDIN_FILENO);
@@ -589,8 +593,9 @@ void RequestController::executeCgiScript(const std::string &cgiScriptPath, const
     dup2(stdout_pipe[1], STDOUT_FILENO);
     close(stdout_pipe[1]);
 
-    for (size_t i = 0; i < envVariables.size(); ++i) {
-        putenv(const_cast<char*>(envVariables[i].c_str()));
+    for (size_t i = 0; i < envVariables.size(); ++i)
+    {
+        putenv(const_cast<char *>(envVariables[i].c_str()));
     }
     logger.log("CGI cgiScriptPath: " + cgiScriptPath);
     execl(cgiScriptPath.c_str(), cgiScriptPath.c_str(), (char *)nullptr);
@@ -599,19 +604,21 @@ void RequestController::executeCgiScript(const std::string &cgiScriptPath, const
 }
 
 // Gère la lecture de la sortie CGI et la réponse HTTP
-void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req, HttpResponse &res) {
+void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req, HttpResponse &res)
+{
     Logger &logger = Logger::getInstance("server.log");
     close(stdin_pipe[0]);
     close(stdout_pipe[1]);
 
     write(stdin_pipe[1], req.getBody().c_str(), req.getBody().size());
     close(stdin_pipe[1]);
-    //logger.log("request BODY : " + req.getBody());
+    // logger.log("request BODY : " + req.getBody());
 
     std::string output;
     char buffer[4096];
     ssize_t bytesRead;
-    while ((bytesRead = read(stdout_pipe[0], buffer, sizeof(buffer) - 1)) > 0) {
+    while ((bytesRead = read(stdout_pipe[0], buffer, sizeof(buffer) - 1)) > 0)
+    {
         buffer[bytesRead] = '\0';
         output += buffer;
     }
@@ -620,9 +627,12 @@ void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdou
     int status;
     waitpid(pid, &status, 0);
 
-    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+    {
         handleCgiResponseOutput(output, res);
-    } else {
+    }
+    else
+    {
         res.generate500InternalServerError("500 Internal Server Error: CGI script execution failed");
         logger.log("Error: CGI script execution failed with status: " + to_string(WEXITSTATUS(status)));
     }
@@ -630,25 +640,30 @@ void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdou
 }
 
 // Analyse la sortie du script CGI et met à jour la réponse HTTP
-void RequestController::handleCgiResponseOutput(const std::string &output, HttpResponse &res) {
-    //Logger &logger = Logger::getInstance("server.log");
+void RequestController::handleCgiResponseOutput(const std::string &output, HttpResponse &res)
+{
+    // Logger &logger = Logger::getInstance("server.log");
     size_t headerEndPos = output.find("\r\n\r\n");
-    if (headerEndPos == std::string::npos) {
+    if (headerEndPos == std::string::npos)
+    {
         headerEndPos = output.find("\n\n");
     }
 
-    if (headerEndPos != std::string::npos) {
+    if (headerEndPos != std::string::npos)
+    {
         std::string headers = output.substr(0, headerEndPos);
         std::string body = output.substr(headerEndPos + 4);
 
         std::istringstream headerStream(headers);
         std::string headerLine;
-        while (std::getline(headerStream, headerLine)) {
+        while (std::getline(headerStream, headerLine))
+        {
             if (!headerLine.empty() && headerLine.back() == '\r')
                 headerLine.pop_back();
 
             size_t colonPos = headerLine.find(':');
-            if (colonPos != std::string::npos) {
+            if (colonPos != std::string::npos)
+            {
                 std::string headerName = headerLine.substr(0, colonPos);
                 std::string headerValue = headerLine.substr(colonPos + 1);
                 res.setHeader(headerName, headerValue);
@@ -656,15 +671,16 @@ void RequestController::handleCgiResponseOutput(const std::string &output, HttpR
         }
 
         res.setBody(body);
-        //logger.log("BODY : " + body);
+        // logger.log("BODY : " + body);
         res.setStatusCode(200);
         res.setReasonMessage("OK");
-    } else {
+    }
+    else
+    {
         res.generate200OK("text/html", output);
     }
-    //logger.log("CGI script executed successfully: " + output);
+    // logger.log("CGI script executed successfully: " + output);
 }
-
 
 std::string RequestController::getHandler()
 {
