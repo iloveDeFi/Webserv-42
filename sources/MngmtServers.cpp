@@ -342,6 +342,7 @@ std::string ManagementServer::readRawData(int clientSocket)
     ssize_t bytesReceived;
     size_t headerEndPos = std::string::npos;
     size_t contentLength = 0;
+    Logger &logger = Logger::getInstance("server.log");
 
     // Read headers
     while (true)
@@ -370,6 +371,7 @@ std::string ManagementServer::readRawData(int clientSocket)
 
     // Parse headers to find Content-Length
     std::string headers = requestData.substr(0, headerEndPos + 2); // Include \r\n
+    logger.log("Reading raw data header: " + headers);
     std::istringstream headerStream(headers);
     std::string line;
     while (std::getline(headerStream, line))
@@ -407,6 +409,7 @@ std::string ManagementServer::readRawData(int clientSocket)
                 throw std::runtime_error("Error reading from socket: " + std::string(strerror(errno)));
         }
     }
+    logger.log("Reading raw data : " + requestData);
 	//std::cout << "HERE!!!!! " << requestData << std::endl;
     return requestData;
 }

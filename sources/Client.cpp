@@ -59,8 +59,11 @@ void Client::processRequest(const _server &serverInfo)
         {
             const HttpConfig::Location &location = *bestMatch;
             std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
-
-            if (_request.isCgi())
+            std::string boolee = "false";
+            if (bestMatch->iscgi)
+                boolee = "true";
+            logger.log("CGI stat: " + boolee);
+            if (bestMatch->iscgi == true)
             {
                 CgiRequestHandler cgiHandler(location, serverInfo._root);
                 cgiHandler.handle(_request, response);

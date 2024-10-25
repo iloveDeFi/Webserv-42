@@ -22,6 +22,7 @@ public:
         std::string index;
         bool autoindex;
         std::vector<std::string> cgiExtensions;
+        bool iscgi;
         std::string cgiHandler;
         bool allowUploads;
         std::string uploadStore;

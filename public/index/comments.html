@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commentaires</title>
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <style>
+        /* Your styles here */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #595959;
+            color: #333;
+        }
+        header {
+            background: #35424a;
+            color: #ffffff;
+            padding: 20px 0;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .content {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 600px;
+            text-align: center;
+        }
+        .content textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        .content button {
+            padding: 10px 20px;
+            background: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .content button:hover {
+            background: #4cae4c;
+        }
+        footer {
+            margin-top: 20px;
+            padding: 10px 0;
+            text-align: center;
+            background: #000000;
+            color: #ffffff;
+        }
+        .comment {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Commentaires</h1>
+</header>
+
+<div class="container">
+    <div class="content">
+        <h2>Commentaires existants</h2>
+
+        <!-- Display existing comments by loading them from the CGI script -->
+        <div id="comments-section">
+            <!-- This section will be populated by comments loaded from the server -->
+        </div>
+
+        <h2>Ajouter un nouveau commentaire</h2>
+        <form id="commentForm" action="/cgi-bin/upload.py" method="POST">
+            <textarea name="comment" rows="4" placeholder="Entrez votre commentaire ici..." required></textarea>
+            <button type="submit">Envoyer le commentaire</button>
+        </form>        
+    </div>
+</div>
+
+<footer>
+    <p>&copy; 2024 Gestion des commentaires - Webserv42. Tous droits réservés.</p>
+</footer>
+
+<script>
+    // Function to fetch and display comments
+    function loadComments() {
+        console.log("Loading comments...");
+
+        fetch('/cgi-bin/save_comment')
+            .then(response => {
+                console.log("GET request response:", response);
+                if (!response.ok) {
+                    throw new Error("Failed to fetch comments: " + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Comments data:", data);  // Log the data received from the server
+                const commentsSection = document.getElementById('comments-section');
+                commentsSection.innerHTML = ''; // Clear existing comments
+
+                // Display each comment
+                if (data.comments && data.comments.length > 0) {
+                    data.comments.forEach(comment => {
+                        const commentDiv = document.createElement('div');
+                        commentDiv.className = 'comment';
+                        commentDiv.innerText = comment;
+                        commentsSection.appendChild(commentDiv);
+                    });
+                } else {
+                    commentsSection.innerHTML = "<p>Aucun commentaire pour le moment.</p>";
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération des commentaires:', error);
+                alert("Erreur lors de la récupération des commentaires: " + error);
+            });
+    }
+
+    // Load comments when the page loads
+    document.addEventListener("DOMContentLoaded", loadComments);
+
+    // Handle form submission to post a new comment without reloading
+    document.getElementById('commentForm').addEventListener('submit', function(event) {
+        event.preventDefault();  // Prevent the form from reloading the page
+
+        const commentText = this.querySelector('textarea[name="comment"]').value.trim();
+        if (!commentText) {
+            alert("Veuillez entrer un commentaire.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('comment', commentText);
+
+        console.log("Submitting comment:", commentText);
+
+        // Send the comment via POST request to the CGI script
+        fetch('/cgi-bin/save_comment', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log("POST request response:", response);
+            if (!response.ok) {
+                throw new Error("Failed to post comment: " + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("POST response data:", data);  // Log the data received from the server
+            if (data.status === 'success') {
+                // Clear the comment input field
+                this.querySelector('textarea[name="comment"]').value = '';
+                // Reload the comments to show the new one
+                loadComments();
+            } else {
+                alert("Échec de l'enregistrement du commentaire.");
+            }
+        })
+        .catch(error => {
+            console.error("Erreur lors de l'envoi du commentaire:", error);
+            alert("Erreur lors de l'envoi du commentaire: " + error);
+        });
+    });
+</script>
+
+</body>
+</html>

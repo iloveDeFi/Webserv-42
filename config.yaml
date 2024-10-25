@@ -1,6 +1,6 @@
 - server:
     server_name: myserver.com
-    port: 8080
+    port: 80
     client_max_body_size: 10M
     root: ./public
 
@@ -15,6 +15,20 @@
           handler: index/index.html
           allow_uploads: false
           content_type: text/html
+
+        - path: /comments
+          methods: GET
+          handler: index/comments.html
+          allow_uploads: false
+          content_type: text/html
+
+        # CGI handler for saving and retrieving comments
+        - path: /cgi-bin/save_comment
+          methods: GET, POST
+          cgi_handler: /usr/bin/python3
+          handler: index/cgi-bin/save_comment.py
+          allow_uploads: false
+          content_type: application/json
 
         - path: /uploadPage
           methods: GET, POST
@@ -54,7 +68,7 @@
           allow_uploads: false
           content_type: application/json  # Changer le content type selon retour requete
           
-         # Handler CGI pour le script Python 'simple.py' (GET)
+        # Handler CGI pour le script Python 'simple.py' (GET)
         - path: /cgi-bin/get
           methods: GET
           cgi_handler: /usr/bin/python3
@@ -72,7 +86,7 @@
 
 - server:
     server_name: secondserver.com
-    port: 80
+    port: 8080
     client_max_body_size: 1M
     root: ./public
 

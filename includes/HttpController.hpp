@@ -60,6 +60,7 @@ public:
     void serveResource(const std::string &resourcePath, HttpResponse &res);
     void handleInternalRequest(const HttpRequest &req, HttpResponse &res);
     std::vector<std::string> listFilesInDirectory(const std::string &directoryPath);
+    std::string getHandler();
     
 };
 

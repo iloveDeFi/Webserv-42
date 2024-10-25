@@ -118,6 +118,12 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
             location.path = configLine.substr(configLine.find(":") + 1);
             trimWhitespace(location.path);
             isFirstLocation = false;
+            size_t separatorPosition = configLine.find(": ");
+            std::string key = configLine.substr(0, separatorPosition);
+            std::string value = configLine.substr(separatorPosition + 2);
+            trimWhitespace(key);
+            trimWhitespace(value);
+            parseLocationAttribute(key, value, location, serverData);
         } else if (!isFirstLocation) {
             // Parser les attributs de la location
             size_t separatorPosition = configLine.find(": ");
@@ -289,7 +295,15 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
 
 } */
 void HttpConfig::parseLocationAttribute(const std::string& key, const std::string& value, Location& location, const ServerConfig& serverData) {
-    if (key == "methods") {
+    //Logger &logger = Logger::getInstance("server.log");
+    //logger.log("Parsing key: " + key + " Parsing value : " + value);
+    if (key == "- path") {
+        if (value.find("/cgi-bin") != std::string::npos)
+            location.iscgi = true;
+        else
+            location.iscgi = false;
+        //logger.log(location.iscgi ? "true" : "false");
+    }else if (key == "methods") {
         std::string methodsValue = value;
         // Vérifier si la valeur commence par '[' et se termine par ']'
         if (!methodsValue.empty() && methodsValue.front() == '[' && methodsValue.back() == ']') {
