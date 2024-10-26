@@ -306,7 +306,7 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
     }else if (key == "methods") {
         std::string methodsValue = value;
         // Vérifier si la valeur commence par '[' et se termine par ']'
-        if (!methodsValue.empty() && methodsValue.front() == '[' && methodsValue.back() == ']') {
+        if (!methodsValue.empty() && methodsValue[0] == '[' && methodsValue[methodsValue.size()-1] == ']') {
             // Supprimer les crochets
             methodsValue = methodsValue.substr(1, methodsValue.length() - 2);
         }

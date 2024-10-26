@@ -104,7 +104,7 @@ void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 		}
 
 		_servers.push_back(newServer);
-		_servers.back()._ipAddress = ip;
+		_servers[0]._ipAddress = ip;
 		std::cout << "Server is listening on port " << newServer._port << std::endl;
 	}
 	catch (const std::exception &e)
@@ -307,7 +307,7 @@ void ManagementServer::handleClient(Client &client)
     }
     if (!serverFound)
     {
-        throw std::runtime_error("No server found for port " + std::to_string(serverPort));
+        throw std::runtime_error("No server found for port " + to_string(serverPort));
     }
 
     // Lire la requête du client
@@ -373,22 +373,27 @@ std::string ManagementServer::readRawData(int clientSocket)
     std::string headers = requestData.substr(0, headerEndPos + 2); // Include \r\n
     //logger.log("Reading raw data header: " + headers);
     std::istringstream headerStream(headers);
-    std::string line;
-    while (std::getline(headerStream, line))
-    {
-        if (!line.empty() && line.back() == '\r') // Remove \r
-            line.pop_back();
+  	std::string line;
+	while (std::getline(headerStream, line))
+	{
+		if (!line.empty() && line[line.size() - 1] == '\r') // Supprime le caractère '\r'
+			line.erase(line.size() - 1);
 
-        if (line.empty())
-            break; // End of headers
+		if (line.empty())
+			break; // Fin des en-têtes
 
-        if (line.find("Content-Length:") != std::string::npos)
-        {
-            std::string value = line.substr(line.find(":") + 1);
-            contentLength = std::stoi(value);
-        }
-    }
+		if (line.find("Content-Length:") != std::string::npos)
+		{
+			std::string value = line.substr(line.find(":") + 1);
 
+			std::istringstream iss(value);
+			iss >> contentLength;
+			
+			if (iss.fail()) {
+				throw std::runtime_error("Invalid Content-Length value");
+			}
+		}
+	}
     // Read the body based on Content-Length
     size_t totalBytesToRead = headerEndPos + 4 + contentLength;
     while (requestData.size() < totalBytesToRead)

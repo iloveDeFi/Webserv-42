@@ -12,7 +12,7 @@ class HttpResponse;
 #include "HttpController.hpp"
 #include "Logger.hpp"
 #include <sstream>
-
+#include <stdexcept>
 
 class HttpRequest
 {

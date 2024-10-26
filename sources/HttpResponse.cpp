@@ -24,7 +24,7 @@ HttpResponse &HttpResponse::operator=(const HttpResponse &src)
 
 std::string HttpResponse::readFile(const std::string &filePath)
 {
-    std::ifstream file(filePath);
+    std::ifstream file(filePath.c_str());
     if (!file.is_open())
     {
         std::cerr << "Error: Could not open file " << filePath << std::endl;
@@ -110,7 +110,7 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage)
     }
 
     setBody(body);
-    setHeader("Content-Length", std::to_string(body.size()));
+    setHeader("Content-Length", to_string(body.size()));
 }
 
 void HttpResponse::generate404NotFound(const std::string &errorMessage)
@@ -131,7 +131,7 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage)
 
     // Définir le corps et l'en-tête
     setBody(body);
-    setHeader("Content-Length", std::to_string(body.size())); // Correction d'appel à to_string
+    setHeader("Content-Length", to_string(body.size())); // Correction d'appel à to_string
 }
 
 void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods)
@@ -167,7 +167,7 @@ void HttpResponse::generate500InternalServerError(const std::string &errorMessag
         body = "<html><body><h1>500 Internal Server Error</h1><p>The server encountered an error. " + errorMessage + "</p></body></html>";
     }
     setBody(body);
-    setHeader("Content-Length", std::to_string(body.size()));
+    setHeader("Content-Length", to_string(body.size()));
 }
 
 void HttpResponse::generate501NotImplemented(const std::string &errorMessage)

@@ -39,9 +39,9 @@ HttpRequest::HttpRequest(const std::string &rawData)
         throw std::runtime_error("Invalid request line");
     }
     // Remove any \r at the end of the line
-    if (!requestLine.empty() && requestLine.back() == '\r')
+    if (!requestLine.empty() && requestLine[0] == '\r')
     {
-        requestLine.pop_back();
+    	requestLine.erase(requestLine.size() - 1);
     }
     std::istringstream requestLineStream(requestLine);
     requestLineStream >> _method >> _uri >> _version;
@@ -63,8 +63,8 @@ HttpRequest::HttpRequest(const std::string &rawData)
     std::string headerLine;
     while (std::getline(headerStream, headerLine))
     {
-        if (!headerLine.empty() && headerLine.back() == '\r')
-            headerLine.pop_back();
+        if (!headerLine.empty() && headerLine[0] == '\r')
+		    headerLine.erase(headerLine.size() - 1);
 
         if (headerLine.empty())
             break; // End of headers
@@ -82,20 +82,25 @@ HttpRequest::HttpRequest(const std::string &rawData)
     _contentType = getHeader("Content-Type");
 
     // Verify Content-Length
-    std::map<std::string, std::string>::iterator contentLengthIt = _headers.find("Content-Length");
-    if (contentLengthIt != _headers.end())
-    {
-        size_t contentLength = std::stoi(contentLengthIt->second);
-        if (_body.size() < contentLength)
-        {
-            throw std::runtime_error("Incomplete request body");
-        }
-        else if (_body.size() > contentLength)
-        {
-            // Trim the body to Content-Length
-            _body = _body.substr(0, contentLength);
-        }
-    }
+   std::map<std::string, std::string>::iterator contentLengthIt = _headers.find("Content-Length");
+	if (contentLengthIt != _headers.end())
+	{
+		std::istringstream iss(contentLengthIt->second);
+		size_t contentLength = 0;
+		if (!(iss >> contentLength)) {
+			throw std::runtime_error("Invalid Content-Length header");
+		}
+
+		if (_body.size() < contentLength)
+		{
+			throw std::runtime_error("Incomplete request body");
+		}
+		else if (_body.size() > contentLength)
+		{
+			// Réduction de la taille du corps à Content-Length
+			_body = _body.substr(0, contentLength);
+		}
+	}
 
 }
 
@@ -227,8 +232,8 @@ HttpRequest::FormData HttpRequest::parseMultipartFormData() const
             std::string disposition;
             while (std::getline(partHeaderStream, headerLine))
             {
-                if (!headerLine.empty() && headerLine.back() == '\r')
-                    headerLine.pop_back();
+                if (!headerLine.empty() && headerLine[0] == '\r')
+		    		headerLine.erase(headerLine.size() - 1);
 
                 if (headerLine.find("Content-Disposition:") != std::string::npos)
                 {
