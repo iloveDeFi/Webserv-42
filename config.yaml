@@ -89,6 +89,19 @@
           allow_uploads: false
           content_type: text/html
 
+        - path: /old-page
+          methods: GET
+          redirect: |
+            url: /new-page
+            code: 301
+
+
+        - path: /new-page
+          methods: GET
+          handler: index/new-page.html
+          allow_uploads: false
+          content_type: text/html
+
         
 
 

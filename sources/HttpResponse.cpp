@@ -101,7 +101,7 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage)
     setReasonMessage("Forbidden");
     setHeader("Content-Type", "text/html");
 
-    std::string body = readFile("./public/errors/403.html");
+    std::string body = readFile("./errors/403.html");
 
     if (body.empty())
     {
@@ -120,7 +120,7 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage)
     setReasonMessage("Not Found");
     setHeader("Content-Type", "text/html");
 
-    std::string body = readFile("./public/errors/404.html");
+    std::string body = readFile("./errors/404.html");
     logger.log(" \n body is " + body);
 
     if (body.empty())
@@ -160,7 +160,7 @@ void HttpResponse::generate500InternalServerError(const std::string &errorMessag
     setStatusCode(500);
     setReasonMessage("Internal Server Error");
     setHeader("Content-Type", "text/html");
-    std::string body = readFile("./public/errors/500.html");
+    std::string body = readFile("./errors/500.html");
     if (body.empty())
     {
         std::cerr << "Warning: Could not read 500.html, using default error message." << std::endl;
