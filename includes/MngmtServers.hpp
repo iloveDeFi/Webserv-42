@@ -53,14 +53,26 @@ public:
 					   std::vector<Client> &clients, int &maxFd);
 	void acceptNewClients(std::vector<Client> &clients, fd_set &readFds);
 	void handleActiveClients(fd_set &readFds, std::vector<Client> &clients);
-	void handleClient(Client &client);
-	std::string readRawData(int clientSocket);
+	bool handleClient(Client &client);
+	std::string readRawData(int clientSocket, size_t maxBodySize);
 
 	int getPort(std::vector<_server>::iterator it);
 	int getSize(std::vector<_server>::iterator it);
 	_server &getServerInfo(std::vector<_server>::iterator it);
 
 	void setIpAddress(std::vector<_server>::iterator it, int ip);
+
+	class RequestTooLargeException : public std::exception
+	{
+		public:
+			const char* what() const throw()
+			{
+				return "Request entity too large";
+			}
+	};
+	
 };
+
+
 
 #endif

@@ -30,7 +30,7 @@ public:
     ~Client();
 
     void readRequest(const std::string &rawData);
-    void processRequest(const _server &serverInfo);
+    void processRequest(const _server &serverInfo, size_t maxSize);
     void sendResponse();
 
     void setHttpRequest(const HttpRequest &request);
@@ -44,6 +44,8 @@ public:
     bool isConnected() const;
     struct sockaddr_in& getClientAddr();
     bool checkFileExists(const std::string &filePath);
+    bool isKeepAlive() const;
+
 };
 
 #endif

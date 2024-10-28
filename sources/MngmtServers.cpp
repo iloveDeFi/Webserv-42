@@ -139,7 +139,7 @@ void ManagementServer::handleRequest()
 	while (true)
 	{
 		prepareFdSets(readFds, clients, maxFd);
-
+        std::cout << "currents clients: " << clients.size() << std::endl;
 		// Attendre 5 secondes (et 0microscd) pour un événement sur les
 		// sockets surveillés avant de retourner.
 		// timeout permet de contrôler la fréquence à laquelle
@@ -181,7 +181,7 @@ void ManagementServer::prepareFdSets(fd_set &readFds,
 		FD_SET(serverFd, &readFds);
 		if (serverFd > maxFd)
 			maxFd = serverFd;
-		std::cout << "server Maxfd " << maxFd << std::endl;
+		//std::cout << "server Maxfd " << maxFd << std::endl;
 	}
     for (size_t i = 0; i < clients.size(); ++i)
     {
@@ -223,9 +223,6 @@ void ManagementServer::acceptNewClients(std::vector<Client> &clients, fd_set &re
 
 
 
-
-
-
 // Configure la socket en non bloquant
 //  FD_CLOEXEC : Ce flag est utilisé pour indiquer que
 // le descripteur de fichier doit être automatiquement fermé
@@ -264,7 +261,14 @@ void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<Client> 
         {
             try
             {
-                handleClient(clients[i]);
+                bool shouldRemoveClient = handleClient(clients[i]);
+                if (shouldRemoveClient)
+                {
+                    FD_CLR(clientFd, &readFds);
+                    clients.erase(clients.begin() + i);
+                    --i; // Adjust index after removal
+                    continue; // Move to next client
+                }
             }
             catch (const std::exception &e)
             {
@@ -272,18 +276,20 @@ void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<Client> 
                 FD_CLR(clientFd, &readFds);
                 close(clientFd);
                 clients.erase(clients.begin() + i);
-                --i;
+                --i; // Adjust index after removal
             }
         }
     }
 }
 
 
-void ManagementServer::handleClient(Client &client)
+
+bool ManagementServer::handleClient(Client &client)
 {
     int clientSocket = client.getClientSocket();
     struct sockaddr_in serverAddr;
     socklen_t serverAddrLen = sizeof(serverAddr);
+    std::string rawData;
 
     //détermine sur quel serveur le client est connecté
     if (getsockname(clientSocket, (struct sockaddr *)&serverAddr, &serverAddrLen) == -1)
@@ -296,6 +302,7 @@ void ManagementServer::handleClient(Client &client)
     //trouver la conf du serveur correspondant à ce port
     _server currentServer;
     bool serverFound = false;
+    
     for (std::vector<_server>::iterator it = _servers.begin(); it != _servers.end(); ++it)
     {
         if (it->_port == serverPort)
@@ -309,32 +316,50 @@ void ManagementServer::handleClient(Client &client)
     {
         throw std::runtime_error("No server found for port " + std::to_string(serverPort));
     }
-
-    // Lire la requête du client
-    std::string rawData = readRawData(clientSocket);
-	
-    if (rawData.empty())
+    size_t maxBodySize = currentServer._maxSize;
+    try
     {
-        // Si aucune donnée n'a été lue, le client a peut-être fermé la connexion
-        throw std::runtime_error("No data received from client.");
+        rawData = readRawData(clientSocket, maxBodySize);
+        if (rawData.empty())
+        {
+            // Le client a peut-être fermé la connexion
+            close(clientSocket);
+            return true; // Indique que le client doit être supprimé
+        }
+
+        client.readRequest(rawData);
+        client.processRequest(currentServer, maxBodySize);
+        client.sendResponse();
     }
-	// TO DO : delete?
-	client.readRequest(rawData); // parser renvoyé à Alex
-	// il ajoute a client sont attribut _request;
+    catch (const RequestTooLargeException &e)
+    {
+        // Générer une réponse 413
+        HttpResponse response;
+        response.generate413PayloadTooLarge(maxBodySize);
+        std::string responseStr = response.toString();
+        send(clientSocket, responseStr.c_str(), responseStr.size(), 0);
+        close(clientSocket);
+        return true; // Indique que le client doit être supprimé
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Exception while handling client: " << e.what() << std::endl;
+        close(clientSocket);
+        return true; // Indique que le client doit être supprimé
+    }
 
-	// TO CHECK : yes rawData values are GOOD here
-	// std::string rawData = readRawData(clientSocket);
-	// client.readRequest(rawData);
-	// std::cout << "BEFORE PROCESS : Raw request data: " << rawData << std::endl;
-
-	client.processRequest(currentServer); // gestion de la requete par Baptiste
-	// il ajoute a client sont attribut _response;
-	client.sendResponse();
+    if (!client.isKeepAlive())
+    {
+        // Fermer la connexion
+        close(client.getClientSocket());
+        return true;
+    }
+    return false;
 }
 
 
 
-std::string ManagementServer::readRawData(int clientSocket)
+std::string ManagementServer::readRawData(int clientSocket, size_t maxBodySize)
 {
     const size_t buffer_size = 1024;
     char buffer[buffer_size];
@@ -342,9 +367,10 @@ std::string ManagementServer::readRawData(int clientSocket)
     ssize_t bytesReceived;
     size_t headerEndPos = std::string::npos;
     size_t contentLength = 0;
+    size_t totalBytesRead = 0;
     //Logger &logger = Logger::getInstance("server.log");
 
-    // Read headers
+    // Lire les en-têtes
     while (true)
     {
         bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0);
@@ -352,44 +378,53 @@ std::string ManagementServer::readRawData(int clientSocket)
         {
             buffer[bytesReceived] = '\0';
             requestData.append(buffer, bytesReceived);
+            totalBytesRead += bytesReceived;
 
-            // Look for the end of the headers
+            // Vérifier si la taille dépasse la limite
+            if (totalBytesRead > maxBodySize)
+                throw RequestTooLargeException();
+
+            // Rechercher la fin des en-têtes
             headerEndPos = requestData.find("\r\n\r\n");
             if (headerEndPos != std::string::npos)
                 break;
         }
-        else if (bytesReceived == 0) // Client closed the connection
+        else if (bytesReceived == 0) // Le client a fermé la connexion
             return "";
         else
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
                 continue;
             else
-                throw std::runtime_error("Error reading from socket: " + std::string(strerror(errno)));
+                throw std::runtime_error("Erreur lors de la lecture du socket : " + std::string(strerror(errno)));
         }
     }
 
-    // Parse headers to find Content-Length
-    std::string headers = requestData.substr(0, headerEndPos + 2); // Include \r\n
+    // Analyser les en-têtes pour trouver Content-Length
+    std::string headers = requestData.substr(0, headerEndPos + 4); // Inclure \r\n\r\n
     //logger.log("Reading raw data header: " + headers);
     std::istringstream headerStream(headers);
     std::string line;
     while (std::getline(headerStream, line))
     {
-        if (!line.empty() && line.back() == '\r') // Remove \r
+        if (!line.empty() && line.back() == '\r') // Supprimer \r
             line.pop_back();
 
         if (line.empty())
-            break; // End of headers
+            break; // Fin des en-têtes
 
         if (line.find("Content-Length:") != std::string::npos)
         {
             std::string value = line.substr(line.find(":") + 1);
             contentLength = std::stoi(value);
+
+            // Vérifier si Content-Length dépasse la limite
+            if (contentLength > maxBodySize)
+                throw RequestTooLargeException();
         }
     }
 
-    // Read the body based on Content-Length
+    // Lire le corps en fonction de Content-Length
     size_t totalBytesToRead = headerEndPos + 4 + contentLength;
     while (requestData.size() < totalBytesToRead)
     {
@@ -398,22 +433,26 @@ std::string ManagementServer::readRawData(int clientSocket)
         {
             buffer[bytesReceived] = '\0';
             requestData.append(buffer, bytesReceived);
+            totalBytesRead += bytesReceived;
+
+            // Vérifier si la taille dépasse la limite
+            if (totalBytesRead > maxBodySize)
+                throw RequestTooLargeException();
         }
-        else if (bytesReceived == 0) // Client closed the connection
+        else if (bytesReceived == 0) // Le client a fermé la connexion
             break;
         else
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
                 continue;
             else
-                throw std::runtime_error("Error reading from socket: " + std::string(strerror(errno)));
+                throw std::runtime_error("Erreur lors de la lecture du socket : " + std::string(strerror(errno)));
         }
     }
     //logger.log("Reading raw data : " + requestData);
-	//std::cout << "HERE!!!!! " << requestData << std::endl;
+    //std::cout << "HERE!!!!! " << requestData << std::endl;
     return requestData;
 }
-
 
 
 
@@ -437,3 +476,4 @@ void ManagementServer::setIpAddress(std::vector<_server>::iterator it, int ip)
 {
 	it->_ipAddress = ip;
 }
+

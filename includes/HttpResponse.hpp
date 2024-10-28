@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include "Logger.hpp"
+#include "Templates.hpp"
 class HttpResponse
 {
 private:
@@ -32,8 +33,10 @@ public:
     void generate404NotFound(const std::string &errorMessage/* , std::string root */);
     void generate405MethodNotAllowed(const std::string &allowedMethods);
     void generate409Conflict(const std::string &conflictInfo);
+    void generate413PayloadTooLarge(size_t size);
     void generate500InternalServerError(const std::string &errorMessage/* , std::string root */);
     void generate501NotImplemented(const std::string &errorMessage);
+
     std::string getFullResponse();
 
     void setHTTPVersion(const std::string &version);

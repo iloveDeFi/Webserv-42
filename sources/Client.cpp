@@ -22,7 +22,7 @@ bool Client::checkFileExists(const std::string &filePath)
     return (stat(filePath.c_str(), &buffer) == 0); // Renvoie true si le fichier existe
 }
 
-void Client::processRequest(const _server &serverInfo)
+void Client::processRequest(const _server &serverInfo, size_t maxSize)
 {
     HttpResponse response;
     std::string uri;
@@ -34,7 +34,10 @@ void Client::processRequest(const _server &serverInfo)
     {
         uri = _request.getURI();
         method = _request.getMethod();
-        logger.logError("Searching for: uri " + uri + " and method " + method);
+        logger.logError("SIZE max" + to_string(maxSize) + " current size " + to_string(_request.getBody().size()));
+
+        if (_request.getBody().size() > maxSize)
+            response.generate413PayloadTooLarge(maxSize);
 
         const HttpConfig::Location *matchedLocation = NULL;
         size_t longestMatchLength = 0;
@@ -188,4 +191,18 @@ bool Client::isConnected() const
 struct sockaddr_in &Client::getClientAddr()
 {
     return (_address);
+}
+
+bool Client::isKeepAlive() const
+{
+    std::string connectionHeader = _request.getHeader("Connection");
+    if (connectionHeader.empty())
+    {
+        // HTTP/1.1 default is keep-alive
+        return _request.getHTTPVersion() == "HTTP/1.1";
+    }
+    else
+    {
+        return (connectionHeader == "keep-alive");
+    }
 }

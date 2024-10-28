@@ -157,7 +157,18 @@ void HttpResponse::generate409Conflict(const std::string &conflictInfo)
     setHeader("Content-Length", to_string(body.size()));
 }
 
-void HttpResponse::generate500InternalServerError(const std::string &errorMessage/* , std::string root */)
+void HttpResponse::generate413PayloadTooLarge(size_t size)
+{
+    setStatusCode(413);
+    setReasonMessage("Payload too large");
+    setHeader("Content-Type", "text/plain");
+    std::string body = "413 Payload too large: max size is " + to_string(size);
+    setBody(body);
+    setHeader("Content-Length", to_string(body.size()));
+}
+
+
+void HttpResponse::generate500InternalServerError(const std::string &errorMessage)
 {
     setStatusCode(500);
     setReasonMessage("Internal Server Error");
@@ -292,8 +303,8 @@ void HttpResponse::logHttpResponse(Logger &logger)
     }
 
     logMessage << "Body: " << _body << "\n";
-
-    logger.log(logMessage.str());
+    (void)logger;
+    //logger.log(logMessage.str());
 }
 
 std::string HttpResponse::getBody() const
