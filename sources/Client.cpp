@@ -34,32 +34,39 @@ void Client::processRequest(const _server &serverInfo)
     {
         uri = _request.getURI();
         method = _request.getMethod();
+        logger.logError("Searching for: uri " + uri + " and method " + method);
 
-        const HttpConfig::Location *exactMatch = NULL;
+        const HttpConfig::Location *matchedLocation = NULL;
+        size_t longestMatchLength = 0;
 
-        // Chercher la location avec une correspondance exacte
+        // Search for the location that best matches the URI
         for (size_t i = 0; i < serverInfo._locations.size(); ++i)
         {
             const HttpConfig::Location &location = serverInfo._locations[i];
+            logger.logError("PATH is : " + location.path);
 
-            // Vérifiez si l'URI correspond exactement à la path
-            if (uri == location.path)
+            // Check if the URI starts with the location path
+            if (uri.find(location.path) == 0)
             {
-                exactMatch = &location;
-                break; // Sortir dès qu'on trouve une correspondance exacte
+                // Prefer the longest matching path
+                if (location.path.length() > longestMatchLength)
+                {
+                    matchedLocation = &location;
+                    longestMatchLength = location.path.length();
+                }
             }
         }
 
-        // Si aucune correspondance n'est trouvée, générer une réponse 404
-        if (exactMatch == NULL)
+        // If no match is found, generate a 404 response
+        if (matchedLocation == NULL)
         {
-            response.generate404NotFound("The requested URL " + uri + " was not found on this server."/* , serverInfo._root */);
+            response.generate404NotFound("The requested URL " + uri + " was not found on this server.");
             logger.logError("404 Not Found for URI: " + uri);
         }
         else
         {
-            // Gestion des requêtes selon le type de méthode
-            const HttpConfig::Location &location = *exactMatch;
+            // Handle requests according to the method type
+            const HttpConfig::Location &location = *matchedLocation;
             std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
 
             if (location.iscgi)
@@ -114,6 +121,7 @@ void Client::processRequest(const _server &serverInfo)
         _response = response;
     }
 }
+
 
 void Client::sendResponse()
 {

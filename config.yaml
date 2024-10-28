@@ -43,7 +43,6 @@
           allow_uploads: true
           content_type: text/html
 
-
         - path: /uploadPage
           methods: GET, POST
           handler: index/post.html
@@ -80,7 +79,7 @@
           methods: GET
           handler: index/cgi-bin/
           allow_uploads: false
-          content_type: application/json  # Changer le content type selon retour requete
+          content_type: application/json
           
         # Handler CGI pour le script Python 'simple.py' (GET)
         - path: /cgi-bin/get

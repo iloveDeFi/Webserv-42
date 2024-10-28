@@ -378,6 +378,7 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
 
     // Expected format: /files/filename
     const std::string prefix = "/files/";
+
     if (uri.compare(0, prefix.length(), prefix) != 0)
     {
         res.generate404NotFound("Invalid URI for DELETE operation: " + uri);
