@@ -36,12 +36,12 @@
           allow_uploads: false
           content_type: application/json
 
-        - path: /cgi-bin/php
+        - path: /cgi-bin/upload.pl
           methods: POST
-          cgi_handler: /opt/homebrew/bin/php  # Chemin vers l'exécutable PHP
-          handler: index/cgi-bin/upload.php
+          cgi_handler: /usr/bin/perl
+          handler: index/cgi-bin/upload.pl
           allow_uploads: true
-          content_type: application/json
+          content_type: text/html
 
         - path: /uploadPage
           methods: GET, POST

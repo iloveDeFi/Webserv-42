@@ -585,23 +585,51 @@ bool RequestController::createPipes(int stdin_pipe[2], int stdout_pipe[2], HttpR
 void RequestController::executeCgiScript(const std::string &cgiScriptPath, const std::vector<std::string> &envVariables, int stdin_pipe[2], int stdout_pipe[2])
 {
     Logger &logger = Logger::getInstance("server.log");
+    std::string cgiHandler = _locationConfig.cgiHandler;
+    struct stat scriptStat;
     close(stdin_pipe[1]);
     dup2(stdin_pipe[0], STDIN_FILENO);
     close(stdin_pipe[0]);
 
     close(stdout_pipe[0]);
     dup2(stdout_pipe[1], STDOUT_FILENO);
+    dup2(stdout_pipe[1], STDERR_FILENO); // Redirect stderr to stdout
     close(stdout_pipe[1]);
 
+    // Set environment variables
+    char *envp[envVariables.size() + 1];
     for (size_t i = 0; i < envVariables.size(); ++i)
     {
-        putenv(const_cast<char *>(envVariables[i].c_str()));
+        envp[i] = const_cast<char *>(envVariables[i].c_str());
     }
+    envp[envVariables.size()] = nullptr;
+
     logger.log("CGI cgiScriptPath: " + cgiScriptPath);
-    execl(cgiScriptPath.c_str(), cgiScriptPath.c_str(), (char *)nullptr);
-    perror("execl failed");
+    logger.log("CGI cgiHandler: " + cgiHandler);
+
+    char *argv[] = {const_cast<char *>(cgiHandler.c_str()), const_cast<char *>(cgiScriptPath.c_str()), nullptr};
+
+    if (stat(cgiScriptPath.c_str(), &scriptStat) == 0 && (scriptStat.st_mode & S_IXUSR))
+    {
+        // Script is executable, execute it directly
+        execve(cgiScriptPath.c_str(), argv, envp);
+    }
+    else if (!cgiHandler.empty())
+    {
+        // Use the specified interpreter
+        execve(cgiHandler.c_str(), argv, envp);
+    }
+    else
+    {
+        // No interpreter specified and script is not executable
+        logger.logError("No CGI handler specified and script is not executable.");
+        exit(1);
+    }
+
+    perror("execve failed");
     exit(1);
 }
+
 
 // Gère la lecture de la sortie CGI et la réponse HTTP
 void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req, HttpResponse &res)
