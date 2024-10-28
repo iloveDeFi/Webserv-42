@@ -53,7 +53,7 @@ void Client::processRequest(const _server &serverInfo)
         // Si aucune correspondance n'est trouvée, générer une réponse 404
         if (exactMatch == NULL)
         {
-            response.generate404NotFound("The requested URL " + uri + " was not found on this server.");
+            response.generate404NotFound("The requested URL " + uri + " was not found on this server."/* , serverInfo._root */);
             logger.logError("404 Not Found for URI: " + uri);
         }
         else

@@ -27,12 +27,12 @@ public:
     void generate201Created(const std::string &location);
     void generate202Accepted(const std::string &deletionInfo);
     void generate204NoContent(const std::string &errorMessage);
-    void generate400BadRequest(const std::string &errorMessage);
-    void generate403Forbidden(const std::string &errorMessage);
-    void generate404NotFound(const std::string &errorMessage);
+    void generate400BadRequest(const std::string &errorMessage/* , std::string root */);
+    void generate403Forbidden(const std::string &errorMessage/* , std::string root */);
+    void generate404NotFound(const std::string &errorMessage/* , std::string root */);
     void generate405MethodNotAllowed(const std::string &allowedMethods);
     void generate409Conflict(const std::string &conflictInfo);
-    void generate500InternalServerError(const std::string &errorMessage);
+    void generate500InternalServerError(const std::string &errorMessage/* , std::string root */);
     void generate501NotImplemented(const std::string &errorMessage);
     std::string getFullResponse();
 

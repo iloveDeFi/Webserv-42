@@ -43,6 +43,7 @@
           allow_uploads: true
           content_type: text/html
 
+
         - path: /uploadPage
           methods: GET, POST
           handler: index/post.html

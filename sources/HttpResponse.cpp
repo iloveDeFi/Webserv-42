@@ -85,7 +85,7 @@ void HttpResponse::generate204NoContent(const std::string &errorMessage)
     (void)errorMessage;
 }
 
-void HttpResponse::generate400BadRequest(const std::string &errorMessage)
+void HttpResponse::generate400BadRequest(const std::string &errorMessage/* , std::string root */)
 {
     setStatusCode(400);
     setReasonMessage("Bad Request");
@@ -93,15 +93,16 @@ void HttpResponse::generate400BadRequest(const std::string &errorMessage)
     std::string body = "400 Bad Request: " + errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
+
 }
 
-void HttpResponse::generate403Forbidden(const std::string &errorMessage)
+void HttpResponse::generate403Forbidden(const std::string &errorMessage/* , std::string root */)
 {
     setStatusCode(403);
     setReasonMessage("Forbidden");
     setHeader("Content-Type", "text/html");
 
-    std::string body = readFile("./public/errors/403.html");
+    std::string body = readFile("./errors/403.html");
 
     if (body.empty())
     {
@@ -113,14 +114,14 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage)
     setHeader("Content-Length", std::to_string(body.size()));
 }
 
-void HttpResponse::generate404NotFound(const std::string &errorMessage)
+void HttpResponse::generate404NotFound(const std::string &errorMessage/* , std::string root */)
 {
     Logger &logger = Logger::getInstance("server.log");
     setStatusCode(404);
     setReasonMessage("Not Found");
     setHeader("Content-Type", "text/html");
 
-    std::string body = readFile("./public/errors/404.html");
+    std::string body = readFile("./errors/404.html");
     logger.log(" \n body is " + body);
 
     if (body.empty())
@@ -143,6 +144,7 @@ void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
     setHeader("Allow", allowedMethods);
+
 }
 
 void HttpResponse::generate409Conflict(const std::string &conflictInfo)
@@ -155,12 +157,12 @@ void HttpResponse::generate409Conflict(const std::string &conflictInfo)
     setHeader("Content-Length", to_string(body.size()));
 }
 
-void HttpResponse::generate500InternalServerError(const std::string &errorMessage)
+void HttpResponse::generate500InternalServerError(const std::string &errorMessage/* , std::string root */)
 {
     setStatusCode(500);
     setReasonMessage("Internal Server Error");
     setHeader("Content-Type", "text/html");
-    std::string body = readFile("./public/errors/500.html");
+    std::string body = readFile("./errors/500.html");
     if (body.empty())
     {
         std::cerr << "Warning: Could not read 500.html, using default error message." << std::endl;
