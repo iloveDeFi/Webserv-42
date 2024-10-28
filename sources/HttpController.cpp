@@ -1,19 +1,21 @@
 #include "HttpController.hpp"
 #include <dirent.h>
 
-RequestController::RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
-    : _locationConfig(locationConfig), _deletionInProgress(), _serverRoot(serverRoot)
-{
-    if (_validMethods.empty())
-    {
-        _validMethods.insert("GET");
-        _validMethods.insert("POST");
-        _validMethods.insert("DELETE");
-        _validMethods.insert("OPTIONS");
-        _validMethods.insert("UNKNOWN");
-        _validMethods.insert("CGI");
-    }
-}
+// RequestController::RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
+//     : _locationConfig(locationConfig), _deletionInProgress(), _serverRoot(serverRoot)
+// {
+// 	std::cout << "[DEBUG] Initializing RequestController for root: " << _serverRoot << std::endl;
+
+//     if (_validMethods.empty())
+//     {
+//         _validMethods.insert("GET");
+//         _validMethods.insert("POST");
+//         _validMethods.insert("DELETE");
+//         _validMethods.insert("OPTIONS");
+//         _validMethods.insert("UNKNOWN");
+//         _validMethods.insert("CGI");
+//     }
+// }
 
 RequestController::RequestController(const RequestController &src)
     : _locationConfig(src._locationConfig), _deletionInProgress(src._deletionInProgress) {}
@@ -177,35 +179,57 @@ bool RequestController::isDirectory(const std::string &path)
     return S_ISDIR(statbuf.st_mode);
 }
 
+#include "HttpController.hpp"
+#include <dirent.h>
+
+RequestController::RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
+    : _locationConfig(locationConfig), _deletionInProgress(), _serverRoot(serverRoot)
+{
+	std::cout << "[DEBUG] Initializing RequestController for root: " << _serverRoot << std::endl;
+
+    if (_validMethods.empty())
+    {
+        _validMethods.insert("GET");
+        _validMethods.insert("POST");
+        _validMethods.insert("DELETE");
+        _validMethods.insert("OPTIONS");
+        _validMethods.insert("UNKNOWN");
+        _validMethods.insert("CGI");
+    }
+}
+
 std::string RequestController::resolveResourcePath(const std::string &uri)
 {
-    std::string resourcePath = _serverRoot;
-    if (resourcePath[resourcePath.length() - 1] != '/')
+    Logger &logger = Logger::getInstance("server.log");
+logger.log("[DEBUG] Starting resolveResourcePath with URI: " + uri);
+std::string resourcePath = _serverRoot;
+if (resourcePath.back() != '/')
+    resourcePath += '/';
+resourcePath += uri[0] == '/' ? uri.substr(1) : uri;
+logger.log("[DEBUG] Resolved resource path: " + resourcePath);
+
+// Ajoutez le chemin du handler ou de l'URI
+if (!_locationConfig.handler.empty()) {
+    resourcePath += _locationConfig.handler;
+    logger.log("[DEBUG] Resource path with handler: " + resourcePath);
+} else {
+    std::string finalUri = uri[0] == '/' ? uri.substr(1) : uri;
+    resourcePath += finalUri;
+    logger.log("[DEBUG] Resource path with URI: " + resourcePath);
+}
+
+if (isDirectory(resourcePath)) {
+    if (resourcePath.back() != '/')
         resourcePath += '/';
+    resourcePath += "index.html";
+    logger.log("[DEBUG] Directory path detected, added index.html: " + resourcePath);
+}
 
-    if (!_locationConfig.handler.empty())
-    {
-        resourcePath += _locationConfig.handler;
-    }
-    else
-    {
-        // Default behavior if no handler is specified
-        std::string finalUri = uri;
-        if (finalUri[0] == '/')
-            finalUri = finalUri.substr(1);
-
-        resourcePath += finalUri;
-
-        if (isDirectory(resourcePath))
-        {
-            if (resourcePath.back() != '/')
-                resourcePath += '/';
-            resourcePath += "index.html";
-        }
-    }
-
+logger.log("[DEBUG] Final resolved resource path: " + resourcePath);
     return resourcePath;
 }
+
+
 
 void RequestController::serveResource(const std::string &resourcePath, HttpResponse &res)
 {
@@ -250,9 +274,11 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         return;
     }
 
+    // Obtain the complete resource path
     std::string resourcePath = resolveResourcePath(uri);
     logger.log("Resolved resource path: " + resourcePath);
 
+    // Verify read permissions
     if (!hasReadPermissions(resourcePath))
     {
         res.generate403Forbidden("403 Forbidden: Access to the resource is forbidden");
@@ -260,8 +286,12 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         return;
     }
 
+    // Serve the resource if everything is correct
     serveResource(resourcePath, res);
 }
+
+
+
 
 void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res)
 {
@@ -429,18 +459,24 @@ void RequestController::setCorsHeaders(HttpResponse &res)
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");               // En-têtes autorisés
 }
 
+bool RequestController::fileExists(const std::string& path) {
+    struct stat buffer;
+    return (stat(path.c_str(), &buffer) == 0);
+}
+
 void RequestController::handleInternalRequest(const HttpRequest &req, HttpResponse &res)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
     logger.log("Handling internal request for URI: " + uri);
 
+    // Liste des fichiers
     if (uri == "/file-list")
     {
         std::string filesDir = _serverRoot + "/index/files";
         std::vector<std::string> files = listFilesInDirectory(filesDir);
 
-        // Generate JSON response
+        // Générer la réponse JSON
         std::string jsonResponse = "{\"files\":[";
         for (size_t i = 0; i < files.size(); ++i)
         {
@@ -454,6 +490,43 @@ void RequestController::handleInternalRequest(const HttpRequest &req, HttpRespon
         res.setReasonMessage("OK");
         res.setHeader("Content-Type", "application/json");
         res.setBody(jsonResponse);
+        res.ensureContentLength();
+    }
+    // Suppression de fichier
+    else if (uri.rfind("/files/", 0) == 0)
+    {
+        std::string fileName = uri.substr(7); // Extraire le nom du fichier après `/files/`
+        std::string filePath = _serverRoot + "/index/files/" + fileName;
+
+        logger.log("Attempting to delete file: " + filePath);
+
+        if (fileExists(filePath))
+        {
+            if (remove(filePath.c_str()) == 0)
+            {
+                res.setStatusCode(200);
+                res.setReasonMessage("OK");
+                res.setHeader("Content-Type", "text/plain");
+                res.setBody("File successfully deleted.");
+                logger.log("File deleted successfully: " + filePath);
+            }
+            else
+            {
+                res.setStatusCode(500);
+                res.setReasonMessage("Internal Server Error");
+                res.setHeader("Content-Type", "text/plain");
+                res.setBody("File could not be deleted due to a server error.");
+                logger.log("Failed to delete file due to server error: " + filePath);
+            }
+        }
+        else
+        {
+            res.setStatusCode(404);
+            res.setReasonMessage("Not Found");
+            res.setHeader("Content-Type", "text/plain");
+            res.setBody("File not found.");
+            logger.log("File not found: " + filePath);
+        }
         res.ensureContentLength();
     }
     else

@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <sys/stat.h>
+
 
 struct FormData;
 
@@ -71,6 +73,7 @@ public:
     void processCgiOutput(pid_t pid, int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req, HttpResponse &res);
     void handleCgiResponseOutput(const std::string &output, HttpResponse &res);
     void handleError(const std::string &errorMessage, HttpResponse &res, Logger &logger);
+	bool fileExists(const std::string& path);
 };
 
 class GetRequestHandler : public RequestController

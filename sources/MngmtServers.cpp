@@ -15,17 +15,15 @@
 // constructeur du gestionnaire de serveurs
 // il va découper le fichier en ligne (chacune représentant un serveur)
 // et ajouter un serveur au veteur de _servers
-ManagementServer::ManagementServer(HttpConfig &config)
-{
-	std::string line;
+ManagementServer::ManagementServer(HttpConfig &config) {
+    std::cout << "[DEBUG] Initializing ManagementServer." << std::endl;
+    std::vector<HttpConfig::ServerConfig>::iterator it = config.getParsedServers().begin();
 
-	std::vector<HttpConfig::ServerConfig>::iterator it = config.getParsedServers().begin();
-
-	while (it != config.getParsedServers().end())
-	{
-		addNewServer(*it);
-		it++;
-	}
+    while (it != config.getParsedServers().end()) {
+        std::cout << "[DEBUG] Adding server: " << it->serverName << " with root: " << it->root << std::endl;
+        addNewServer(*it);
+        it++;
+    }
 }
 
 ManagementServer::~ManagementServer()
@@ -49,78 +47,56 @@ ManagementServer::~ManagementServer()
 //  la lie avec le port d'écoute (bind) et écoute les requests (listen)
 #include <sstream>
 
-void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
-{
-	_server newServer;
-	socklen_t addrLen;
+void ManagementServer::addNewServer(HttpConfig::ServerConfig server) {
+    _server newServer;
+    socklen_t addrLen;
+    Logger &logger = Logger::getInstance("server.log");
 
-	try
-	{
-		newServer._name = server.serverName;
-		newServer._port = server.port;
-		newServer._maxSize = server.clientMaxBodySize;
-		newServer._errorPages = server.errorPages;
-		newServer._locations = server.locations;
-		newServer._root = server.root;
+    try {
+        newServer._name = server.serverName;
+        newServer._port = server.port;
+        newServer._maxSize = server.clientMaxBodySize;
+        newServer._errorPages = server.errorPages;
+        newServer._locations = server.locations;
+        newServer._root = server.root;
 
-		newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
-		addrLen = sizeof(newServer._serverSocket->getAddress());
+        logger.log("[DEBUG] Configuring server: " + newServer._name + ", Port: " + std::to_string(newServer._port) + ", Root directory: " + newServer._root);
 
-		setNonBlocking(newServer._serverSocket->getFdSocket());
+        newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
+        addrLen = sizeof(newServer._serverSocket->getAddress());
 
-		try
-		{
-			newServer._serverSocket->Bind();
-		}
-		catch (const std::runtime_error &e)
-		{
-			std::ostringstream errorMsg;
-			if (errno == EACCES)
-			{
-				errorMsg << "Permission denied. You may need root privileges to bind to port " << newServer._port;
-				throw std::runtime_error(errorMsg.str());
-			}
-			else if (errno == EADDRINUSE)
-			{
-				errorMsg << "Address already in use. Port " << newServer._port << " may already be occupied.";
-				throw std::runtime_error(errorMsg.str());
-			}
-			else
-			{
-				throw; // Rethrow the original exception if it's not one of the specific cases we're handling
-			}
-		}
+        setNonBlocking(newServer._serverSocket->getFdSocket());
 
-		newServer._serverSocket->Listen();
+        try {
+            newServer._serverSocket->Bind();
+            logger.log("[DEBUG] Bind successful on port " + std::to_string(newServer._port));
+        } catch (const std::runtime_error &e) {
+            std::ostringstream errorMsg;
+            if (errno == EACCES) {
+                errorMsg << "Permission denied on port " << newServer._port;
+                logger.log("[ERROR] " + errorMsg.str());
+                throw std::runtime_error(errorMsg.str());
+            } else if (errno == EADDRINUSE) {
+                errorMsg << "Address already in use on port " << newServer._port;
+                logger.log("[ERROR] " + errorMsg.str());
+                throw std::runtime_error(errorMsg.str());
+            } else {
+                throw;
+            }
+        }
 
-		int ip = getsockname(newServer._serverSocket->getFdSocket(),
-							 (struct sockaddr *)&newServer._serverSocket->getAddress(),
-							 &addrLen);
-		if (ip == -1)
-		{
-			std::string errorStr = "Error getting host IP: ";
-			errorStr += strerror(errno);
-			throw std::runtime_error(errorStr);
-		}
+        newServer._serverSocket->Listen();
+        logger.log("[DEBUG] Listening on port " + std::to_string(newServer._port));
 
-		_servers.push_back(newServer);
-		_servers.back()._ipAddress = ip;
-		std::cout << "Server is listening on port " << newServer._port << std::endl;
-	}
-	catch (const std::exception &e)
-	{
-		std::cerr << "Failed to set up server on port " << server.port << ": " << e.what() << std::endl;
-
-		// Clean up resources if an error occurred
-		if (newServer._serverSocket)
-		{
-			delete newServer._serverSocket;
-		}
-
-		// Optionally, you might want to rethrow the exception or handle it in some other way
-		// throw;
-	}
+        _servers.push_back(newServer);
+    } catch (const std::exception &e) {
+        logger.log("[ERROR] Failed to set up server on port " + std::to_string(server.port) + ": " + e.what());
+        if (newServer._serverSocket) {
+            delete newServer._serverSocket;
+        }
+    }
 }
+
 // La boucle principale d'écoute des différents serveur lancés
 // prépare les FD des serveurs et des potentiels clients
 // en modifiant la valeur max du nombre d'FD actif
@@ -279,138 +255,89 @@ void ManagementServer::handleActiveClients(fd_set &readFds, std::vector<Client> 
 }
 
 
-void ManagementServer::handleClient(Client &client)
-{
+void ManagementServer::handleClient(Client &client) {
     int clientSocket = client.getClientSocket();
     struct sockaddr_in serverAddr;
     socklen_t serverAddrLen = sizeof(serverAddr);
 
-    //détermine sur quel serveur le client est connecté
-    if (getsockname(clientSocket, (struct sockaddr *)&serverAddr, &serverAddrLen) == -1)
-    {
+    if (getsockname(clientSocket, (struct sockaddr *)&serverAddr, &serverAddrLen) == -1) {
         throw std::runtime_error("Error getting server socket information: " + std::string(strerror(errno)));
     }
 
     int serverPort = ntohs(serverAddr.sin_port);
+    Logger &logger = Logger::getInstance("server.log");
+    logger.log("[DEBUG] Handling client request on port: " + std::to_string(serverPort));
 
-    //trouver la conf du serveur correspondant à ce port
+    // Find server config for port
     _server currentServer;
     bool serverFound = false;
-    for (std::vector<_server>::iterator it = _servers.begin(); it != _servers.end(); ++it)
-    {
-        if (it->_port == serverPort)
-        {
+    for (std::vector<_server>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
+        if (it->_port == serverPort) {
             currentServer = *it;
             serverFound = true;
             break;
         }
     }
-    if (!serverFound)
-    {
+
+    if (!serverFound) {
+        logger.log("[ERROR] No server configuration found for port: " + std::to_string(serverPort));
         throw std::runtime_error("No server found for port " + std::to_string(serverPort));
     }
 
-    // Lire la requête du client
+    // Read and process the request
     std::string rawData = readRawData(clientSocket);
-	
-    if (rawData.empty())
-    {
-        // Si aucune donnée n'a été lue, le client a peut-être fermé la connexion
+    if (rawData.empty()) {
         throw std::runtime_error("No data received from client.");
     }
-	// TO DO : delete?
-	client.readRequest(rawData); // parser renvoyé à Alex
-	// il ajoute a client sont attribut _request;
 
-	// TO CHECK : yes rawData values are GOOD here
-	// std::string rawData = readRawData(clientSocket);
-	// client.readRequest(rawData);
-	// std::cout << "BEFORE PROCESS : Raw request data: " << rawData << std::endl;
-
-	client.processRequest(currentServer); // gestion de la requete par Baptiste
-	// il ajoute a client sont attribut _response;
-	client.sendResponse();
+    logger.log("[DEBUG] Raw client data received: " + rawData);
+    client.readRequest(rawData);
+    client.processRequest(currentServer);
+    client.sendResponse();
 }
 
 
 
-std::string ManagementServer::readRawData(int clientSocket)
-{
+std::string ManagementServer::readRawData(int clientSocket) {
     const size_t buffer_size = 1024;
     char buffer[buffer_size];
     std::string requestData;
     ssize_t bytesReceived;
     size_t headerEndPos = std::string::npos;
-    size_t contentLength = 0;
+    // size_t contentLength = 0;
     Logger &logger = Logger::getInstance("server.log");
 
+    logger.log("[DEBUG] Start reading raw data from client.");
+
     // Read headers
-    while (true)
-    {
+    while (true) {
         bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0);
-        if (bytesReceived > 0)
-        {
+        if (bytesReceived > 0) {
             buffer[bytesReceived] = '\0';
             requestData.append(buffer, bytesReceived);
+            logger.log("[DEBUG] Received data chunk: " + std::string(buffer));
 
             // Look for the end of the headers
             headerEndPos = requestData.find("\r\n\r\n");
-            if (headerEndPos != std::string::npos)
+            if (headerEndPos != std::string::npos) {
+                logger.log("[DEBUG] Header end found. Moving to parse Content-Length.");
                 break;
-        }
-        else if (bytesReceived == 0) // Client closed the connection
+            }
+        } else if (bytesReceived == 0) {
+            logger.log("[DEBUG] Client closed the connection before any data was read.");
             return "";
-        else
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+        } else {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                logger.log("[DEBUG] Non-blocking socket, retrying recv.");
                 continue;
-            else
+            } else {
+                logger.log("[ERROR] Error reading from socket: " + std::string(strerror(errno)));
                 throw std::runtime_error("Error reading from socket: " + std::string(strerror(errno)));
+            }
         }
     }
-
-    // Parse headers to find Content-Length
-    std::string headers = requestData.substr(0, headerEndPos + 2); // Include \r\n
-    //logger.log("Reading raw data header: " + headers);
-    std::istringstream headerStream(headers);
-    std::string line;
-    while (std::getline(headerStream, line))
-    {
-        if (!line.empty() && line.back() == '\r') // Remove \r
-            line.pop_back();
-
-        if (line.empty())
-            break; // End of headers
-
-        if (line.find("Content-Length:") != std::string::npos)
-        {
-            std::string value = line.substr(line.find(":") + 1);
-            contentLength = std::stoi(value);
-        }
-    }
-
-    // Read the body based on Content-Length
-    size_t totalBytesToRead = headerEndPos + 4 + contentLength;
-    while (requestData.size() < totalBytesToRead)
-    {
-        bytesReceived = recv(clientSocket, buffer, buffer_size - 1, 0);
-        if (bytesReceived > 0)
-        {
-            buffer[bytesReceived] = '\0';
-            requestData.append(buffer, bytesReceived);
-        }
-        else if (bytesReceived == 0) // Client closed the connection
-            break;
-        else
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                continue;
-            else
-                throw std::runtime_error("Error reading from socket: " + std::string(strerror(errno)));
-        }
-    }
-    logger.log("Reading raw data : " + requestData);
-	//std::cout << "HERE!!!!! " << requestData << std::endl;
+    // Additional logging for Content-Length and body
+    logger.log("[DEBUG] Raw request data: " + requestData);
     return requestData;
 }
 
