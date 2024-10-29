@@ -45,6 +45,10 @@ public:
     struct sockaddr_in& getClientAddr();
     bool checkFileExists(const std::string &filePath);
     bool isKeepAlive() const;
+    bool handleRedirect(const ServerData &serverInfo, const std::string &method, HttpResponse &response);
+    const HttpConfig::Location* findMatchingLocation(const ServerData &serverInfo, const std::string &uri);
+    void handleRequest(const HttpRequest &request, const HttpConfig::Location &location, const ServerData &serverInfo, HttpResponse &response);
+
 };
 
 #endif

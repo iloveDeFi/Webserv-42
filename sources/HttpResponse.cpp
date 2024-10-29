@@ -133,7 +133,7 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage/* , std::
     setReasonMessage("Not Found");
     setHeader("Content-Type", "text/html");
 
-    std::string body = readFile(".public/errors/404.html");
+    std::string body = readFile("./public/errors/404.html");
     logger.log(" \n body is " + body);
 
     if (body.empty())

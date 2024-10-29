@@ -30,111 +30,62 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
 
     Logger &logger = Logger::getInstance("server.log");
 
-        uri = _request.getURI();
-        method = _request.getMethod();
-		logger.logError("SIZE max" + to_string(maxSize) + " current size " + to_string(_request.getBody().size()));
+    uri = _request.getURI();
+    method = _request.getMethod();
+    logger.log("SIZE max" + to_string(maxSize) + " current size " + to_string(_request.getBody().size()));
 
-        logger.log("PATH: " + uri);
+    logger.log("PATH: " + uri);
 
-         try
+    try
+    {
+        // Handle redirects
+        if (handleRedirect(serverInfo, method, response))
         {
-         for (size_t i = 0; i < serverInfo._locations.size(); ++i)
-         {
-            if (serverInfo._locations[i].redirect.code == 301 && method == "GET")
-            {
-                response.generate301MovedPermanently(serverInfo._locations[i].redirect.url);
-                _response = response;
-                logger.log("HttpConfig Location.redirect.url" + serverInfo._locations[i].redirect.url);
-                logger.log("Code is : " + to_string(serverInfo._locations[i].redirect.code));
-                return;
-            }
-         }
+            _response = response;
+            return;
+        }
 
+        // Check if body size exceeds max size
         if (_request.getBody().size() > maxSize)
         {
             response.generate413PayloadTooLarge(maxSize);
             _response = response;
-            return; // Terminer le traitement si la taille est excessive
-        }
-        // Vérification de la taille maximale autorisée du body
-        logger.logError("Max size: " + std::to_string(maxSize) + " | Current size: " + std::to_string(_request.getBody().size()));
-
-        const HttpConfig::Location *exactMatch = nullptr;
-
-        // Recherche d'une correspondance exacte pour l'URI
-        for (size_t i = 0; i < serverInfo._locations.size(); ++i)
-        {
-            const HttpConfig::Location &location = serverInfo._locations[i];
-
-            // Vérifie si l'URI correspond exactement au chemin
-            if (uri == location.path)
-            {
-                exactMatch = &location;
-                break; // Sortir dès qu'on trouve une correspondance exacte
-            }
+            return; // Terminate processing if size is too large
         }
 
-        // Si aucune correspondance exacte n'est trouvée, générer une réponse 404
-        if (exactMatch == nullptr)
+        // Log body size
+        logger.log("Max size: " + to_string(maxSize) + " | Current size: " + to_string(_request.getBody().size()));
+
+        // Find the best matching location
+        const HttpConfig::Location *matchedLocation = findMatchingLocation(serverInfo, uri);
+
+        if (matchedLocation == NULL)
         {
             response.generate404NotFound("The requested URL " + uri + " was not found on this server.");
             logger.logError("404 Not Found for URI: " + uri);
         }
         else
         {
-            // Gestion de la requête en fonction de la méthode
-            const HttpConfig::Location &location = *exactMatch;
-            std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
-
-            if (location.iscgi)
-            {
-                CgiRequestHandler cgiHandler(location, serverInfo);
-                cgiHandler.handle(_request, response);
-            }
-            else if (method == "GET")
-            {
-                GetRequestHandler getHandler(location, serverInfo);
-                getHandler.handle(_request, response);
-            }
-            else if (method == "POST")
-            {
-                PostRequestHandler postHandler(location, serverInfo);
-                postHandler.handle(_request, response);
-            }
-            else if (method == "DELETE")
-            {
-                DeleteRequestHandler deleteHandler(location, serverInfo);
-                deleteHandler.handle(_request, response);
-            }
-            else if (method == "OPTIONS")
-            {
-                OptionsRequestHandler optionsHandler(location, serverInfo);
-                optionsHandler.handle(_request, response);
-            }
-            else
-            {
-                logger.log("UNKNOWN method detected.");
-                UnknownRequestHandler unknownHandler(location, serverInfo);
-                unknownHandler.handle(_request, response);
-            }
+            // Process the request based on the method
+            handleRequest(_request, *matchedLocation, serverInfo, response);
         }
 
-        // Log du code de statut de la réponse
+        // Log the response status code
         int statusCode = response.getStatusCode();
         logger.logRequest(method, uri, statusCode);
 
-        // Si le code de statut est une erreur, log supplémentaire
+        // Additional logging if status code indicates an error
         if (statusCode >= 400)
         {
-            logger.logError("Request resulted in error: " + std::to_string(statusCode));
+            logger.logError("Request resulted in error: " + to_string(statusCode));
         }
 
-        // Assigner la réponse à l'attribut de réponse du client
+        // Assign the response to the client's response attribute
         _response = response;
     }
     catch (const std::exception &e)
     {
-        // En cas d'exception, générer une réponse d'erreur 400
+        // In case of exception, generate a 400 Bad Request response
         response.setStatusCode(400);
         response.setBody("400 Bad Request: " + std::string(e.what()));
         response.setHeader("Content-Type", "text/plain");
@@ -143,6 +94,121 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
         _response = response;
     }
 }
+
+bool Client::handleRedirect(const ServerData &serverInfo, const std::string &method, HttpResponse &response)
+{
+    Logger &logger = Logger::getInstance("server.log");
+
+    for (size_t i = 0; i < serverInfo._locations.size(); ++i)
+    {
+        const HttpConfig::Location &location = serverInfo._locations[i];
+        if (location.redirect.code == 301 && method == "GET")
+        {
+            response.generate301MovedPermanently(location.redirect.url);
+            logger.log("Redirecting to: " + location.redirect.url);
+            logger.log("Code is: " + to_string(location.redirect.code));
+            return true;
+        }
+    }
+    return false;
+}
+
+const HttpConfig::Location* Client::findMatchingLocation(const ServerData &serverInfo, const std::string &uri)
+{
+    Logger &logger = Logger::getInstance("server.log");
+    const HttpConfig::Location *matchedLocation = NULL;
+    size_t longestMatchLength = 0;
+
+    // Remove query parameters for matching
+    std::string uriPath = uri;
+    size_t queryPos = uri.find('?');
+    if (queryPos != std::string::npos)
+    {
+        uriPath = uri.substr(0, queryPos);
+    }
+
+    // First, attempt exact matching
+    for (size_t i = 0; i < serverInfo._locations.size(); ++i)
+    {
+        const HttpConfig::Location &location = serverInfo._locations[i];
+        if (uriPath == location.path)
+        {
+            logger.log("Exact match found: " + location.path);
+            return &location;
+        }
+    }
+
+    // Then, attempt longest prefix matching (excluding '/')
+    for (size_t i = 0; i < serverInfo._locations.size(); ++i)
+    {
+        const HttpConfig::Location &location = serverInfo._locations[i];
+        if (location.path == "/")
+            continue; // Skip the default location for now
+
+        if (uriPath.find(location.path) == 0)
+        {
+            if (location.path.length() > longestMatchLength)
+            {
+                matchedLocation = &location;
+                longestMatchLength = location.path.length();
+            }
+        }
+    }
+
+    // If still no match, decide whether to use default location or return NULL
+    if (matchedLocation == NULL)
+    {
+        // Optionally, you can choose to not use the default location to force a 404
+        logger.log("No matching location found for URI: " + uri);
+        return NULL;
+    }
+
+    logger.log("Matched Location Path: " + matchedLocation->path);
+    return matchedLocation;
+}
+
+
+void Client::handleRequest(const HttpRequest &request, const HttpConfig::Location &location, const ServerData &serverInfo, HttpResponse &response)
+{
+    Logger &logger = Logger::getInstance("server.log");
+    std::string method = request.getMethod();
+
+    std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
+
+    if (location.iscgi)
+    {
+        CgiRequestHandler cgiHandler(location, serverInfo);
+        cgiHandler.handle(request, response);
+    }
+    else if (method == "GET")
+    {
+        GetRequestHandler getHandler(location, serverInfo);
+        getHandler.handle(request, response);
+    }
+    else if (method == "POST")
+    {
+        PostRequestHandler postHandler(location, serverInfo);
+        postHandler.handle(request, response);
+    }
+    else if (method == "DELETE")
+    {
+        DeleteRequestHandler deleteHandler(location, serverInfo);
+        deleteHandler.handle(request, response);
+    }
+    else if (method == "OPTIONS")
+    {
+        OptionsRequestHandler optionsHandler(location, serverInfo);
+        optionsHandler.handle(request, response);
+    }
+    else
+    {
+        logger.log("UNKNOWN method detected.");
+        UnknownRequestHandler unknownHandler(location, serverInfo);
+        unknownHandler.handle(request, response);
+    }
+}
+
+
 
 void Client::sendResponse()
 {
