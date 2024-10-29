@@ -42,7 +42,7 @@ public:
     int getClientSocket();
     std::string getIPaddress();
     bool isConnected() const;
-    struct sockaddr_in& getClientAddr();
+    struct sockaddr_in &getClientAddr();
     bool checkFileExists(const std::string &filePath);
     bool isKeepAlive() const;
 };

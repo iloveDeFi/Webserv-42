@@ -8,8 +8,8 @@ Client::~Client() {}
 void Client::readRequest(const std::string &rawData)
 {
     //_request.parse(rawData);
-    //Logger &logger = Logger::getInstance("server.log");
-    //logger.log(">> rawData in readRequest to pass to HttpRequest(rawData) is " + rawData);
+    // Logger &logger = Logger::getInstance("server.log");
+    // logger.log(">> rawData in readRequest to pass to HttpRequest(rawData) is " + rawData);
     _request = HttpRequest(rawData);
     /*     std::cout << "Method: " << _request.getMethod() << std::endl;
         std::cout << "URI: " << _request.getURI() << std::endl;
@@ -30,25 +30,40 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
 
     Logger &logger = Logger::getInstance("server.log");
 
-        uri = _request.getURI();
-        method = _request.getMethod();
-		logger.logError("SIZE max" + to_string(maxSize) + " current size " + to_string(_request.getBody().size()));
+    uri = _request.getURI();
+    method = _request.getMethod();
+    logger.logError("SIZE max" + to_string(maxSize) + " current size " + to_string(_request.getBody().size()));
 
-        logger.log("PATH: " + uri);
+    logger.log("PATH: " + uri);
 
-         try
+    try
+    {
+        for (size_t i = 0; i < serverInfo._locations.size(); ++i)
         {
-         for (size_t i = 0; i < serverInfo._locations.size(); ++i)
-         {
-            if (serverInfo._locations[i].redirect.code == 301 && method == "GET")
+            const HttpConfig::Location &location = serverInfo._locations[i];
+
+            if (uri == location.path && !location.redirect.url.empty())
             {
-                response.generate301MovedPermanently(serverInfo._locations[i].redirect.url);
-                _response = response;
-                logger.log("HttpConfig Location.redirect.url" + serverInfo._locations[i].redirect.url);
-                logger.log("Code is : " + to_string(serverInfo._locations[i].redirect.code));
+                _response = HttpResponse();
+
+                if (location.redirect.code == 301)
+                {
+                    _response.generate301MovedPermanently(location.redirect.url);
+                }
+                else
+                {
+                    _response.setStatusCode(location.redirect.code);
+                    _response.setHeader("Location", location.redirect.url);
+                    _response.setBody("Redirecting to " + location.redirect.url);
+                    _response.setHeader("Content-Length", std::to_string(_response.getBody().size()));
+                }
+
+                // -------------------------------------
+
+                logger.log("Redirection from " + uri + " to " + location.redirect.url + " with code " + std::to_string(location.redirect.code));
                 return;
             }
-         }
+        }
 
         if (_request.getBody().size() > maxSize)
         {
@@ -57,7 +72,7 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
             return; // Terminer le traitement si la taille est excessive
         }
         // Vérification de la taille maximale autorisée du body
-        logger.logError("Max size: " + std::to_string(maxSize) + " | Current size: " + std::to_string(_request.getBody().size()));
+        logger.logError("Max size: " + to_string(maxSize) + " | Current size: " + to_string(_request.getBody().size()));
 
         const HttpConfig::Location *exactMatch = nullptr;
 
@@ -126,7 +141,7 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
         // Si le code de statut est une erreur, log supplémentaire
         if (statusCode >= 400)
         {
-            logger.logError("Request resulted in error: " + std::to_string(statusCode));
+            logger.logError("Request resulted in error: " + to_string(statusCode));
         }
 
         // Assigner la réponse à l'attribut de réponse du client
