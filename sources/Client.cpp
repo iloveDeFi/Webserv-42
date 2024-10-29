@@ -22,7 +22,7 @@ bool Client::checkFileExists(const std::string &filePath)
     return (stat(filePath.c_str(), &buffer) == 0); // Renvoie true si le fichier existe
 }
 
-void Client::processRequest(const _server &serverInfo, size_t maxSize)
+void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
 {
     HttpResponse response;
     std::string uri;
@@ -74,33 +74,33 @@ void Client::processRequest(const _server &serverInfo, size_t maxSize)
 
             if (location.iscgi)
             {
-                CgiRequestHandler cgiHandler(location, serverInfo._root);
+                CgiRequestHandler cgiHandler(location, serverInfo);
                 cgiHandler.handle(_request, response);
             }
             else if (method == "GET")
             {
-                GetRequestHandler getHandler(location, serverInfo._root);
+                GetRequestHandler getHandler(location, serverInfo);
                 getHandler.handle(_request, response);
             }
             else if (method == "POST")
             {
-                PostRequestHandler postHandler(location, serverInfo._root);
+                PostRequestHandler postHandler(location, serverInfo);
                 postHandler.handle(_request, response);
             }
             else if (method == "DELETE")
             {
-                DeleteRequestHandler deleteHandler(location, serverInfo._root);
+                DeleteRequestHandler deleteHandler(location, serverInfo);
                 deleteHandler.handle(_request, response);
             }
             else if (method == "OPTIONS")
             {
-                OptionsRequestHandler optionsHandler(location, serverInfo._root);
+                OptionsRequestHandler optionsHandler(location, serverInfo);
                 optionsHandler.handle(_request, response);
             }
             else
             {
                 logger.log("UNKNOWN method detected.");
-                UnknownRequestHandler unknownHandler(location, serverInfo._root);
+                UnknownRequestHandler unknownHandler(location, serverInfo);
                 unknownHandler.handle(_request, response);
             }
         }

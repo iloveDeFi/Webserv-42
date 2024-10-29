@@ -6,6 +6,7 @@
 #include "HttpConfig.hpp"
 #include "Logger.hpp"
 #include "Templates.hpp"
+#include "MngmtServers.hpp"
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -30,6 +31,7 @@ protected:
     std::set<std::string> _deletionInProgress;
     std::set<std::string> _validMethods;
     std::string _serverRoot;
+    ServerData _server;
 
     bool hasReadPermissions(const std::string &filePath);
     std::string loadResource(const std::string &filePath);
@@ -46,7 +48,7 @@ protected:
     void handleCgiResponse(const HttpRequest &req, HttpResponse &res);
 
 public:
-    RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
+    RequestController(const HttpConfig::Location &locationConfig, const ServerData& server);
     RequestController(const RequestController &src);
     RequestController &operator=(const RequestController &src);
     virtual ~RequestController();
@@ -71,12 +73,13 @@ public:
     void processCgiOutput(pid_t pid, int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req, HttpResponse &res);
     void handleCgiResponseOutput(const std::string &output, HttpResponse &res);
     void handleError(const std::string &errorMessage, HttpResponse &res, Logger &logger);
+    ServerData& getServerInfo();
 };
 
 class GetRequestHandler : public RequestController
 {
 public:
-    GetRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
+    GetRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server);
     virtual ~GetRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
     void handleInternalRequest(const HttpRequest &req, HttpResponse &res);
@@ -85,7 +88,7 @@ public:
 class PostRequestHandler : public RequestController
 {
 public:
-    PostRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
+    PostRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server);
     virtual ~PostRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -93,7 +96,7 @@ public:
 class DeleteRequestHandler : public RequestController
 {
 public:
-    DeleteRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
+    DeleteRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server);
     virtual ~DeleteRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -101,7 +104,7 @@ public:
 class OptionsRequestHandler : public RequestController
 {
 public:
-    OptionsRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
+    OptionsRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server);
     virtual ~OptionsRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -109,7 +112,7 @@ public:
 class UnknownRequestHandler : public RequestController
 {
 public:
-    UnknownRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
+    UnknownRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server);
     virtual ~UnknownRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };
@@ -117,7 +120,7 @@ public:
 class CgiRequestHandler : public RequestController
 {
 public:
-    CgiRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot);
+    CgiRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server);
     virtual ~CgiRequestHandler();
     virtual void handle(const HttpRequest &req, HttpResponse &res);
 };

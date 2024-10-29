@@ -13,7 +13,7 @@
 #include <sstream>
 #include <cerrno>
 
-struct _server;
+struct ServerData;
 
 class Logger;
 
@@ -30,7 +30,7 @@ public:
     ~Client();
 
     void readRequest(const std::string &rawData);
-    void processRequest(const _server &serverInfo, size_t maxSize);
+    void processRequest(const ServerData &serverInfo, size_t maxSize);
     void sendResponse();
 
     void setHttpRequest(const HttpRequest &request);

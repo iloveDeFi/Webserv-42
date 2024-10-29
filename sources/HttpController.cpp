@@ -1,8 +1,8 @@
 #include "HttpController.hpp"
 #include <dirent.h>
 
-RequestController::RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
-    : _locationConfig(locationConfig), _deletionInProgress(), _serverRoot(serverRoot)
+RequestController::RequestController(const HttpConfig::Location &locationConfig, const ServerData& server)
+    : _locationConfig(locationConfig), _deletionInProgress(), _server(server)
 {
     if (_validMethods.empty())
     {
@@ -30,8 +30,8 @@ RequestController &RequestController::operator=(const RequestController &src)
 
 RequestController::~RequestController() {}
 
-GetRequestHandler::GetRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
-    : RequestController(locationConfig, serverRoot) {}
+GetRequestHandler::GetRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+    : RequestController(locationConfig, server) {}
 
 GetRequestHandler::~GetRequestHandler() {}
 
@@ -40,8 +40,8 @@ void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handleGetResponse(req, res);
 }
 
-PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
-    : RequestController(locationConfig, serverRoot) {}
+PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+    : RequestController(locationConfig, server) {}
 
 PostRequestHandler::~PostRequestHandler() {}
 
@@ -50,8 +50,8 @@ void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handlePostResponse(req, res);
 }
 
-DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
-    : RequestController(locationConfig, serverRoot) {}
+DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+    : RequestController(locationConfig, server) {}
 
 DeleteRequestHandler::~DeleteRequestHandler() {}
 
@@ -60,8 +60,8 @@ void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handleDeleteResponse(req, res);
 }
 
-OptionsRequestHandler::OptionsRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
-    : RequestController(locationConfig, serverRoot) {}
+OptionsRequestHandler::OptionsRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+    : RequestController(locationConfig, server) {}
 
 OptionsRequestHandler::~OptionsRequestHandler() {}
 
@@ -70,8 +70,8 @@ void OptionsRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handleOptionsResponse(req, res);
 }
 
-UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
-    : RequestController(locationConfig, serverRoot) {}
+UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+    : RequestController(locationConfig, server) {}
 
 UnknownRequestHandler::~UnknownRequestHandler() {}
 
@@ -80,8 +80,8 @@ void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     handleUnknownResponse(req, res);
 }
 
-CgiRequestHandler::CgiRequestHandler(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
-    : RequestController(locationConfig, serverRoot) {}
+CgiRequestHandler::CgiRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+    : RequestController(locationConfig, server) {}
 
 CgiRequestHandler::~CgiRequestHandler() {}
 
@@ -714,4 +714,10 @@ void RequestController::handleCgiResponseOutput(const std::string &output, HttpR
 std::string RequestController::getHandler()
 {
     return (_locationConfig.handler);
+}
+
+
+ServerData& RequestController::getServerInfo()
+{
+    return (_server);
 }
