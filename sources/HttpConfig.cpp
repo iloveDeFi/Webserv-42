@@ -118,6 +118,10 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
             }
             location = Location();
             location.path = configLine.substr(configLine.find(":") + 1);
+            if (location.path.find("/cgi-bin") != std::string::npos)
+                location.iscgi = true;
+            else
+                location.iscgi = false;
             trimWhitespace(location.path);
             isFirstLocation = false;
             continue;
@@ -298,14 +302,17 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
 
 } */
 void HttpConfig::parseLocationAttribute(const std::string& key, const std::string& value, Location& location, const ServerConfig& serverData) {
-    //Logger &logger = Logger::getInstance("server.log");
-    //logger.log("Parsing key: " + key + " Parsing value : " + value);
-    if (key == "- path") {
-        if (value.find("/cgi-bin") != std::string::npos)
-            location.iscgi = true;
-        else
-            location.iscgi = false;
-        //logger.log(location.iscgi ? "true" : "false");
+    Logger &logger = Logger::getInstance("server.log");
+       logger.log("Checking key: " + key);
+	if (key == "- path") {
+		logger.log("Key is '- path'");
+		if (value.find("/cgi-bin") != std::string::npos) {
+			location.iscgi = true;
+			logger.log("CGI detected, setting location.iscgi to true");
+		} else {
+			location.iscgi = false;
+			logger.log("CGI not detected, setting location.iscgi to false");
+		}
     }else if (key == "methods") {
         std::string methodsValue = value;
         // Vérifier si la valeur commence par '[' et se termine par ']'

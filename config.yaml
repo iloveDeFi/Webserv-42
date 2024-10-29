@@ -39,7 +39,7 @@
         - path: /cgi-bin/upload.pl
           methods: POST
           cgi_handler: /usr/bin/perl
-          handler: index/cgi-bin/upload.pl
+          handler: ./public/index/cgi-bin/upload.pl
           allow_uploads: true
           content_type: text/html
 
