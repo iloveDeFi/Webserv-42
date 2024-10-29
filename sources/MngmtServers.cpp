@@ -314,7 +314,7 @@ bool ManagementServer::handleClient(Client &client)
     }
     if (!serverFound)
     {
-        throw std::runtime_error("No server found for port " + std::to_string(serverPort));
+        throw std::runtime_error("No server found for port " + to_string(serverPort));
     }
     size_t maxBodySize = currentServer._maxSize;
     try
@@ -407,21 +407,25 @@ std::string ManagementServer::readRawData(int clientSocket, size_t maxBodySize)
     std::string line;
     while (std::getline(headerStream, line))
     {
-        if (!line.empty() && line.back() == '\r') // Supprimer \r
-            line.pop_back();
+		if (!line.empty() && line[line.length() - 1] == '\r') // Supprimer \r
+            line.erase(line.length() - 1);
 
         if (line.empty())
             break; // Fin des en-têtes
 
-        if (line.find("Content-Length:") != std::string::npos)
-        {
-            std::string value = line.substr(line.find(":") + 1);
-            contentLength = std::stoi(value);
 
-            // Vérifier si Content-Length dépasse la limite
-            if (contentLength > maxBodySize)
-                throw RequestTooLargeException();
-        }
+		if (line.find("Content-Length:") != std::string::npos)
+		{
+			std::string value = line.substr(line.find(":") + 1);
+			std::istringstream iss(value);
+			size_t contentLength;
+			iss >> contentLength;
+
+			// Vérifier si Content-Length dépasse la limite
+			if (contentLength > maxBodySize)
+				throw RequestTooLargeException();
+		}
+
     }
 
     // Lire le corps en fonction de Content-Length

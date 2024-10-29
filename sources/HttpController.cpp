@@ -201,7 +201,7 @@ std::string RequestController::resolveResourcePath(const std::string &uri)
 
         if (isDirectory(resourcePath))
         {
-            if (resourcePath.back() != '/')
+            if (resourcePath[resourcePath.length() - 1] != '/')
                 resourcePath += '/';
             resourcePath += "index.html";
         }
@@ -608,12 +608,12 @@ void RequestController::executeCgiScript(const std::string &cgiScriptPath, const
     {
         envp[i] = const_cast<char *>(envVariables[i].c_str());
     }
-    envp[envVariables.size()] = nullptr;
+    envp[envVariables.size()] = NULL;
 
     logger.log("CGI cgiScriptPath: " + cgiScriptPath);
     logger.log("CGI cgiHandler: " + cgiHandler);
 
-    char *argv[] = {const_cast<char *>(cgiHandler.c_str()), const_cast<char *>(cgiScriptPath.c_str()), nullptr};
+    char *argv[] = {const_cast<char *>(cgiHandler.c_str()), const_cast<char *>(cgiScriptPath.c_str()), NULL};
 
     if (stat(cgiScriptPath.c_str(), &scriptStat) == 0 && (scriptStat.st_mode & S_IXUSR))
     {
@@ -691,8 +691,8 @@ void RequestController::handleCgiResponseOutput(const std::string &output, HttpR
         std::string headerLine;
         while (std::getline(headerStream, headerLine))
         {
-            if (!headerLine.empty() && headerLine.back() == '\r')
-                headerLine.pop_back();
+            if (!headerLine.empty() && headerLine[headerLine.length() - 1] == '\r')
+                headerLine.erase(headerLine.length() - 1);
 
             size_t colonPos = headerLine.find(':');
             if (colonPos != std::string::npos)

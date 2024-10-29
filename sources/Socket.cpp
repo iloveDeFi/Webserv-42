@@ -54,7 +54,9 @@ int Socket::Accept(struct sockaddr_in &clientAddr)
     socklen_t clientLen = sizeof(clientAddr);
     int clientSocket = accept(_fdSocket, (struct sockaddr*)&clientAddr, &clientLen);
     if (clientSocket < 0)
+	{
         throw std::runtime_error("Error accepting socket.");
+	}
 	_clientAddr = clientAddr;
     return clientSocket;
 }

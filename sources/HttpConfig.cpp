@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <cctype>
 #include <set>
+#include <sstream>
 #include <sys/stat.h>
 
-//HttpConfig::HttpConfig() {}
-
+// Constructeur et destructeur
 HttpConfig::~HttpConfig() {}
 
 HttpConfig::HttpConfig(const std::string& configPath) {
@@ -51,6 +51,7 @@ void HttpConfig::parseConfigurationFile() {
         throw std::runtime_error("No valid server configuration found");
     }
 }
+
 bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
     ServerConfig serverData;
     std::string configLine, currentSection;
@@ -94,7 +95,7 @@ bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
 }
 
 void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
-	Logger &logger = Logger::getInstance("server.log");
+    Logger &logger = Logger::getInstance("server.log");
 
     Location location;
     std::string configLine;
@@ -104,13 +105,11 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
         trimWhitespace(configLine);
         if (configLine.empty() || configLine[0] == '#') continue;
 
-        // Fin du bloc location si un nouveau serveur est détecté
         if (configLine == "- server:" || configLine.find("server_name:") != std::string::npos) {
             configStream.seekg(-static_cast<int>(configLine.length()) - 1, std::ios::cur);
             break;
         }
 
-        // Nouveau chemin de location
         if (configLine.find("- path:") != std::string::npos) {
             if (!isFirstLocation) {
                 validateLocation(location, serverData);
@@ -123,7 +122,6 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
             continue;
         }
 
-        // Analyse des attributs de location
         size_t separatorPosition = configLine.find(": ");
         if (separatorPosition != std::string::npos) {
             std::string key = configLine.substr(0, separatorPosition);
@@ -145,11 +143,8 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
         validateLocation(location, serverData);
         serverData.locations.push_back(location);
     }
-	logger.log("Location url + cpode " + location.redirect.url);
+    logger.log("Location url + code " + location.redirect.url);
 }
-
-
-
 
 void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerConfig& serverData, std::set<std::string>& definedAttributes) {
     size_t separatorPosition = attributeLine.find(": ");
@@ -188,8 +183,6 @@ int HttpConfig::parsePortNumber(const std::string& portString) {
     int port = std::atoi(portString.c_str());
     if (port <= 0 || port > 65535) {
         throw std::runtime_error("Port number out of valid range (1-65535)");
-    }
-    if (port < 1024) {
     }
     return port;
 }
@@ -245,243 +238,14 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
         throw std::runtime_error("Error page path cannot be empty for error code: " + errorCodeString);
     }
 
-    // Adjust file path checking: use relative path for errors outside root
-    std::string fullPath;
-    if (errorPagePath[0] == '/') {
-        // Treat as relative to the project directory (not system root)
-        fullPath = serverData.root + errorPagePath;  // Relative to the project root
-    } else {
-        // Treat as relative to the server's root directory
-        fullPath = serverData.root + "/" + errorPagePath;
-    }
+    std::string fullPath = (errorPagePath[0] == '/') ? (serverData.root + errorPagePath) : (serverData.root + "/" + errorPagePath);
 
     if (!fileExists(fullPath)) {
-        //std::cout << "Checking file path: " << fullPath << std::endl;
         throw std::runtime_error("Error page file does not exist: " + fullPath);
     }
 
     serverData.errorPages[errorCode] = errorPagePath;
 }
-
-
-/* void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
-    Location location;
-    std::string configLine;
-    bool isFirstLocation = true;
-    std::set<std::string> locationPaths;
-
-
-	while (std::getline(configStream, configLine)) {
-        trimWhitespace(configLine);
-        if (configLine.empty() || configLine[0] == '#') continue;
-         
-
-        if (configLine == "- server:" || configLine.find("server_name:") != std::string::npos) {
-            configStream.seekg(-static_cast<int>(configLine.length()) - 1, std::ios::cur); // Revenir en arrière pour que cette ligne soit relue
-            break;
-        }
-
-        if (configLine.find("- path:") != std::string::npos) {
-            if (!isFirstLocation) {
-                serverData.locations.push_back(location);
-            }
-            location = Location();
-            location.path = configLine.substr(configLine.find(":") + 1);
-            trimWhitespace(location.path);
-            isFirstLocation = false;
-        }
-    }
-
-    if (!location.path.empty()) {
-        serverData.locations.push_back(location);
-    }
-
-} */
-void HttpConfig::parseLocationAttribute(const std::string& key, const std::string& value, Location& location, const ServerConfig& serverData) {
-    //Logger &logger = Logger::getInstance("server.log");
-    //logger.log("Parsing key: " + key + " Parsing value : " + value);
-    if (key == "- path") {
-        if (value.find("/cgi-bin") != std::string::npos)
-            location.iscgi = true;
-        else
-            location.iscgi = false;
-        //logger.log(location.iscgi ? "true" : "false");
-    }else if (key == "methods") {
-        std::string methodsValue = value;
-        // Vérifier si la valeur commence par '[' et se termine par ']'
-        if (!methodsValue.empty() && methodsValue.front() == '[' && methodsValue.back() == ']') {
-            // Supprimer les crochets
-            methodsValue = methodsValue.substr(1, methodsValue.length() - 2);
-        }
-        std::vector<std::string> methodsVector = split(methodsValue, ',');
-        location.methods.clear();
-        for (std::vector<std::string>::iterator it = methodsVector.begin(); it != methodsVector.end(); ++it) {
-            std::string method = *it;
-            trimWhitespace(method);
-            method = toUpperCase(method);
-            if (method == "GET" || method == "POST" || method == "DELETE" || method == "OPTIONS") {
-                location.methods.push_back(method);
-            } else {
-                throw std::runtime_error("Invalid HTTP method: " + method + ". Only GET, POST, and DELETE are allowed.");
-            }
-        }
-        if (location.methods.empty()) {
-            throw std::runtime_error("At least one valid HTTP method must be specified.");
-        }
-    } else if (key == "root") {
-        location.root = value;
-        if (!directoryExists(location.root)) {
-            throw std::runtime_error("Location root directory does not exist or is not accessible: " + location.root);
-        }
-    } else if (key == "index") {
-        location.index = value;
-    } else if (key == "autoindex") {
-        if (value != "on" && value != "off") {
-            throw std::runtime_error("Invalid autoindex value. Must be 'on' or 'off'.");
-        }
-        location.autoindex = (value == "on");
-    } else if (key == "cgi_extensions") {
-        location.cgiExtensions = split(value.substr(1, value.length() - 2), ',');
-        for (std::vector<std::string>::iterator it = location.cgiExtensions.begin(); it != location.cgiExtensions.end(); ++it) {
-            if ((*it)[0] != '.') {
-                throw std::runtime_error("CGI extension must start with a dot: " + *it);
-            }
-        }
-    } else if (key == "allow_uploads") {
-        if (value != "true" && value != "false") {
-            throw std::runtime_error("Invalid allow_uploads value. Must be 'true' or 'false'.");
-        }
-        location.allowUploads = (value == "true");
-    } else if (key == "upload_store") {
-        location.uploadStore = value;
-        if (!directoryExists(location.uploadStore)) {
-            throw std::runtime_error("Upload store directory does not exist or is not accessible: " + location.uploadStore);
-        }
-    } else if (key == "client_max_body_size") {
-        location.clientMaxBodySize = parseBodySizeLimit(value);
-        if (location.clientMaxBodySize > serverData.clientMaxBodySize) {
-            throw std::runtime_error("Location client_max_body_size exceeds server's limit");
-        }
-    } else if (key == "handler") {
-        location.handler = value;
-    } else if (key == "requires_auth") {
-        if (value != "true" && value != "false") {
-            throw std::runtime_error("Invalid requires_auth value. Must be 'true' or 'false'.");
-        }
-        location.requiresAuth = (value == "true");
-    } else if (key == "content_type") {
-        location.contentType = value;
-    } else if (key == "include") {
-        location.include = value;
-	} else if (key == "default_file") {
-        location.defaultFile = value;
-    } else if (key == "cgi_extensions") {
-        location.cgiExtensions = split(value.substr(1, value.length() - 2), ',');
-        for (std::vector<std::string>::iterator it = location.cgiExtensions.begin(); it != location.cgiExtensions.end(); ++it) {
-            trimWhitespace(*it);
-            if ((*it)[0] != '.') {
-                throw std::runtime_error("CGI extension must start with a dot: " + *it);
-            }
-        }
-    } else if (key == "cgi_handler") {
-        location.cgiHandler = value;
-    }
-	else if (key == "redirect") {
-    std::istringstream redirectStream(value);
-    parseRedirect(redirectStream, location);
-	}
-	 else {
-        throw std::runtime_error("Unknown location attribute: " + key);
-    }
-}
-
-void HttpConfig::validateLocation(const Location& location, const ServerConfig& serverData) {
-
-    if (location.path.empty() || location.path[0] != '/') {
-        throw std::runtime_error("Invalid location path: " + location.path);
-    }
-
-    if (!location.redirect.url.empty()) {
-        if (location.redirect.code == 0) {
-            throw std::runtime_error("Incomplete redirect configuration for location: " + location.path);
-        }
-        return;
-    }
-
-
-    if (location.methods.empty()) {
-        throw std::runtime_error("No HTTP methods defined for non-redirect location: " + location.path);
-    }
-
-    for (std::vector<std::string>::const_iterator it = location.methods.begin(); it != location.methods.end(); ++it) {
-        if (*it != "GET" && *it != "POST" && *it != "DELETE" && *it != "OPTIONS") {
-            throw std::runtime_error("Invalid HTTP method for location " + location.path + ": " + *it);
-        }
-    }
-
-    if (location.clientMaxBodySize > serverData.clientMaxBodySize) {
-        throw std::runtime_error("Location client_max_body_size exceeds server's limit for location: " + location.path);
-    }
-}
-
-void HttpConfig::parseRedirect(std::istringstream& configStream, Location& location) {
-    std::string redirectLine;
-    bool foundUrl = false;
-    bool foundCode = false;
-
-    while (std::getline(configStream, redirectLine)) {
-        trimWhitespace(redirectLine);
-        if (redirectLine.empty() || redirectLine[0] == '#') continue;
-        
-        size_t pos = redirectLine.find(": ");
-        if (pos != std::string::npos) {
-            std::string redirectKey = redirectLine.substr(0, pos);
-            std::string redirectValue = redirectLine.substr(pos + 2);
-
-            if (redirectKey == "url") {
-                location.redirect.url = redirectValue;
-                foundUrl = true;
-            } else if (redirectKey == "code") {
-                int code = std::atoi(redirectValue.c_str());
-                if (code != 301 && code != 302 && code != 303 && code != 307 && code != 308) {
-                    throw std::runtime_error("Invalid redirect code: " + redirectValue);
-                }
-                location.redirect.code = code;
-                foundCode = true;
-            }
-        }
-
-        // Arrêter de lire après avoir trouvé les deux sous-attributs
-        if (foundUrl && foundCode) break;
-    }
-
-    if (location.redirect.url.empty() || location.redirect.code == 0) {
-        throw std::runtime_error("Incomplete redirect configuration for location: " + location.path);
-    }
-}
-
-
-void HttpConfig::validateServerConfiguration(const ServerConfig& serverData) {
-    if (serverData.serverName.empty()) {
-        throw std::runtime_error("Server name is missing");
-    }
-    if (serverData.port == 0) {
-        throw std::runtime_error("Port is missing or invalid for server: " + serverData.serverName);
-    }
-    if (serverData.clientMaxBodySize == 0) {
-        throw std::runtime_error("Client max body size is missing or invalid for server: " + serverData.serverName);
-    }
-    if (serverData.locations.empty()) {
-        throw std::runtime_error("No locations defined for server: " + serverData.serverName);
-    }
-
-    if (serverData.root.empty()) {
-        throw std::runtime_error("Server root is empty for server: " + serverData.serverName);
-    } else if (!directoryExists(serverData.root)) {
-        throw std::runtime_error("Server root directory does not exist or is not accessible: " + serverData.root + " for server: " + serverData.serverName);
-    }
-}
-
 
 bool HttpConfig::directoryExists(const std::string& path) {
     struct stat info;
@@ -493,7 +257,6 @@ bool HttpConfig::directoryExists(const std::string& path) {
 
 bool HttpConfig::fileExists(const std::string& path) {
     struct stat info;
-    //std::cout << path << std::endl;
     if (stat(path.c_str(), &info) != 0) {
         return false;
     }
@@ -509,13 +272,9 @@ std::string HttpConfig::toUpperCase(const std::string& str) {
 }
 
 void HttpConfig::trimWhitespace(std::string& str) {
-    size_t first = str.find_first_not_of(" \t\n\r");
-    size_t last = str.find_last_not_of(" \t\n\r");
-    if (first != std::string::npos && last != std::string::npos) {
-        str = str.substr(first, (last - first + 1));
-    } else {
-        str.clear();
-    }
+    size_t start = str.find_first_not_of(" \t\n\r");
+    size_t end = str.find_last_not_of(" \t\n\r");
+    str = (start != std::string::npos && end != std::string::npos) ? str.substr(start, end - start + 1) : "";
 }
 
 bool HttpConfig::isAllDigits(const std::string& str) {

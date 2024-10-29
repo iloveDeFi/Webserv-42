@@ -1,12 +1,10 @@
 #include "HttpRequest.hpp"
+#include <sstream> // pour std::ostringstream
 
 std::string HttpRequest::trim(const std::string &str)
 {
     size_t first = str.find_first_not_of(' ');
-    if (std::string::npos == first)
-    {
-        return "";
-    }
+    if (first == std::string::npos) return "";
     size_t last = str.find_last_not_of(' ');
     return str.substr(first, (last - first + 1));
 }
@@ -17,12 +15,9 @@ HttpRequest::HttpRequest()
     // Do nothing else; no parsing
 }
 
-
-// Constructeur pour analyser la raw data
 HttpRequest::HttpRequest(const std::string &rawData)
     : _method(""), _uri(""), _version("HTTP/1.1"), _headers(), _body(""), _queryParameters(""), _allowedMethods(initMethods()), _contentType("")
 {
-    // Split the raw data into header and body
     size_t headerEndPos = rawData.find("\r\n\r\n");
     if (headerEndPos == std::string::npos)
     {
@@ -31,17 +26,15 @@ HttpRequest::HttpRequest(const std::string &rawData)
     std::string headerPart = rawData.substr(0, headerEndPos);
     _body = rawData.substr(headerEndPos + 4);
 
-    // Now parse the header lines
     std::istringstream headerStream(headerPart);
     std::string requestLine;
     if (!std::getline(headerStream, requestLine))
     {
         throw std::runtime_error("Invalid request line");
     }
-    // Remove any \r at the end of the line
-    if (!requestLine.empty() && requestLine.back() == '\r')
+    if (!requestLine.empty() && requestLine[requestLine.length() - 1] == '\r')
     {
-        requestLine.pop_back();
+        requestLine = requestLine.substr(0, requestLine.length() - 1);
     }
     std::istringstream requestLineStream(requestLine);
     requestLineStream >> _method >> _uri >> _version;
@@ -51,7 +44,6 @@ HttpRequest::HttpRequest(const std::string &rawData)
         throw std::runtime_error("Invalid request line");
     }
 
-    // Handle query parameters
     size_t queryPos = _uri.find('?');
     if (queryPos != std::string::npos)
     {
@@ -59,15 +51,13 @@ HttpRequest::HttpRequest(const std::string &rawData)
         _uri = _uri.substr(0, queryPos);
     }
 
-    // Parse headers
     std::string headerLine;
     while (std::getline(headerStream, headerLine))
     {
-        if (!headerLine.empty() && headerLine.back() == '\r')
-            headerLine.pop_back();
+        if (!headerLine.empty() && headerLine[headerLine.length() - 1] == '\r')
+            headerLine = headerLine.substr(0, headerLine.length() - 1);
 
-        if (headerLine.empty())
-            break; // End of headers
+        if (headerLine.empty()) break;
 
         size_t colonPos = headerLine.find(':');
         if (colonPos != std::string::npos)
@@ -78,27 +68,24 @@ HttpRequest::HttpRequest(const std::string &rawData)
         }
     }
 
-    // Set _contentType from headers after parsing
     _contentType = getHeader("Content-Type");
 
-    // Verify Content-Length
     std::map<std::string, std::string>::iterator contentLengthIt = _headers.find("Content-Length");
     if (contentLengthIt != _headers.end())
     {
-        size_t contentLength = std::stoi(contentLengthIt->second);
+        std::istringstream iss(contentLengthIt->second);
+        size_t contentLength;
+        iss >> contentLength;
         if (_body.size() < contentLength)
         {
             throw std::runtime_error("Incomplete request body");
         }
         else if (_body.size() > contentLength)
         {
-            // Trim the body to Content-Length
             _body = _body.substr(0, contentLength);
         }
     }
-
 }
-
 
 HttpRequest::~HttpRequest() {}
 
@@ -120,7 +107,6 @@ HttpRequest &HttpRequest::operator=(const HttpRequest &src)
     return *this;
 }
 
-// Méthodes pour obtenir les valeurs
 std::string HttpRequest::getMethod() const { return _method; }
 std::string HttpRequest::getURI() const { return _uri; }
 std::string HttpRequest::getHTTPVersion() const { return _version; }
@@ -141,25 +127,22 @@ bool HttpRequest::isChunked() const { return false; }
 std::string HttpRequest::getFileName() const { return _fileName; }
 bool HttpRequest::isCgi() const { return isCgiRequest; }
 
-// Méthode pour valider si une méthode est autorisée
 bool HttpRequest::isMethodAllowed(const std::string &method) const
 {
     return _allowedMethods.find(method) != _allowedMethods.end();
 }
 
-// Autres méthodes comme l'initialisation des méthodes autorisées
 std::set<std::string> HttpRequest::initMethods()
 {
     std::set<std::string> methods;
     methods.insert("GET");
     methods.insert("POST");
     methods.insert("DELETE");
-    methods.insert("UNKOWN");
+    methods.insert("UNKNOWN");
     methods.insert("CGI");
     return methods;
 }
 
-// Log de la requête HTTP
 void HttpRequest::logHttpRequest(Logger &logger)
 {
     std::ostringstream logMessage;
@@ -177,7 +160,6 @@ void HttpRequest::logHttpRequest(Logger &logger)
     logger.log(logMessage.str());
 }
 
-// Définir la méthode, URI, et version si besoin
 void HttpRequest::setMethod(std::string method) { _method = method; }
 void HttpRequest::setURI(std::string uri) { _uri = uri; }
 void HttpRequest::setVersion(std::string version) { _version = version; }
@@ -214,21 +196,19 @@ HttpRequest::FormData HttpRequest::parseMultipartFormData() const
             endPos = _body.length();
         }
         std::string part = _body.substr(pos + boundary.length(), endPos - pos - boundary.length());
-        // Parse part headers and content
         size_t headerEnd = part.find("\r\n\r\n");
         if (headerEnd != std::string::npos)
         {
             std::string partHeaders = part.substr(0, headerEnd);
             std::string partContent = part.substr(headerEnd + 4);
 
-            // Extract filename and field name
             std::istringstream partHeaderStream(partHeaders);
             std::string headerLine;
             std::string disposition;
             while (std::getline(partHeaderStream, headerLine))
             {
-                if (!headerLine.empty() && headerLine.back() == '\r')
-                    headerLine.pop_back();
+                if (!headerLine.empty() && headerLine[headerLine.length() - 1] == '\r')
+                    headerLine = headerLine.substr(0, headerLine.length() - 1);
 
                 if (headerLine.find("Content-Disposition:") != std::string::npos)
                 {
@@ -236,7 +216,6 @@ HttpRequest::FormData HttpRequest::parseMultipartFormData() const
                 }
             }
 
-            // Extract name and filename from Content-Disposition
             size_t namePos = disposition.find("name=\"");
             if (namePos != std::string::npos)
             {

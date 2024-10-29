@@ -1344,12 +1344,12 @@ void RequestController::executeCgiScript(const std::string &cgiScriptPath, const
     {
         envp[i] = const_cast<char *>(envVariables[i].c_str());
     }
-    envp[envVariables.size()] = nullptr;
+    envp[envVariables.size()] = NULL;
 
     logger.log("CGI cgiScriptPath: " + cgiScriptPath);
     logger.log("CGI cgiHandler: " + cgiHandler);
 
-    char *argv[] = {const_cast<char *>(cgiHandler.c_str()), const_cast<char *>(cgiScriptPath.c_str()), nullptr};
+    char *argv[] = {const_cast<char *>(cgiHandler.c_str()), const_cast<char *>(cgiScriptPath.c_str()), NULL};
 
     if (stat(cgiScriptPath.c_str(), &scriptStat) == 0 && (scriptStat.st_mode & S_IXUSR))
     {
@@ -1893,7 +1893,7 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage/* , std:
     }
 
     setBody(body);
-    setHeader("Content-Length", std::to_string(body.size()));
+    setHeader("Content-Length", to_string(body.size()));
 }
 
 void HttpResponse::generate404NotFound(const std::string &errorMessage/* , std::string root */)
@@ -1914,7 +1914,7 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage/* , std::
 
     // Définir le corps et l'en-tête
     setBody(body);
-    setHeader("Content-Length", std::to_string(body.size())); // Correction d'appel à to_string
+    setHeader("Content-Length", to_string(body.size())); // Correction d'appel à to_string
 }
 
 void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods)
@@ -1962,7 +1962,7 @@ void HttpResponse::generate500InternalServerError(const std::string &errorMessag
         body = "<html><body><h1>500 Internal Server Error</h1><p>The server encountered an error. " + errorMessage + "</p></body></html>";
     }
     setBody(body);
-    setHeader("Content-Length", std::to_string(body.size()));
+    setHeader("Content-Length", to_string(body.size()));
 }
 
 void HttpResponse::generate501NotImplemented(const std::string &errorMessage)
@@ -2094,7 +2094,7 @@ std::string HttpResponse::getBody() const
     return (_body);
 }#include "Logger.hpp"
 
-Logger *Logger::_instance = nullptr;
+Logger *Logger::_instance = NULL;
 
 Logger::Logger(const std::string &filename)
 {
@@ -2115,7 +2115,7 @@ Logger::~Logger()
 
 Logger &Logger::getInstance(const std::string &filename)
 {
-    if (_instance == nullptr)
+    if (_instance == NULL)
     {
         _instance = new Logger(filename);
     }
@@ -2454,7 +2454,7 @@ bool ManagementServer::handleClient(Client &client)
     }
     if (!serverFound)
     {
-        throw std::runtime_error("No server found for port " + std::to_string(serverPort));
+        throw std::runtime_error("No server found for port " + to_string(serverPort));
     }
     size_t maxBodySize = currentServer._maxSize;
     try

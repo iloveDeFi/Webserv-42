@@ -1,6 +1,6 @@
 #include "Logger.hpp"
 
-Logger *Logger::_instance = nullptr;
+Logger *Logger::_instance = NULL;
 
 Logger::Logger(const std::string &filename)
 {
@@ -21,7 +21,7 @@ Logger::~Logger()
 
 Logger &Logger::getInstance(const std::string &filename)
 {
-    if (_instance == nullptr)
+    if (_instance == NULL)
     {
         _instance = new Logger(filename);
     }

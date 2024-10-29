@@ -55,12 +55,12 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
                     _response.setStatusCode(location.redirect.code);
                     _response.setHeader("Location", location.redirect.url);
                     _response.setBody("Redirecting to " + location.redirect.url);
-                    _response.setHeader("Content-Length", std::to_string(_response.getBody().size()));
+                    _response.setHeader("Content-Length", to_string(_response.getBody().size()));
                 }
 
                 // -------------------------------------
 
-                logger.log("Redirection from " + uri + " to " + location.redirect.url + " with code " + std::to_string(location.redirect.code));
+                logger.log("Redirection from " + uri + " to " + location.redirect.url + " with code " + to_string(location.redirect.code));
                 return;
             }
         }
@@ -74,7 +74,7 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
         // Vérification de la taille maximale autorisée du body
         logger.logError("Max size: " + to_string(maxSize) + " | Current size: " + to_string(_request.getBody().size()));
 
-        const HttpConfig::Location *exactMatch = nullptr;
+        const HttpConfig::Location *exactMatch = NULL;
 
         // Recherche d'une correspondance exacte pour l'URI
         for (size_t i = 0; i < serverInfo._locations.size(); ++i)
@@ -90,7 +90,7 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
         }
 
         // Si aucune correspondance exacte n'est trouvée, générer une réponse 404
-        if (exactMatch == nullptr)
+        if (exactMatch == NULL)
         {
             response.generate404NotFound("The requested URL " + uri, serverInfo._root);
             logger.logError("404 Not Found for URI: " + uri);
