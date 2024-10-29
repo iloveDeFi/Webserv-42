@@ -108,13 +108,14 @@ void HttpResponse::generate400BadRequest(const std::string &errorMessage/* , std
 
 }
 
-void HttpResponse::generate403Forbidden(const std::string &errorMessage/* , std::string root */)
+void HttpResponse::generate403Forbidden(const std::string &errorMessage, const std::string &root)
 {
     setStatusCode(403);
     setReasonMessage("Forbidden");
     setHeader("Content-Type", "text/html");
 
-    std::string body = readFile("./errors/403.html");
+    std::string readError = root + "./errors/403.html";
+    std::string body = readFile(readError);
 
     if (body.empty())
     {
@@ -126,8 +127,9 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage/* , std:
     setHeader("Content-Length", std::to_string(body.size()));
 }
 
-void HttpResponse::generate404NotFound(const std::string &errorMessage/* , std::string root */)
+void HttpResponse::generate404NotFound(const std::string &errorMessage, const std::string &root)
 {
+    (void)root;
     Logger &logger = Logger::getInstance("server.log");
     setStatusCode(404);
     setReasonMessage("Not Found");
@@ -142,9 +144,8 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage/* , std::
         body = "<html><body><h1>404 Not Found</h1><p>" + errorMessage + "</p></body></html>";
     }
 
-    // Définir le corps et l'en-tête
     setBody(body);
-    setHeader("Content-Length", std::to_string(body.size())); // Correction d'appel à to_string
+    setHeader("Content-Length", std::to_string(body.size()));
 }
 
 void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods)
@@ -180,8 +181,9 @@ void HttpResponse::generate413PayloadTooLarge(size_t size)
 }
 
 
-void HttpResponse::generate500InternalServerError(const std::string &errorMessage)
+void HttpResponse::generate500InternalServerError(const std::string &errorMessage, const std::string &root)
 {
+    (void)root;
     setStatusCode(500);
     setReasonMessage("Internal Server Error");
     setHeader("Content-Type", "text/html");

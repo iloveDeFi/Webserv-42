@@ -35,9 +35,9 @@ GetRequestHandler::GetRequestHandler(const HttpConfig::Location &locationConfig,
 
 GetRequestHandler::~GetRequestHandler() {}
 
-void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
-    handleGetResponse(req, res);
+    handleGetResponse(req, res, server);
 }
 
 PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
@@ -45,9 +45,9 @@ PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfi
 
 PostRequestHandler::~PostRequestHandler() {}
 
-void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
-    handlePostResponse(req, res);
+    handlePostResponse(req, res, server);
 }
 
 DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
@@ -55,9 +55,9 @@ DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationC
 
 DeleteRequestHandler::~DeleteRequestHandler() {}
 
-void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
-    handleDeleteResponse(req, res);
+    handleDeleteResponse(req, res, server);
 }
 
 OptionsRequestHandler::OptionsRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
@@ -65,9 +65,9 @@ OptionsRequestHandler::OptionsRequestHandler(const HttpConfig::Location &locatio
 
 OptionsRequestHandler::~OptionsRequestHandler() {}
 
-void OptionsRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+void OptionsRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
-    handleOptionsResponse(req, res);
+    handleOptionsResponse(req, res, server);
 }
 
 UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
@@ -75,9 +75,9 @@ UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locatio
 
 UnknownRequestHandler::~UnknownRequestHandler() {}
 
-void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
-    handleUnknownResponse(req, res);
+    handleUnknownResponse(req, res, server);
 }
 
 CgiRequestHandler::CgiRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
@@ -85,9 +85,9 @@ CgiRequestHandler::CgiRequestHandler(const HttpConfig::Location &locationConfig,
 
 CgiRequestHandler::~CgiRequestHandler() {}
 
-void CgiRequestHandler::handle(const HttpRequest &req, HttpResponse &res)
+void CgiRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
-    handleCgiResponse(req, res);
+    handleCgiResponse(req, res, server);
 }
 
 bool RequestController::hasReadPermissions(const std::string &filePath)
@@ -210,7 +210,7 @@ std::string RequestController::resolveResourcePath(const std::string &uri)
     return resourcePath;
 }
 
-void RequestController::serveResource(const std::string &resourcePath, HttpResponse &res)
+void RequestController::serveResource(const std::string &resourcePath, HttpResponse &res,  const ServerData& server)
 {
     Logger &logger = Logger::getInstance("server.log");
 
@@ -225,14 +225,14 @@ void RequestController::serveResource(const std::string &resourcePath, HttpRespo
     catch (const std::exception &e)
     {
         logger.log("Error occurred while loading resource: " + std::string(e.what()));
-        res.generate500InternalServerError("Internal error 500: " + std::string(e.what()));
+        res.generate500InternalServerError("Internal error 500: " + std::string(e.what()), server._root);
     }
 
     res.ensureContentLength();
     res.logHttpResponse(logger);
 }
 
-void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res)
+void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
@@ -249,7 +249,7 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
     // Check if handler is "internal"
     if (_locationConfig.handler == "internal")
     {
-        handleInternalRequest(req, res);
+        handleInternalRequest(req, res, server);
         return;
     }
    
@@ -258,15 +258,15 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
 
     if (!hasReadPermissions(resourcePath))
     {
-        res.generate403Forbidden("403 Forbidden: Access to the resource is forbidden");
+        res.generate403Forbidden("403 Forbidden: Access to the resource is forbidden", server._root);
         logger.log("Error: Access to the resource is forbidden for resourcePath: " + resourcePath);
         return;
     }
 
-    serveResource(resourcePath, res);
+    serveResource(resourcePath, res, server);
 }
 
-void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res)
+void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
@@ -291,7 +291,7 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
     // Check if uploads are allowed in this location
     if (!_locationConfig.allowUploads)
     {
-        res.generate403Forbidden("Forbidden: Uploads are not allowed at this location.");
+        res.generate403Forbidden("Forbidden: Uploads are not allowed at this location.", server._root);
         return;
     }
 
@@ -300,7 +300,7 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
     struct stat dirStat;
     if (stat(uploadsDir.c_str(), &dirStat) != 0 || !S_ISDIR(dirStat.st_mode) || access(uploadsDir.c_str(), W_OK) != 0)
     {
-        res.generate500InternalServerError("Uploads directory does not exist or is not writable.");
+        res.generate500InternalServerError("Uploads directory does not exist or is not writable.", server._root);
         return;
     }
 
@@ -327,7 +327,7 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
         // Security check to prevent directory traversal attacks
         if (fileName.find("..") != std::string::npos)
         {
-            res.generate403Forbidden("Forbidden: Invalid filename");
+            res.generate403Forbidden("Forbidden: Invalid filename", server._root);
             return;
         }
 
@@ -357,7 +357,7 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
     }
     catch (const std::exception &e)
     {
-        res.generate500InternalServerError("Internal Server Error: " + std::string(e.what()));
+        res.generate500InternalServerError("Internal Server Error: " + std::string(e.what()), server._root);
         logger.log("Error processing POST request: " + std::string(e.what()));
     }
 
@@ -366,7 +366,7 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
     setCorsHeaders(res);
 }
 
-void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res)
+void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
@@ -375,7 +375,7 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
 
     if (!hasPermissionToDelete(uri))
     {
-        res.generate403Forbidden("403 Forbidden: You do not have permission to delete this resource.");
+        res.generate403Forbidden("403 Forbidden: You do not have permission to delete this resource.", server._root);
         return;
     }
 
@@ -384,7 +384,7 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
 
     if (uri.compare(0, prefix.length(), prefix) != 0)
     {
-        res.generate404NotFound("Invalid URI for DELETE operation: " + uri);
+        res.generate404NotFound("Invalid URI for DELETE operation: " + uri, server._root);
         return;
     }
 
@@ -393,7 +393,7 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
     // Security check to prevent directory traversal attacks
     if (filename.find("..") != std::string::npos)
     {
-        res.generate403Forbidden("Forbidden: Invalid filename");
+        res.generate403Forbidden("Forbidden: Invalid filename", server._root);
         return;
     }
 
@@ -403,7 +403,7 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
     // Attempt to delete the file
     if (remove(resourcePath.c_str()) != 0)
     {
-        res.generate404NotFound("404 Not Found: Resource not found: " + uri);
+        res.generate404NotFound("404 Not Found: Resource not found: " + uri, server._root);
         return;
     }
     logger.log("File deleted successfully: " + resourcePath);
@@ -411,8 +411,9 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
     res.setHTTPVersion(version);
 }
 
-void RequestController::handleUnknownResponse(const HttpRequest &req, HttpResponse &res)
+void RequestController::handleUnknownResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
+    (void)server;
     std::string version = req.getHTTPVersion();
     std::string method = req.getMethod();
 
@@ -433,7 +434,7 @@ void RequestController::setCorsHeaders(HttpResponse &res)
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");               // En-têtes autorisés
 }
 
-void RequestController::handleInternalRequest(const HttpRequest &req, HttpResponse &res)
+void RequestController::handleInternalRequest(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
@@ -462,7 +463,7 @@ void RequestController::handleInternalRequest(const HttpRequest &req, HttpRespon
     }
     else
     {
-        res.generate404NotFound("Invalid internal URI: " + uri);
+        res.generate404NotFound("Invalid internal URI: " + uri, server._root);
         logger.log("Invalid internal URI: " + uri);
     }
 }
@@ -490,8 +491,9 @@ std::vector<std::string> RequestController::listFilesInDirectory(const std::stri
     return files;
 }
 
-void RequestController::handleOptionsResponse(const HttpRequest &req, HttpResponse &res)
+void RequestController::handleOptionsResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
+    (void)server;
     (void)req;
     res.setStatusCode(204); // No Content
     res.setReasonMessage("No Content");
@@ -502,7 +504,7 @@ void RequestController::handleOptionsResponse(const HttpRequest &req, HttpRespon
     res.setBody("");
 }
 
-void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res)
+void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string cgiScriptPath = resolveCgiPath();
@@ -520,7 +522,7 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
     pid_t pid = fork();
     if (pid < 0)
     {
-        res.generate500InternalServerError("500 Internal Server Error: Failed to fork process");
+        res.generate500InternalServerError("500 Internal Server Error: Failed to fork process", server._root);
         logger.log("Error: Failed to fork process for CGI execution");
         return;
     }
@@ -530,7 +532,7 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
     }
     else
     {
-        processCgiOutput(pid, stdin_pipe, stdout_pipe, req, res);
+        processCgiOutput(pid, stdin_pipe, stdout_pipe, req, res, server);
     }
 
     res.ensureContentLength();
@@ -550,7 +552,7 @@ bool RequestController::isCgiExecutable(const std::string &cgiScriptPath, HttpRe
     Logger &logger = Logger::getInstance("server.log");
     if (stat(cgiScriptPath.c_str(), &scriptStat) != 0 || !S_ISREG(scriptStat.st_mode) || !(scriptStat.st_mode & S_IXUSR))
     {
-        res.generate403Forbidden("403 Forbidden: CGI script is not accessible or does not exist");
+        res.generate403Forbidden("403 Forbidden: CGI script is not accessible or does not exist", server._root);
         logger.log("Error: CGI script not found or not executable: " + cgiScriptPath);
         return false;
     }
@@ -578,7 +580,7 @@ bool RequestController::createPipes(int stdin_pipe[2], int stdout_pipe[2], HttpR
 {
     if (pipe(stdin_pipe) == -1 || pipe(stdout_pipe) == -1)
     {
-        res.generate500InternalServerError("500 Internal Server Error: Failed to create pipes");
+        res.generate500InternalServerError("500 Internal Server Error: Failed to create pipes", server._root);
         logger.log("Error: Failed to create pipes for CGI execution");
         return false;
     }
@@ -636,7 +638,7 @@ void RequestController::executeCgiScript(const std::string &cgiScriptPath, const
 
 
 // Gère la lecture de la sortie CGI et la réponse HTTP
-void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req, HttpResponse &res)
+void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req, HttpResponse &res,  const ServerData& server)
 {
     Logger &logger = Logger::getInstance("server.log");
     close(stdin_pipe[0]);
@@ -665,7 +667,7 @@ void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdou
     }
     else
     {
-        res.generate500InternalServerError("500 Internal Server Error: CGI script execution failed");
+        res.generate500InternalServerError("500 Internal Server Error: CGI script execution failed", server._root);
         logger.log("Error: CGI script execution failed with status: " + to_string(WEXITSTATUS(status)));
     }
     logger.log("CGI output: " + output);

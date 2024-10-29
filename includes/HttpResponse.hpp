@@ -30,12 +30,12 @@ public:
     void generate204NoContent(const std::string &errorMessage);
     void generate301MovedPermanently(const std::string &location);
     void generate400BadRequest(const std::string &errorMessage/* , std::string root */);
-    void generate403Forbidden(const std::string &errorMessage/* , std::string root */);
-    void generate404NotFound(const std::string &errorMessage/* , std::string root */);
+    void generate403Forbidden(const std::string &errorMessage, const std::string &root);
+    void generate404NotFound(const std::string &errorMessage, const std::string &root);
     void generate405MethodNotAllowed(const std::string &allowedMethods);
     void generate409Conflict(const std::string &conflictInfo);
     void generate413PayloadTooLarge(size_t size);
-    void generate500InternalServerError(const std::string &errorMessage/* , std::string root */);
+    void generate500InternalServerError(const std::string &errorMessage, const std::string &root);
     void generate501NotImplemented(const std::string &errorMessage);
 
     std::string getFullResponse();

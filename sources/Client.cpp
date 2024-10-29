@@ -77,7 +77,7 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
         // Si aucune correspondance exacte n'est trouvée, générer une réponse 404
         if (exactMatch == nullptr)
         {
-            response.generate404NotFound("The requested URL " + uri + " was not found on this server.");
+            response.generate404NotFound("The requested URL " + uri, serverInfo._root);
             logger.logError("404 Not Found for URI: " + uri);
         }
         else
@@ -89,33 +89,33 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
             if (location.iscgi)
             {
                 CgiRequestHandler cgiHandler(location, serverInfo);
-                cgiHandler.handle(_request, response);
+                cgiHandler.handle(_request, response, serverInfo);
             }
             else if (method == "GET")
             {
                 GetRequestHandler getHandler(location, serverInfo);
-                getHandler.handle(_request, response);
+                getHandler.handle(_request, response, serverInfo);
             }
             else if (method == "POST")
             {
                 PostRequestHandler postHandler(location, serverInfo);
-                postHandler.handle(_request, response);
+                postHandler.handle(_request, response, serverInfo);
             }
             else if (method == "DELETE")
             {
                 DeleteRequestHandler deleteHandler(location, serverInfo);
-                deleteHandler.handle(_request, response);
+                deleteHandler.handle(_request, response, serverInfo);
             }
             else if (method == "OPTIONS")
             {
                 OptionsRequestHandler optionsHandler(location, serverInfo);
-                optionsHandler.handle(_request, response);
+                optionsHandler.handle(_request, response, serverInfo);
             }
             else
             {
                 logger.log("UNKNOWN method detected.");
                 UnknownRequestHandler unknownHandler(location, serverInfo);
-                unknownHandler.handle(_request, response);
+                unknownHandler.handle(_request, response, serverInfo);
             }
         }
 
