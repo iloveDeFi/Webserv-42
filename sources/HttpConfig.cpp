@@ -94,23 +94,25 @@ bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
 }
 
 void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
+	Logger &logger = Logger::getInstance("server.log");
+
     Location location;
     std::string configLine;
     bool isFirstLocation = true;
-    std::set<std::string> locationPaths;
 
     while (std::getline(configStream, configLine)) {
         trimWhitespace(configLine);
         if (configLine.empty() || configLine[0] == '#') continue;
 
+        // Fin du bloc location si un nouveau serveur est détecté
         if (configLine == "- server:" || configLine.find("server_name:") != std::string::npos) {
-            configStream.seekg(-static_cast<int>(configLine.length()) - 1, std::ios::cur); // Revenir en arrière pour que cette ligne soit relue
+            configStream.seekg(-static_cast<int>(configLine.length()) - 1, std::ios::cur);
             break;
         }
 
+        // Nouveau chemin de location
         if (configLine.find("- path:") != std::string::npos) {
             if (!isFirstLocation) {
-                // Valider la location précédente avant de la stocker
                 validateLocation(location, serverData);
                 serverData.locations.push_back(location);
             }
@@ -118,33 +120,34 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
             location.path = configLine.substr(configLine.find(":") + 1);
             trimWhitespace(location.path);
             isFirstLocation = false;
-            size_t separatorPosition = configLine.find(": ");
+            continue;
+        }
+
+        // Analyse des attributs de location
+        size_t separatorPosition = configLine.find(": ");
+        if (separatorPosition != std::string::npos) {
             std::string key = configLine.substr(0, separatorPosition);
             std::string value = configLine.substr(separatorPosition + 2);
             trimWhitespace(key);
             trimWhitespace(value);
-            parseLocationAttribute(key, value, location, serverData);
-        } else if (!isFirstLocation) {
-            // Parser les attributs de la location
-            size_t separatorPosition = configLine.find(": ");
-            if (separatorPosition != std::string::npos) {
-                std::string key = configLine.substr(0, separatorPosition);
-                std::string value = configLine.substr(separatorPosition + 2);
-                trimWhitespace(key);
-                trimWhitespace(value);
-                parseLocationAttribute(key, value, location, serverData);
+
+            if (key == "redirect") {
+                parseRedirect(configStream, location);
             } else {
-                throw std::runtime_error("Invalid location attribute format: " + configLine);
+                parseLocationAttribute(key, value, location, serverData);
             }
+        } else {
+            throw std::runtime_error("Invalid location attribute format: " + configLine);
         }
     }
 
-    // Ajouter la dernière location
     if (!location.path.empty()) {
         validateLocation(location, serverData);
         serverData.locations.push_back(location);
     }
+	logger.log("Location url + cpode " + location.redirect.url);
 }
+
 
 
 
@@ -383,6 +386,10 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
     } else if (key == "cgi_handler") {
         location.cgiHandler = value;
     }
+	else if (key == "redirect") {
+    std::istringstream redirectStream(value);
+    parseRedirect(redirectStream, location);
+	}
 	 else {
         throw std::runtime_error("Unknown location attribute: " + key);
     }
@@ -419,29 +426,40 @@ void HttpConfig::validateLocation(const Location& location, const ServerConfig& 
 
 void HttpConfig::parseRedirect(std::istringstream& configStream, Location& location) {
     std::string redirectLine;
+    bool foundUrl = false;
+    bool foundCode = false;
+
     while (std::getline(configStream, redirectLine)) {
         trimWhitespace(redirectLine);
         if (redirectLine.empty() || redirectLine[0] == '#') continue;
+        
         size_t pos = redirectLine.find(": ");
         if (pos != std::string::npos) {
             std::string redirectKey = redirectLine.substr(0, pos);
             std::string redirectValue = redirectLine.substr(pos + 2);
+
             if (redirectKey == "url") {
                 location.redirect.url = redirectValue;
+                foundUrl = true;
             } else if (redirectKey == "code") {
                 int code = std::atoi(redirectValue.c_str());
                 if (code != 301 && code != 302 && code != 303 && code != 307 && code != 308) {
                     throw std::runtime_error("Invalid redirect code: " + redirectValue);
                 }
                 location.redirect.code = code;
+                foundCode = true;
             }
         }
-        if (redirectLine.find("code:") != std::string::npos) break;
+
+        // Arrêter de lire après avoir trouvé les deux sous-attributs
+        if (foundUrl && foundCode) break;
     }
+
     if (location.redirect.url.empty() || location.redirect.code == 0) {
         throw std::runtime_error("Incomplete redirect configuration for location: " + location.path);
     }
 }
+
 
 void HttpConfig::validateServerConfiguration(const ServerConfig& serverData) {
     if (serverData.serverName.empty()) {

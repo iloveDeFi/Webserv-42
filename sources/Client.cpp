@@ -34,42 +34,41 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
     {
         uri = _request.getURI();
         method = _request.getMethod();
-        logger.logError("SIZE max" + to_string(maxSize) + " current size " + to_string(_request.getBody().size()));
 
         if (_request.getBody().size() > maxSize)
+        {
             response.generate413PayloadTooLarge(maxSize);
+            _response = response;
+            return; // Terminer le traitement si la taille est excessive
+        }
+        // Vérification de la taille maximale autorisée du body
+        logger.logError("Max size: " + std::to_string(maxSize) + " | Current size: " + std::to_string(_request.getBody().size()));
 
-        const HttpConfig::Location *matchedLocation = NULL;
-        size_t longestMatchLength = 0;
+        const HttpConfig::Location *exactMatch = nullptr;
 
-        // Search for the location that best matches the URI
+        // Recherche d'une correspondance exacte pour l'URI
         for (size_t i = 0; i < serverInfo._locations.size(); ++i)
         {
             const HttpConfig::Location &location = serverInfo._locations[i];
-            logger.logError("PATH is : " + location.path);
 
-            // Check if the URI starts with the location path
-            if (uri.find(location.path) == 0)
+            // Vérifie si l'URI correspond exactement au chemin
+            if (uri == location.path)
             {
-                // Prefer the longest matching path
-                if (location.path.length() > longestMatchLength)
-                {
-                    matchedLocation = &location;
-                    longestMatchLength = location.path.length();
-                }
+                exactMatch = &location;
+                break; // Sortir dès qu'on trouve une correspondance exacte
             }
         }
 
-        // If no match is found, generate a 404 response
-        if (matchedLocation == NULL)
+        // Si aucune correspondance exacte n'est trouvée, générer une réponse 404
+        if (exactMatch == nullptr)
         {
             response.generate404NotFound("The requested URL " + uri + " was not found on this server.");
             logger.logError("404 Not Found for URI: " + uri);
         }
         else
         {
-            // Handle requests according to the method type
-            const HttpConfig::Location &location = *matchedLocation;
+            // Gestion de la requête en fonction de la méthode
+            const HttpConfig::Location &location = *exactMatch;
             std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
 
             if (location.iscgi)
@@ -105,17 +104,22 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
             }
         }
 
+        // Log du code de statut de la réponse
         int statusCode = response.getStatusCode();
         logger.logRequest(method, uri, statusCode);
+
+        // Si le code de statut est une erreur, log supplémentaire
         if (statusCode >= 400)
         {
-            logger.logError("Request resulted in error: " + to_string(statusCode));
+            logger.logError("Request resulted in error: " + std::to_string(statusCode));
         }
 
+        // Assigner la réponse à l'attribut de réponse du client
         _response = response;
     }
     catch (const std::exception &e)
     {
+        // En cas d'exception, générer une réponse d'erreur 400
         response.setStatusCode(400);
         response.setBody("400 Bad Request: " + std::string(e.what()));
         response.setHeader("Content-Type", "text/plain");
@@ -124,6 +128,7 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
         _response = response;
     }
 }
+
 
 
 void Client::sendResponse()
