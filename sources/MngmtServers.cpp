@@ -14,7 +14,7 @@
 
 // constructeur du gestionnaire de serveurs
 // il va découper le fichier en ligne (chacune représentant un serveur)
-// et ajouter un serveur au veteur de _servers
+// et ajouter un serveur au veteur de ServerDatas
 ManagementServer::ManagementServer(HttpConfig &config)
 {
 	std::string line;
@@ -30,11 +30,11 @@ ManagementServer::ManagementServer(HttpConfig &config)
 
 ManagementServer::~ManagementServer()
 {
-	for (std::vector<_server>::iterator it = _servers.begin();
-		 it != _servers.end(); it++)
+	for (std::vector<ServerData>::iterator it = ServerDatas.begin();
+		 it != ServerDatas.end(); it++)
 	{
-		close(it->_serverSocket->getFdSocket());
-		delete it->_serverSocket;
+		close(it->ServerDataSocket->getFdSocket());
+		delete it->ServerDataSocket;
 		// delete la map location ?
 	}
 }
@@ -51,7 +51,7 @@ ManagementServer::~ManagementServer()
 
 void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 {
-	_server newServer;
+	ServerData newServer;
 	socklen_t addrLen;
 
 	try
@@ -63,14 +63,14 @@ void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 		newServer._locations = server.locations;
 		newServer._root = server.root;
 
-		newServer._serverSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
-		addrLen = sizeof(newServer._serverSocket->getAddress());
+		newServer.ServerDataSocket = new Socket(AF_INET, SOCK_STREAM, 0, newServer._port, INADDR_ANY);
+		addrLen = sizeof(newServer.ServerDataSocket->getAddress());
 
-		setNonBlocking(newServer._serverSocket->getFdSocket());
+		setNonBlocking(newServer.ServerDataSocket->getFdSocket());
 
 		try
 		{
-			newServer._serverSocket->Bind();
+			newServer.ServerDataSocket->Bind();
 		}
 		catch (const std::runtime_error &e)
 		{
@@ -91,10 +91,10 @@ void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 			}
 		}
 
-		newServer._serverSocket->Listen();
+		newServer.ServerDataSocket->Listen();
 
-		int ip = getsockname(newServer._serverSocket->getFdSocket(),
-							 (struct sockaddr *)&newServer._serverSocket->getAddress(),
+		int ip = getsockname(newServer.ServerDataSocket->getFdSocket(),
+							 (struct sockaddr *)&newServer.ServerDataSocket->getAddress(),
 							 &addrLen);
 		if (ip == -1)
 		{
@@ -103,8 +103,8 @@ void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 			throw std::runtime_error(errorStr);
 		}
 
-		_servers.push_back(newServer);
-		_servers.back()._ipAddress = ip;
+		ServerDatas.push_back(newServer);
+		ServerDatas.back()._ipAddress = ip;
 		std::cout << "Server is listening on port " << newServer._port << std::endl;
 	}
 	catch (const std::exception &e)
@@ -112,9 +112,9 @@ void ManagementServer::addNewServer(HttpConfig::ServerConfig server)
 		std::cerr << "Failed to set up server on port " << server.port << ": " << e.what() << std::endl;
 
 		// Clean up resources if an error occurred
-		if (newServer._serverSocket)
+		if (newServer.ServerDataSocket)
 		{
-			delete newServer._serverSocket;
+			delete newServer.ServerDataSocket;
 		}
 
 		// Optionally, you might want to rethrow the exception or handle it in some other way
@@ -175,9 +175,9 @@ void ManagementServer::prepareFdSets(fd_set &readFds,
 {
 
 	FD_ZERO(&readFds);
-	for (size_t i = 0; i < _servers.size(); i++)
+	for (size_t i = 0; i < ServerDatas.size(); i++)
 	{
-		int serverFd = _servers[i]._serverSocket->getFdSocket();
+		int serverFd = ServerDatas[i].ServerDataSocket->getFdSocket();
 		FD_SET(serverFd, &readFds);
 		if (serverFd > maxFd)
 			maxFd = serverFd;
@@ -199,19 +199,19 @@ void ManagementServer::prepareFdSets(fd_set &readFds,
 // member of the set pointed to by fdset. (int FD_ISSET(int fd, fd_set *fdset))
 void ManagementServer::acceptNewClients(std::vector<Client> &clients, fd_set &readFds)
 {
-    for (size_t i = 0; i < _servers.size(); i++)
+    for (size_t i = 0; i < ServerDatas.size(); i++)
     {
-        if (FD_ISSET(_servers[i]._serverSocket->getFdSocket(), &readFds))
+        if (FD_ISSET(ServerDatas[i].ServerDataSocket->getFdSocket(), &readFds))
         {
-            std::cout << "Connection detected on server " << _servers[i]._name << std::endl;
+            std::cout << "Connection detected on server " << ServerDatas[i]._name << std::endl;
             struct sockaddr_in clientAddr;
             try
             {
-                int clientFd = _servers[i]._serverSocket->Accept(clientAddr);
+                int clientFd = ServerDatas[i].ServerDataSocket->Accept(clientAddr);
                 setNonBlocking(clientFd);
                 Client newClient(clientFd, clientAddr);
                 clients.push_back(newClient);
-                std::cout << "New client connected on server " << _servers[i]._name << ": " << clientFd << std::endl;
+                std::cout << "New client connected on server " << ServerDatas[i]._name << ": " << clientFd << std::endl;
             }
             catch (const std::exception &e)
             {
@@ -300,10 +300,10 @@ bool ManagementServer::handleClient(Client &client)
     int serverPort = ntohs(serverAddr.sin_port);
 
     //trouver la conf du serveur correspondant à ce port
-    _server currentServer;
+    ServerData currentServer;
     bool serverFound = false;
     
-    for (std::vector<_server>::iterator it = _servers.begin(); it != _servers.end(); ++it)
+    for (std::vector<ServerData>::iterator it = ServerDatas.begin(); it != ServerDatas.end(); ++it)
     {
         if (it->_port == serverPort)
         {
@@ -456,23 +456,23 @@ std::string ManagementServer::readRawData(int clientSocket, size_t maxBodySize)
 
 
 
-int ManagementServer::getPort(std::vector<_server>::iterator it)
+int ManagementServer::getPort(std::vector<ServerData>::iterator it)
 {
 	return (it->_port);
 }
 
-int ManagementServer::getSize(std::vector<_server>::iterator it)
+int ManagementServer::getSize(std::vector<ServerData>::iterator it)
 {
 	return (it->_maxSize);
 }
 
-/* _server& ManagementServer::\
-getServerInfo(std::vector<_server>::iterator it)
+/* ServerData& ManagementServer::\
+getServerInfo(std::vector<ServerData>::iterator it)
 {
 	return (*it);
 }  */
 
-void ManagementServer::setIpAddress(std::vector<_server>::iterator it, int ip)
+void ManagementServer::setIpAddress(std::vector<ServerData>::iterator it, int ip)
 {
 	it->_ipAddress = ip;
 }

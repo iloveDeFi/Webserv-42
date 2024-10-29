@@ -1,6 +1,7 @@
 #pragma once
 #ifndef MNGMTSERVERS_HPP
 #define MNGMTSERVERS_HPP
+
 #include <iostream>
 #include <vector>
 #include <map>
@@ -15,30 +16,36 @@
 #include "Socket.hpp"
 #include "Utils.hpp"
 #include "HttpConfig.hpp"
-#include "HttpController.hpp"
-#include "HttpRequest.hpp"
-#include "HttpResponse.hpp"
-#include "Client.hpp" // just to print rawData
-#include "Logger.hpp"
 
-struct _server
+
+class RequestController; 
+
+struct ServerData
 {
-	Socket *_serverSocket;
-	std::string _name;
-	int _ipAddress;
-	int _port;
-	int _maxSize;
-	std::map<int, std::string> _errorPages;
-	std::vector<HttpConfig::Location> _locations;
-	std::string _root;
+    Socket *ServerDataSocket;
+    std::string _name;
+    int _ipAddress;
+    int _port;
+    int _maxSize;
+    std::map<int, std::string> _errorPages;
+    std::vector<HttpConfig::Location> _locations;
+    std::string _root;
 };
 
+
+#include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
+#include "Client.hpp"
+#include "Logger.hpp"
+
 class Client;
+//class HttpRequest;
+//class HttpResponse;
 
 class ManagementServer
 {
 private:
-	std::vector<_server> _servers;
+	std::vector<ServerData> ServerDatas;
 	void addNewServer(HttpConfig::ServerConfig server);
 
 public:
@@ -56,11 +63,11 @@ public:
 	bool handleClient(Client &client);
 	std::string readRawData(int clientSocket, size_t maxBodySize);
 
-	int getPort(std::vector<_server>::iterator it);
-	int getSize(std::vector<_server>::iterator it);
-	_server &getServerInfo(std::vector<_server>::iterator it);
+	int getPort(std::vector<ServerData>::iterator it);
+	int getSize(std::vector<ServerData>::iterator it);
+	ServerData &getServerInfo(std::vector<ServerData>::iterator it);
 
-	void setIpAddress(std::vector<_server>::iterator it, int ip);
+	void setIpAddress(std::vector<ServerData>::iterator it, int ip);
 
 	class RequestTooLargeException : public std::exception
 	{

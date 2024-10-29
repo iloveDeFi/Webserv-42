@@ -9,7 +9,7 @@ class HttpResponse;
 #include <vector>
 #include <set>
 #include "HttpResponse.hpp"
-#include "HttpController.hpp"
+//#include "HttpController.hpp"
 #include "Logger.hpp"
 #include <sstream>
 
