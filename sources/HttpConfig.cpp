@@ -249,7 +249,7 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
     std::string fullPath;
     if (errorPagePath[0] == '/') {
         // Treat as relative to the project directory (not system root)
-        fullPath = "." + errorPagePath;  // Relative to the project root
+        fullPath = serverData.root + errorPagePath;  // Relative to the project root
     } else {
         // Treat as relative to the server's root directory
         fullPath = serverData.root + "/" + errorPagePath;

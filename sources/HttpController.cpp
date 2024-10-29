@@ -2,7 +2,7 @@
 #include <dirent.h>
 
 RequestController::RequestController(const HttpConfig::Location &locationConfig, const ServerData& server)
-    : _locationConfig(locationConfig), _deletionInProgress(), _server(server)
+    : _locationConfig(locationConfig), _deletionInProgress(), _serverRoot(server._root), _server(server)
 {
     if (_validMethods.empty())
     {
@@ -179,7 +179,10 @@ bool RequestController::isDirectory(const std::string &path)
 
 std::string RequestController::resolveResourcePath(const std::string &uri)
 {
+    Logger &logger = Logger::getInstance("server.log");
+    
     std::string resourcePath = _serverRoot;
+    logger.log("before resolved resource path: " + _serverRoot);
     if (resourcePath[resourcePath.length() - 1] != '/')
         resourcePath += '/';
 
@@ -249,7 +252,7 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         handleInternalRequest(req, res);
         return;
     }
-
+   
     std::string resourcePath = resolveResourcePath(uri);
     logger.log("Resolved resource path: " + resourcePath);
 

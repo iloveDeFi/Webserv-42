@@ -34,6 +34,9 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
     {
         uri = _request.getURI();
         method = _request.getMethod();
+		logger.logError("SIZE max" + to_string(maxSize) + " current size " + to_string(_request.getBody().size()));
+
+        logger.log("PATH: " + uri);
 
         if (_request.getBody().size() > maxSize)
         {
