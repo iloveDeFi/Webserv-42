@@ -40,7 +40,7 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
         {
          for (size_t i = 0; i < serverInfo._locations.size(); ++i)
          {
-            if (serverInfo._locations[i].redirect.code != 0 && method == "GET")
+            if (serverInfo._locations[i].redirect.code == 301 && method == "GET")
             {
                 response.generate301MovedPermanently(serverInfo._locations[i].redirect.url);
                 _response = response;

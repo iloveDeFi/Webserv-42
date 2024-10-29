@@ -31,10 +31,11 @@ public:
         bool requiresAuth;
         std::string contentType;
 
-        struct
+        struct Redirect
         {
             std::string url;
             int code;
+    		Redirect() : code(0) {}
         } redirect;
         
         std::string include;

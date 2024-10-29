@@ -93,7 +93,7 @@
           methods: GET
           redirect: |
             url: /new-page
-            code: 301
+            code: 302
 
         - path: /new-page
           methods: GET
