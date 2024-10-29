@@ -97,7 +97,7 @@ void HttpResponse::generate301MovedPermanently(const std::string &location)
     setHeader("Content-Length", std::to_string(body.size()));
 }
 
-void HttpResponse::generate400BadRequest(const std::string &errorMessage/* , std::string root */)
+void HttpResponse::generate400BadRequest(const std::string &errorMessage /* , std::string root */)
 {
     setStatusCode(400);
     setReasonMessage("Bad Request");
@@ -105,7 +105,6 @@ void HttpResponse::generate400BadRequest(const std::string &errorMessage/* , std
     std::string body = "400 Bad Request: " + errorMessage;
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
-
 }
 
 void HttpResponse::generate403Forbidden(const std::string &errorMessage, const std::string &root)
@@ -114,7 +113,7 @@ void HttpResponse::generate403Forbidden(const std::string &errorMessage, const s
     setReasonMessage("Forbidden");
     setHeader("Content-Type", "text/html");
 
-    std::string readError = root + "./errors/403.html";
+    std::string readError = root + "/errors/403.html";
     std::string body = readFile(readError);
 
     if (body.empty())
@@ -135,7 +134,8 @@ void HttpResponse::generate404NotFound(const std::string &errorMessage, const st
     setReasonMessage("Not Found");
     setHeader("Content-Type", "text/html");
 
-    std::string body = readFile(".public/errors/404.html");
+    std::string readError = root + "/errors/404.html";
+    std::string body = readFile(readError);
     logger.log(" \n body is " + body);
 
     if (body.empty())
@@ -157,7 +157,6 @@ void HttpResponse::generate405MethodNotAllowed(const std::string &allowedMethods
     setBody(body);
     setHeader("Content-Length", to_string(body.size()));
     setHeader("Allow", allowedMethods);
-
 }
 
 void HttpResponse::generate409Conflict(const std::string &conflictInfo)
@@ -180,14 +179,14 @@ void HttpResponse::generate413PayloadTooLarge(size_t size)
     setHeader("Content-Length", to_string(body.size()));
 }
 
-
 void HttpResponse::generate500InternalServerError(const std::string &errorMessage, const std::string &root)
 {
     (void)root;
     setStatusCode(500);
     setReasonMessage("Internal Server Error");
     setHeader("Content-Type", "text/html");
-    std::string body = readFile("./errors/500.html");
+    std::string readError = root + "/errors/500.html";
+    std::string body = readFile(readError);
     if (body.empty())
     {
         std::cerr << "Warning: Could not read 500.html, using default error message." << std::endl;
@@ -318,7 +317,7 @@ void HttpResponse::logHttpResponse(Logger &logger)
 
     logMessage << "Body: " << _body << "\n";
     (void)logger;
-    //logger.log(logMessage.str());
+    // logger.log(logMessage.str());
 }
 
 std::string HttpResponse::getBody() const

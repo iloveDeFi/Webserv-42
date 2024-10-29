@@ -1,7 +1,7 @@
 #include "HttpController.hpp"
 #include <dirent.h>
 
-RequestController::RequestController(const HttpConfig::Location &locationConfig, const ServerData& server)
+RequestController::RequestController(const HttpConfig::Location &locationConfig, const ServerData &server)
     : _locationConfig(locationConfig), _deletionInProgress(), _serverRoot(server._root), _server(server)
 {
     if (_validMethods.empty())
@@ -30,62 +30,62 @@ RequestController &RequestController::operator=(const RequestController &src)
 
 RequestController::~RequestController() {}
 
-GetRequestHandler::GetRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+GetRequestHandler::GetRequestHandler(const HttpConfig::Location &locationConfig, const ServerData &server)
     : RequestController(locationConfig, server) {}
 
 GetRequestHandler::~GetRequestHandler() {}
 
-void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void GetRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     handleGetResponse(req, res, server);
 }
 
-PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+PostRequestHandler::PostRequestHandler(const HttpConfig::Location &locationConfig, const ServerData &server)
     : RequestController(locationConfig, server) {}
 
 PostRequestHandler::~PostRequestHandler() {}
 
-void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void PostRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     handlePostResponse(req, res, server);
 }
 
-DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+DeleteRequestHandler::DeleteRequestHandler(const HttpConfig::Location &locationConfig, const ServerData &server)
     : RequestController(locationConfig, server) {}
 
 DeleteRequestHandler::~DeleteRequestHandler() {}
 
-void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void DeleteRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     handleDeleteResponse(req, res, server);
 }
 
-OptionsRequestHandler::OptionsRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+OptionsRequestHandler::OptionsRequestHandler(const HttpConfig::Location &locationConfig, const ServerData &server)
     : RequestController(locationConfig, server) {}
 
 OptionsRequestHandler::~OptionsRequestHandler() {}
 
-void OptionsRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void OptionsRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     handleOptionsResponse(req, res, server);
 }
 
-UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+UnknownRequestHandler::UnknownRequestHandler(const HttpConfig::Location &locationConfig, const ServerData &server)
     : RequestController(locationConfig, server) {}
 
 UnknownRequestHandler::~UnknownRequestHandler() {}
 
-void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void UnknownRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     handleUnknownResponse(req, res, server);
 }
 
-CgiRequestHandler::CgiRequestHandler(const HttpConfig::Location &locationConfig, const ServerData& server)
+CgiRequestHandler::CgiRequestHandler(const HttpConfig::Location &locationConfig, const ServerData &server)
     : RequestController(locationConfig, server) {}
 
 CgiRequestHandler::~CgiRequestHandler() {}
 
-void CgiRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void CgiRequestHandler::handle(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     handleCgiResponse(req, res, server);
 }
@@ -180,7 +180,7 @@ bool RequestController::isDirectory(const std::string &path)
 std::string RequestController::resolveResourcePath(const std::string &uri)
 {
     Logger &logger = Logger::getInstance("server.log");
-    
+
     std::string resourcePath = _serverRoot;
     logger.log("before resolved resource path: " + _serverRoot);
     if (resourcePath[resourcePath.length() - 1] != '/')
@@ -210,7 +210,7 @@ std::string RequestController::resolveResourcePath(const std::string &uri)
     return resourcePath;
 }
 
-void RequestController::serveResource(const std::string &resourcePath, HttpResponse &res,  const ServerData& server)
+void RequestController::serveResource(const std::string &resourcePath, HttpResponse &res, const ServerData &server)
 {
     Logger &logger = Logger::getInstance("server.log");
 
@@ -232,7 +232,7 @@ void RequestController::serveResource(const std::string &resourcePath, HttpRespo
     res.logHttpResponse(logger);
 }
 
-void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
@@ -252,7 +252,7 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
         handleInternalRequest(req, res, server);
         return;
     }
-   
+
     std::string resourcePath = resolveResourcePath(uri);
     logger.log("Resolved resource path: " + resourcePath);
 
@@ -266,7 +266,7 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
     serveResource(resourcePath, res, server);
 }
 
-void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
@@ -366,7 +366,7 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
     setCorsHeaders(res);
 }
 
-void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
@@ -411,7 +411,7 @@ void RequestController::handleDeleteResponse(const HttpRequest &req, HttpRespons
     res.setHTTPVersion(version);
 }
 
-void RequestController::handleUnknownResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void RequestController::handleUnknownResponse(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     (void)server;
     std::string version = req.getHTTPVersion();
@@ -434,7 +434,7 @@ void RequestController::setCorsHeaders(HttpResponse &res)
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");               // En-têtes autorisés
 }
 
-void RequestController::handleInternalRequest(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void RequestController::handleInternalRequest(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
@@ -491,7 +491,7 @@ std::vector<std::string> RequestController::listFilesInDirectory(const std::stri
     return files;
 }
 
-void RequestController::handleOptionsResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void RequestController::handleOptionsResponse(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     (void)server;
     (void)req;
@@ -504,7 +504,7 @@ void RequestController::handleOptionsResponse(const HttpRequest &req, HttpRespon
     res.setBody("");
 }
 
-void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res, const ServerData& server)
+void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string cgiScriptPath = resolveCgiPath();
@@ -516,7 +516,7 @@ void RequestController::handleCgiResponse(const HttpRequest &req, HttpResponse &
     std::vector<std::string> envVariables = setupEnvironmentVariables(req, cgiScriptPath);
 
     int stdin_pipe[2], stdout_pipe[2];
-    if (!createPipes(stdin_pipe, stdout_pipe, res, logger))
+    if (!createPipes(stdin_pipe, stdout_pipe, res, logger, server))
         return;
 
     pid_t pid = fork();
@@ -552,7 +552,7 @@ bool RequestController::isCgiExecutable(const std::string &cgiScriptPath, HttpRe
     Logger &logger = Logger::getInstance("server.log");
     if (stat(cgiScriptPath.c_str(), &scriptStat) != 0 || !S_ISREG(scriptStat.st_mode) || !(scriptStat.st_mode & S_IXUSR))
     {
-        res.generate403Forbidden("403 Forbidden: CGI script is not accessible or does not exist", server._root);
+        res.generate403Forbidden("403 Forbidden: CGI script is not accessible or does not exist", _server._root);
         logger.log("Error: CGI script not found or not executable: " + cgiScriptPath);
         return false;
     }
@@ -576,7 +576,7 @@ std::vector<std::string> RequestController::setupEnvironmentVariables(const Http
 }
 
 // Crée les pipes pour stdin et stdout
-bool RequestController::createPipes(int stdin_pipe[2], int stdout_pipe[2], HttpResponse &res, Logger &logger)
+bool RequestController::createPipes(int stdin_pipe[2], int stdout_pipe[2], HttpResponse &res, Logger &logger, const ServerData &server)
 {
     if (pipe(stdin_pipe) == -1 || pipe(stdout_pipe) == -1)
     {
@@ -636,9 +636,8 @@ void RequestController::executeCgiScript(const std::string &cgiScriptPath, const
     exit(1);
 }
 
-
 // Gère la lecture de la sortie CGI et la réponse HTTP
-void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req, HttpResponse &res,  const ServerData& server)
+void RequestController::processCgiOutput(pid_t pid, int stdin_pipe[2], int stdout_pipe[2], const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     Logger &logger = Logger::getInstance("server.log");
     close(stdin_pipe[0]);
@@ -721,8 +720,7 @@ std::string RequestController::getHandler()
     return (_locationConfig.handler);
 }
 
-
-ServerData& RequestController::getServerInfo()
+ServerData &RequestController::getServerInfo()
 {
     return (_server);
 }
