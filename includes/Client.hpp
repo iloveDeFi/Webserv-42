@@ -45,7 +45,6 @@ public:
     struct sockaddr_in& getClientAddr();
     bool checkFileExists(const std::string &filePath);
     bool isKeepAlive() const;
-
 };
 
 #endif

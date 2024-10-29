@@ -28,6 +28,7 @@ public:
     void generate201Created(const std::string &location);
     void generate202Accepted(const std::string &deletionInfo);
     void generate204NoContent(const std::string &errorMessage);
+    void generate301MovedPermanently(const std::string &location);
     void generate400BadRequest(const std::string &errorMessage/* , std::string root */);
     void generate403Forbidden(const std::string &errorMessage/* , std::string root */);
     void generate404NotFound(const std::string &errorMessage/* , std::string root */);

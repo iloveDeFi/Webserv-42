@@ -30,10 +30,22 @@ void Client::processRequest(const _server &serverInfo, size_t maxSize)
 
     Logger &logger = Logger::getInstance("server.log");
 
-    try
-    {
         uri = _request.getURI();
         method = _request.getMethod();
+
+         try
+        {
+         for (size_t i = 0; i < serverInfo._locations.size(); ++i)
+         {
+            if (serverInfo._locations[i].redirect.code != 0 && method == "GET")
+            {
+                response.generate301MovedPermanently(serverInfo._locations[i].redirect.url);
+                _response = response;
+                logger.log("HttpConfig Location.redirect.url" + serverInfo._locations[i].redirect.url);
+                logger.log("Code is : " + to_string(serverInfo._locations[i].redirect.code));
+                return;
+            }
+         }
 
         if (_request.getBody().size() > maxSize)
         {
@@ -128,8 +140,6 @@ void Client::processRequest(const _server &serverInfo, size_t maxSize)
         _response = response;
     }
 }
-
-
 
 void Client::sendResponse()
 {

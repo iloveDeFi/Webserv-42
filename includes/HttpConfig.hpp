@@ -30,11 +30,13 @@ public:
         std::string handler;
         bool requiresAuth;
         std::string contentType;
+
         struct
         {
             std::string url;
             int code;
         } redirect;
+        
         std::string include;
         std::string defaultFile;
     };

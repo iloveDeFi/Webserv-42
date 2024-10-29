@@ -85,6 +85,18 @@ void HttpResponse::generate204NoContent(const std::string &errorMessage)
     (void)errorMessage;
 }
 
+void HttpResponse::generate301MovedPermanently(const std::string &location)
+{
+    setStatusCode(301);
+    setReasonMessage("Moved Permanently");
+    setHeader("Location", location);
+    setHeader("Content-Type", "text/plain");
+
+    std::string body = "301 Moved Permanently: The requested resource has been moved permanently to " + location;
+    setBody(body);
+    setHeader("Content-Length", std::to_string(body.size()));
+}
+
 void HttpResponse::generate400BadRequest(const std::string &errorMessage/* , std::string root */)
 {
     setStatusCode(400);

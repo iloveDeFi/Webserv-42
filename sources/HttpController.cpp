@@ -2,7 +2,7 @@
 #include <dirent.h>
 
 RequestController::RequestController(const HttpConfig::Location &locationConfig, const std::string &serverRoot)
-    : _locationConfig(locationConfig), _deletionInProgress(), _serverRoot(serverRoot)
+    : _locationConfig(locationConfig), _deletionInProgress(),  _serverRoot(serverRoot)
 {
     if (_validMethods.empty())
     {
