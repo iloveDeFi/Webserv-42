@@ -422,8 +422,8 @@ void RequestController::handleUnknownResponse(const HttpRequest &req, HttpRespon
         res.generate400BadRequest("400 Bad Request: Method cannot be empty.");
         return;
     }
-
-    res.generate501NotImplemented("501 Not Implemented: The server does not recognize the HTTP method used: " + method);
+    res.generate405MethodNotAllowed("405: Method not allowred: " + method);
+    // res.generate501NotImplemented("501 Not Implemented: The server does not recognize the HTTP method used: " + method);
     res.setHTTPVersion(version);
 }
 

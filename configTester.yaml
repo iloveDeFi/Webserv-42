@@ -45,6 +45,6 @@
           methods: GET
           handler: internal  # Specify the directory to serve
           allow_uploads: false
-          root: /Users/astutz/42school/WebServ/YoupiBanane
+          root: /Users/bbessard/Desktop/we/YoupiBanane
   # Root directory for files
           search_for: youpi.bad_extension  # Look for this file if no specific file is requested
