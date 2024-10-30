@@ -101,6 +101,12 @@
           allow_uploads: false
           content_type: text/html
 
+        - path: /cgi-bin/cgi_tester
+          methods: GET, POST
+          cgi_handler: /path/to/your/cgi-bin/cgi_tester
+          allow_uploads: false
+          content_type: text/html
+
 
         
 

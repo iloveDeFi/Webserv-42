@@ -1,0 +1,49 @@
+- server:
+    server_name: myserver.com
+    port: 80
+    client_max_body_size: 100M
+    root: ./public
+
+    error_pages:
+        404: /errors/404.html
+        500: /errors/500.html
+        403: /errors/403.html
+
+    locations:
+        # Handle GET requests to the root
+        - path: /
+          methods: GET
+          handler: index/index.html
+          allow_uploads: false
+          content_type: text/html
+
+        # Handle PUT requests to /put_test/*
+        - path: /put_test/*
+          methods: GET
+          handler: internal  # Replace with actual handler for saving files
+          allow_uploads: true
+          content_type: application/octet-stream  # Assuming binary file uploads
+
+        # Handle POST requests for .bla files
+        - path: /*.bla
+          methods: POST
+          handler: internal  # Specify handler for executing cgi_test
+          cgi_handler: /path/to/cgi_test  # Adjust the path to your executable
+          allow_uploads: false
+          content_type: application/json  # Assuming JSON responses
+
+        # Handle POST requests to /post_body with max body size
+        - path: /post_body
+          methods: POST
+          handler: internal  # Specify your internal handler
+          allow_uploads: false
+          content_type: application/x-www-form-urlencoded  # Adjust if necessary
+
+        # Serve GET requests for /directory/
+        - path: /directory/
+          methods: GET
+          handler: internal  # Specify the directory to serve
+          allow_uploads: false
+          root: /Users/astutz/42school/WebServ/YoupiBanane
+  # Root directory for files
+          search_for: youpi.bad_extension  # Look for this file if no specific file is requested
