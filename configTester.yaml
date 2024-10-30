@@ -41,9 +41,10 @@
           content_type: application/x-www-form-urlencoded  # Adjust if necessary
 
         # Serve GET requests for /directory/
+        # - path: /directory
         - path: /directory/
           methods: GET
-          handler: internal  # Specify the directory to serve
+          handler: internal
           allow_uploads: false
           root: /Users/bbessard/Desktop/we/YoupiBanane
   # Root directory for files
