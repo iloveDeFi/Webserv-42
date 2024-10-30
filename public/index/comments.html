@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <!-- Meta tags for responsive design and character encoding -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Commentaires</title>
+    <!-- Link to the favicon -->
     <link rel="icon" href="./public/index/favicon.png" type="image/x-icon">
     <style>
-        /* Your styles here */
+        /* Styles for the page */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -94,6 +96,7 @@
 <body>
 
 <header>
+    <!-- Back to index button -->
     <a href="/" class="back-button">Retour à l'index</a>
     <h1>Commentaires</h1>
 </header>
@@ -102,13 +105,14 @@
     <div class="content">
         <h2>Commentaires existants</h2>
 
-        <!-- Display existing comments by loading them from the CGI script -->
+        <!-- Section where comments will be displayed -->
         <div id="comments-section">
             <!-- This section will be populated by comments loaded from the server -->
         </div>
 
         <h2>Ajouter un nouveau commentaire</h2>
-        <form id="commentForm" action="/cgi-bin/upload.py" method="POST">
+        <!-- Updated form with correct action attribute -->
+        <form id="commentForm" action="/cgi-bin/save_comment" method="POST">
             <textarea name="comment" rows="4" placeholder="Entrez votre commentaire ici..." required></textarea>
             <button type="submit">Envoyer le commentaire</button>
         </form>        
@@ -119,37 +123,40 @@
     <p>&copy; 2024 Gestion des commentaires - Webserv42. Tous droits réservés.</p>
 </footer>
 
+<!-- JavaScript code to handle comment loading and submission -->
 <script>
     // Function to fetch and display comments
     function loadComments() {
-    fetch('/cgi-bin/save_comment')
-        .then(response => {
-            console.log("Raw response:", response);
-            return response.text(); // Read as text first to examine raw content
-        })
-        .then(text => {
-            console.log("Raw JSON text:", text); // Log raw text
-            const data = JSON.parse(text); // Manually parse JSON
-            console.log("Parsed JSON data:", data); // Log parsed JSON data
+        // Fetch comments from the server
+        fetch('/cgi-bin/save_comment')
+            .then(response => {
+                console.log("Raw response:", response);
+                return response.text(); // Read the response as text
+            })
+            .then(text => {
+                console.log("Raw JSON text:", text); // Log the raw JSON text
+                const data = JSON.parse(text); // Parse the text as JSON
+                console.log("Parsed JSON data:", data); // Log the parsed JSON data
 
-            const commentsSection = document.getElementById('comments-section');
-            commentsSection.innerHTML = ''; // Clear existing comments
+                const commentsSection = document.getElementById('comments-section');
+                commentsSection.innerHTML = ''; // Clear existing comments
 
-            if (data.comments && data.comments.length > 0) {
-                data.comments.forEach(comment => {
-                    const commentDiv = document.createElement('div');
-                    commentDiv.className = 'comment';
-                    commentDiv.innerText = comment;
-                    commentsSection.appendChild(commentDiv);
-                });
-            } else {
-                commentsSection.innerHTML = "<p>Aucun commentaire pour le moment.</p>";
-            }
-        })
-        .catch(error => {
-            console.error("Erreur lors de la récupération des commentaires:", error);
-            alert("Erreur lors de la récupération des commentaires: " + error);
-        });
+                if (data.comments && data.comments.length > 0) {
+                    // Loop through each comment and display it
+                    data.comments.forEach(comment => {
+                        const commentDiv = document.createElement('div');
+                        commentDiv.className = 'comment';
+                        commentDiv.innerText = comment;
+                        commentsSection.appendChild(commentDiv);
+                    });
+                } else {
+                    commentsSection.innerHTML = "<p>Aucun commentaire pour le moment.</p>";
+                }
+            })
+            .catch(error => {
+                console.error("Erreur lors de la récupération des commentaires:", error);
+                alert("Erreur lors de la récupération des commentaires: " + error);
+            });
     }
 
     // Load comments when the page loads
@@ -157,14 +164,16 @@
 
     // Handle form submission to post a new comment without reloading
     document.getElementById('commentForm').addEventListener('submit', function(event) {
-        event.preventDefault();  // Prevent the form from reloading the page
+        event.preventDefault();  // Prevent the default form submission
 
+        // Get the comment text from the textarea
         const commentText = this.querySelector('textarea[name="comment"]').value.trim();
         if (!commentText) {
             alert("Veuillez entrer un commentaire.");
             return;
         }
 
+        // Create a FormData object to send the comment
         const formData = new FormData();
         formData.append('comment', commentText);
 
@@ -180,7 +189,7 @@
             if (!response.ok) {
                 throw new Error("Failed to post comment: " + response.statusText);
             }
-            return response.json();
+            return response.json(); // Parse the response as JSON
         })
         .then(data => {
             console.log("POST response data:", data);  // Log the data received from the server
