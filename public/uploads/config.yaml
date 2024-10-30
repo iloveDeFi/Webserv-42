@@ -1,0 +1,156 @@
+- server:
+    server_name: myserver.com
+    port: 80
+    client_max_body_size: 10M
+    root: ./public
+
+    error_pages:
+        404: /errors/404.html
+        500: /errors/500.html
+        403: /errors/403.html
+
+    locations:
+        - path: /
+          methods: GET
+          handler: index/index.html
+          allow_uploads: false
+          content_type: text/html
+
+        - path: /comments
+          methods: GET
+          handler: index/comments.html
+          allow_uploads: false
+          content_type: text/html
+        
+        - path: /UploadCGI
+          methods: GET
+          handler: index/uploadcgi.html
+          allow_uploads: true
+          content_type: text/html
+
+        # CGI handler for saving and retrieving comments
+        - path: /cgi-bin/save_comment
+          methods: GET, POST
+          cgi_handler: /usr/bin/python3
+          handler: index/cgi-bin/save_comment.py
+          allow_uploads: false
+          content_type: application/json
+
+        - path: /cgi-bin/upload.pl
+          methods: POST
+          cgi_handler: /usr/bin/perl
+          handler: index/cgi-bin/upload.pl
+          allow_uploads: true
+          content_type: text/html
+
+        - path: /uploadPage
+          methods: GET, POST
+          handler: index/post.html
+          allow_uploads: true
+
+        - path: /upload
+          methods: POST
+          handler: internal
+          allow_uploads: true
+
+        - path: /deletePage
+          methods: GET, DELETE
+          handler: index/delete.html
+          allow_uploads: false
+          content_type: text/html
+
+        - path: /file-list
+          methods: GET
+          handler: internal
+          allow_uploads: false
+
+        - path: /files
+          methods: DELETE, OPTIONS
+          handler: internal
+          allow_uploads: false
+
+        - path: /cgi-bin
+          methods: GET, POST
+          handler: index/cgi-bin/
+          allow_uploads: false
+          content_type: text/html
+
+        - path: /cgi-bin/json
+          methods: GET
+          handler: index/cgi-bin/
+          allow_uploads: false
+          content_type: application/json
+          
+        # Handler CGI pour le script Python 'simple.py' (GET)
+        - path: /cgi-bin/get
+          methods: GET
+          cgi_handler: /usr/bin/python3
+          handler: index/cgi-bin/simple.py
+          allow_uploads: false
+          content_type: text/html
+
+        - path: /old-page
+          methods: GET
+          redirect: |
+            url: /new-page
+            code: 302
+
+        - path: /new-page
+          methods: GET
+          handler: index/new-page.html
+          allow_uploads: false
+          content_type: text/html
+
+
+        
+
+- server:
+    server_name: secondserver.com
+    port: 8080
+    client_max_body_size: 1M
+    root: ./public
+
+    error_pages:
+        404: /errors/404.html
+        500: /errors/500.html
+
+    locations:
+        - path: /images
+          methods: GET
+          handler: images/
+          allow_uploads: false
+          content_type: image/jpeg
+
+        - path: /videos
+          methods: GET
+          handler: videos/
+          allow_uploads: false
+          content_type: video/mp4
+
+        - path: /
+          methods: GET
+          handler: index/index.html
+          allow_uploads: false
+          content_type: text/html
+
+        - path: /uploadPage
+          methods: GET, POST
+          handler: index/post.html
+          allow_uploads: true
+
+        - path: /upload
+          methods: POST
+          handler: internal
+          allow_uploads: true
+
+        - path: /cgi-bin
+          methods: GET, POST
+          handler: index/cgi-bin/
+          allow_uploads: false
+          content_type: text/html   # Pour les requêtes GET
+
+        - path: /cgi-bin/json
+          methods: GET
+          handler: index/cgi-bin/
+          allow_uploads: false
+          content_type: application/json  # Requêtes qui retournent des données JSON etc etc
