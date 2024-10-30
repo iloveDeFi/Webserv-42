@@ -93,8 +93,9 @@ bool HttpConfig::parseServerConfiguration(std::istringstream& configStream) {
     return false;
 }
 
+
 void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
-	Logger &logger = Logger::getInstance("server.log");
+    Logger &logger = Logger::getInstance("server.log");
 
     Location location;
     std::string configLine;
@@ -104,30 +105,24 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
         trimWhitespace(configLine);
         if (configLine.empty() || configLine[0] == '#') continue;
 
-        // Fin du bloc location si un nouveau serveur est détecté
         if (configLine == "- server:" || configLine.find("server_name:") != std::string::npos) {
             configStream.seekg(-static_cast<int>(configLine.length()) - 1, std::ios::cur);
             break;
         }
 
-        // Nouveau chemin de location
         if (configLine.find("- path:") != std::string::npos) {
             if (!isFirstLocation) {
                 validateLocation(location, serverData);
                 serverData.locations.push_back(location);
             }
-            location = Location();
+            location = Location();  // Reset location for the new block
+            location.iscgi = false; // Default value
             location.path = configLine.substr(configLine.find(":") + 1);
-            if (location.path.find("/cgi-bin") != std::string::npos)
-                location.iscgi = true;
-            else
-                location.iscgi = false;
             trimWhitespace(location.path);
             isFirstLocation = false;
             continue;
         }
 
-        // Analyse des attributs de location
         size_t separatorPosition = configLine.find(": ");
         if (separatorPosition != std::string::npos) {
             std::string key = configLine.substr(0, separatorPosition);
@@ -149,9 +144,8 @@ void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerCon
         validateLocation(location, serverData);
         serverData.locations.push_back(location);
     }
-	logger.log("Location url + cpode " + location.redirect.url);
+    logger.log("Location URL: " + location.redirect.url);
 }
-
 
 
 
@@ -184,6 +178,7 @@ void HttpConfig::parseServerAttribute(const std::string& attributeLine, ServerCo
         throw std::runtime_error("Unknown server attribute: " + attributeKey);
     }
 }
+
 
 int HttpConfig::parsePortNumber(const std::string& portString) {
     if (!isAllDigits(portString)) {
@@ -249,13 +244,10 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
         throw std::runtime_error("Error page path cannot be empty for error code: " + errorCodeString);
     }
 
-    // Adjust file path checking: use relative path for errors outside root
     std::string fullPath;
     if (errorPagePath[0] == '/') {
-        // Treat as relative to the project directory (not system root)
-        fullPath = serverData.root + errorPagePath;  // Relative to the project root
+        fullPath = serverData.root + errorPagePath;
     } else {
-        // Treat as relative to the server's root directory
         fullPath = serverData.root + "/" + errorPagePath;
     }
 
@@ -268,39 +260,7 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
 }
 
 
-/* void HttpConfig::parseLocationConfig(std::istringstream& configStream, ServerConfig& serverData) {
-    Location location;
-    std::string configLine;
-    bool isFirstLocation = true;
-    std::set<std::string> locationPaths;
 
-
-	while (std::getline(configStream, configLine)) {
-        trimWhitespace(configLine);
-        if (configLine.empty() || configLine[0] == '#') continue;
-         
-
-        if (configLine == "- server:" || configLine.find("server_name:") != std::string::npos) {
-            configStream.seekg(-static_cast<int>(configLine.length()) - 1, std::ios::cur); // Revenir en arrière pour que cette ligne soit relue
-            break;
-        }
-
-        if (configLine.find("- path:") != std::string::npos) {
-            if (!isFirstLocation) {
-                serverData.locations.push_back(location);
-            }
-            location = Location();
-            location.path = configLine.substr(configLine.find(":") + 1);
-            trimWhitespace(location.path);
-            isFirstLocation = false;
-        }
-    }
-
-    if (!location.path.empty()) {
-        serverData.locations.push_back(location);
-    }
-
-} */
 void HttpConfig::parseLocationAttribute(const std::string& key, const std::string& value, Location& location, const ServerConfig& serverData) {
     Logger &logger = Logger::getInstance("server.log");
     logger.log("Parsing key: " + key + " Parsing value : " + value);
@@ -347,6 +307,7 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
     } else if (key == "cgi_extensions") {
         location.cgiExtensions = split(value.substr(1, value.length() - 2), ',');
         for (std::vector<std::string>::iterator it = location.cgiExtensions.begin(); it != location.cgiExtensions.end(); ++it) {
+            trimWhitespace(*it);
             if ((*it)[0] != '.') {
                 throw std::runtime_error("CGI extension must start with a dot: " + *it);
             }
@@ -377,24 +338,20 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
         location.contentType = value;
     } else if (key == "include") {
         location.include = value;
-	} else if (key == "default_file") {
+    } else if (key == "default_file") {
         location.defaultFile = value;
-    } else if (key == "cgi_extensions") {
-        location.cgiExtensions = split(value.substr(1, value.length() - 2), ',');
-        for (std::vector<std::string>::iterator it = location.cgiExtensions.begin(); it != location.cgiExtensions.end(); ++it) {
-            trimWhitespace(*it);
-            if ((*it)[0] != '.') {
-                throw std::runtime_error("CGI extension must start with a dot: " + *it);
-            }
-        }
     } else if (key == "cgi_handler") {
         location.cgiHandler = value;
-    }
-	else if (key == "redirect") {
-    std::istringstream redirectStream(value);
-    parseRedirect(redirectStream, location);
-	}
-	 else {
+        location.iscgi = true;
+    } else if (key == "iscgi") {
+        if (value != "true" && value != "false") {
+            throw std::runtime_error("Invalid iscgi value. Must be 'true' or 'false'.");
+        }
+        location.iscgi = (value == "true");
+    } else if (key == "redirect") {
+        std::istringstream redirectStream(value);
+        parseRedirect(redirectStream, location);
+    } else {
         throw std::runtime_error("Unknown location attribute: " + key);
     }
 }
