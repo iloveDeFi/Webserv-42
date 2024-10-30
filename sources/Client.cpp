@@ -42,6 +42,11 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
         {
             const HttpConfig::Location &location = serverInfo._locations[i];
 
+			if (location.redirect.code == 405)
+			{
+				_response.setStatusCode(location.redirect.code);
+			}
+
             if (uri == location.path && !location.redirect.url.empty())
             {
                 _response = HttpResponse();
@@ -72,6 +77,13 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
             _response = response;
             return; // Terminate processing if size is too large
         }
+
+		if (_request.getBody().size() <= 0 && method == "POST")
+		{
+			response.generate405MethodNotAllowed("POST body not compliant");
+            _response = response;
+			return;
+		}
 
         // Log body size
         logger.log("Max size: " + to_string(maxSize) + " | Current size: " + to_string(_request.getBody().size()));

@@ -275,18 +275,18 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
     logger.log("Received POST request for URI: " + uri);
     logger.log("Body: " + body);
 
-    if (body.empty())
-    {
-        res.generate400BadRequest("Bad Request: Empty body or malformed request.");
-        return;
-    }
-
     // Check if POST method is allowed for this location
     if (!isMethodAllowed("POST"))
     {
         res.generate405MethodNotAllowed("POST method not allowed for this location.");
         return;
     }
+
+    if (req.getMethod() == "POST" && body.empty()) {
+        res.generate400BadRequest("Bad Request: Empty body or malformed request.");
+        return;
+    }
+
 
     // Check if uploads are allowed in this location
     if (!_locationConfig.allowUploads)

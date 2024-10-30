@@ -12,10 +12,11 @@
     locations:
         # Handle GET requests to the root
         - path: /
-          methods: GET
+          methods: GET, POST
           handler: index/index.html
           allow_uploads: false
           content_type: text/html
+
 
         # Handle PUT requests to /put_test/*
         - path: /put_test/*

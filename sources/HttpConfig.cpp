@@ -351,7 +351,11 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
     } else if (key == "redirect") {
         std::istringstream redirectStream(value);
         parseRedirect(redirectStream, location);
-    } else {
+    } else if (key == "search_for") {
+		location.search_for = value;
+		location.root = location.root + location.search_for;
+	}
+	else {
         throw std::runtime_error("Unknown location attribute: " + key);
     }
 }

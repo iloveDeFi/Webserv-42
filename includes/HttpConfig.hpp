@@ -30,6 +30,7 @@ public:
         std::string handler;
         bool requiresAuth;
         std::string contentType;
+		std::string search_for;
 
         struct Redirect
         {
