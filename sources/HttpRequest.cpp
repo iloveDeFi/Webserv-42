@@ -45,7 +45,8 @@ HttpRequest::HttpRequest(const std::string &rawData)
     }
     std::istringstream requestLineStream(requestLine);
     requestLineStream >> _method >> _uri >> _version;
-
+    Logger &logger = Logger::getInstance("server.log");
+    logger.log("In constructor request uri : " + _uri);
     if (_method.empty() || _uri.empty() || _version.empty())
     {
         throw std::runtime_error("Invalid request line");

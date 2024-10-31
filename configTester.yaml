@@ -2,7 +2,7 @@
     server_name: myserver.com
     port: 80
     client_max_body_size: 100M
-    root: ./public
+    root: ./YoupiBanane
 
     error_pages:
         404: /errors/404.html
@@ -13,7 +13,7 @@
         # Handle GET requests to the root
         - path: /
           methods: GET, POST
-          handler: index/index.html
+          handler: index.html
           allow_uploads: false
           content_type: text/html
 
@@ -43,9 +43,9 @@
         # Serve GET requests for /directory/
         # - path: /directory
         - path: /directory/
-          methods: GET
+          methods: GET, UNKNOWN
           handler: internal
           allow_uploads: false
-          root: /Users/bbessard/Desktop/we/YoupiBanane
+          root: /Users/helenegandar/Documents/42_Lausanne/Webserv/YoupiBanane
   # Root directory for files
           search_for: youpi.bad_extension  # Look for this file if no specific file is requested

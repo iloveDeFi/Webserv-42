@@ -262,8 +262,8 @@ void HttpConfig::parseErrorPageConfig(const std::string& errorPageLine, ServerCo
 
 
 void HttpConfig::parseLocationAttribute(const std::string& key, const std::string& value, Location& location, const ServerConfig& serverData) {
-    Logger &logger = Logger::getInstance("server.log");
-    logger.log("Parsing key: " + key + " Parsing value : " + value);
+    //Logger &logger = Logger::getInstance("server.log");
+    //logger.log("Parsing key: " + key + " Parsing value : " + value);
     if (key == "- path") {
         if (value.find("/cgi-bin") != std::string::npos)
             location.iscgi = true;
@@ -283,7 +283,7 @@ void HttpConfig::parseLocationAttribute(const std::string& key, const std::strin
             std::string method = *it;
             trimWhitespace(method);
             method = toUpperCase(method);
-            if (method == "GET" || method == "POST" || method == "DELETE" || method == "OPTIONS") {
+            if (method == "GET" || method == "POST" || method == "DELETE" || method == "UNKNOWN") {
                 location.methods.push_back(method);
             } else {
                 throw std::runtime_error("Invalid HTTP method: " + method + ". Only GET, POST, and DELETE are allowed.");
@@ -379,7 +379,7 @@ void HttpConfig::validateLocation(const Location& location, const ServerConfig& 
     }
 
     for (std::vector<std::string>::const_iterator it = location.methods.begin(); it != location.methods.end(); ++it) {
-        if (*it != "GET" && *it != "POST" && *it != "DELETE" && *it != "OPTIONS") {
+        if (*it != "GET" && *it != "POST" && *it != "DELETE" && *it != "UNKNOWN") {
             throw std::runtime_error("Invalid HTTP method for location " + location.path + ": " + *it);
         }
     }

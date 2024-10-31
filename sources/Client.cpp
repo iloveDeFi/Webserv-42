@@ -8,8 +8,8 @@ Client::~Client() {}
 void Client::readRequest(const std::string &rawData)
 {
     //_request.parse(rawData);
-    // Logger &logger = Logger::getInstance("server.log");
-    // logger.log(">> rawData in readRequest to pass to HttpRequest(rawData) is " + rawData);
+    Logger &logger = Logger::getInstance("server.log");
+    logger.log(">> rawData in readRequest to pass to HttpRequest(rawData) is " + rawData);
     _request = HttpRequest(rawData);
     /*     std::cout << "Method: " << _request.getMethod() << std::endl;
         std::cout << "URI: " << _request.getURI() << std::endl;

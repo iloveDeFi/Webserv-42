@@ -290,6 +290,7 @@ bool ManagementServer::handleClient(Client &client)
     struct sockaddr_in serverAddr;
     socklen_t serverAddrLen = sizeof(serverAddr);
     std::string rawData;
+    Logger &logger = Logger::getInstance("server.log");
 
     //détermine sur quel serveur le client est connecté
     if (getsockname(clientSocket, (struct sockaddr *)&serverAddr, &serverAddrLen) == -1)
@@ -320,6 +321,7 @@ bool ManagementServer::handleClient(Client &client)
     try
     {
         rawData = readRawData(clientSocket, maxBodySize);
+        logger.log("Rawdata result: " + rawData);
         if (rawData.empty())
         {
             // Le client a peut-être fermé la connexion
