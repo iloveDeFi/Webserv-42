@@ -306,7 +306,13 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
 
     try
     {
-        // Parse the multipart/form-data
+
+        if (body.size() > static_cast<std::size_t>(server._maxSize))
+        {
+            res.generate413PayloadTooLarge(server._maxSize);
+            return;
+        }
+
         std::string boundary = req.getBoundary();
         if (boundary.empty())
         {
