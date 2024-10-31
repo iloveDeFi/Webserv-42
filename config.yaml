@@ -65,7 +65,7 @@
           allow_uploads: false
 
         - path: /files
-          methods: DELETE, OPTIONS
+          methods: DELETE
           handler: internal
           allow_uploads: false
 

@@ -317,7 +317,7 @@ bool ManagementServer::handleClient(Client &client)
     {
         throw std::runtime_error("No server found for port " + std::to_string(serverPort));
     }
-    size_t maxBodySize = currentServer._maxSize;
+    size_t maxBodySize = 10 * 1024 * 1024; 
     try
     {
         rawData = readRawData(clientSocket, maxBodySize);

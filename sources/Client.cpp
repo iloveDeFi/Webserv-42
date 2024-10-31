@@ -7,19 +7,15 @@ Client::~Client() {}
 
 void Client::readRequest(const std::string &rawData)
 {
-    //_request.parse(rawData);
     Logger &logger = Logger::getInstance("server.log");
     logger.log(">> rawData in readRequest to pass to HttpRequest(rawData) is " + rawData);
     _request = HttpRequest(rawData);
-    /*     std::cout << "Method: " << _request.getMethod() << std::endl;
-        std::cout << "URI: " << _request.getURI() << std::endl;
-        std::cout << "Version: " << _request.getHTTPVersion() << std::endl; */
 }
 
 bool Client::checkFileExists(const std::string &filePath)
 {
     struct stat buffer;
-    return (stat(filePath.c_str(), &buffer) == 0); // Renvoie true si le fichier existe
+    return (stat(filePath.c_str(), &buffer) == 0);
 }
 
 void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
@@ -63,19 +59,16 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
                     _response.setHeader("Content-Length", std::to_string(_response.getBody().size()));
                 }
 
-                // -------------------------------------
-
                 logger.log("Redirection from " + uri + " to " + location.redirect.url + " with code " + std::to_string(location.redirect.code));
                 return;
             }
         }
 
-        // Check if body size exceeds max size
         if (_request.getBody().size() > maxSize)
         {
             response.generate413PayloadTooLarge(maxSize);
             _response = response;
-            return; // Terminate processing if size is too large
+            return;
         }
 
 		if (_request.getBody().size() <= 0 && method == "POST")
@@ -85,10 +78,8 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
 			return;
 		}
 
-        // Log body size
         logger.log("Max size: " + to_string(maxSize) + " | Current size: " + to_string(_request.getBody().size()));
 
-        // Find the best matching location
         const HttpConfig::Location *matchedLocation = findMatchingLocation(serverInfo, uri);
 
         if (matchedLocation == NULL)
@@ -97,8 +88,7 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
             logger.logError("404 Not Found for URI: " + uri);
         }
         else
-{
-            // Gestion de la requête en fonction de la méthode
+        {
             const HttpConfig::Location &location = *matchedLocation;
             std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
 
@@ -134,22 +124,17 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
                 unknownHandler.handle(_request, response, serverInfo);
             }
         }
-        // Log the response status code
         int statusCode = response.getStatusCode();
         logger.logRequest(method, uri, statusCode);
 
-        // Additional logging if status code indicates an error
         if (statusCode >= 400)
         {
             logger.logError("Request resulted in error: " + to_string(statusCode));
         }
-
-        // Assign the response to the client's response attribute
         _response = response;
     }
     catch (const std::exception &e)
     {
-        // In case of exception, generate a 400 Bad Request response
         response.setStatusCode(400);
         response.setBody("400 Bad Request: " + std::string(e.what()));
         response.setHeader("Content-Type", "text/plain");
@@ -183,7 +168,6 @@ const HttpConfig::Location* Client::findMatchingLocation(const ServerData &serve
     const HttpConfig::Location *matchedLocation = NULL;
     size_t longestMatchLength = 0;
 
-    // Remove query parameters for matching
     std::string uriPath = uri;
     size_t queryPos = uri.find('?');
     if (queryPos != std::string::npos)
@@ -191,7 +175,6 @@ const HttpConfig::Location* Client::findMatchingLocation(const ServerData &serve
         uriPath = uri.substr(0, queryPos);
     }
 
-    // First, attempt exact matching
     for (size_t i = 0; i < serverInfo._locations.size(); ++i)
     {
         const HttpConfig::Location &location = serverInfo._locations[i];
@@ -202,12 +185,11 @@ const HttpConfig::Location* Client::findMatchingLocation(const ServerData &serve
         }
     }
 
-    // Then, attempt longest prefix matching (excluding '/')
     for (size_t i = 0; i < serverInfo._locations.size(); ++i)
     {
         const HttpConfig::Location &location = serverInfo._locations[i];
         if (location.path == "/")
-            continue; // Skip the default location for now
+            continue;
 
         if (uriPath.find(location.path) == 0)
         {
@@ -218,11 +200,9 @@ const HttpConfig::Location* Client::findMatchingLocation(const ServerData &serve
             }
         }
     }
-
-    // If still no match, decide whether to use default location or return NULL
     if (matchedLocation == NULL)
     {
-        // Optionally, you can choose to not use the default location to force a 404
+        // Can return default location 404 or NULL
         logger.log("No matching location found for URI: " + uri);
         return NULL;
     }
@@ -230,49 +210,6 @@ const HttpConfig::Location* Client::findMatchingLocation(const ServerData &serve
     logger.log("Matched Location Path: " + matchedLocation->path);
     return matchedLocation;
 }
-
-
-// void Client::handleRequest(const HttpRequest &request, const HttpConfig::Location &location, const ServerData &serverInfo, HttpResponse &response)
-// {
-//     Logger &logger = Logger::getInstance("server.log");
-//     std::string method = request.getMethod();
-
-//     std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
-
-//     if (location.iscgi)
-//     {
-//         CgiRequestHandler cgiHandler(location, serverInfo);
-//         cgiHandler.handle(request, response);
-//     }
-//     else if (method == "GET")
-//     {
-//         GetRequestHandler getHandler(location, serverInfo);
-//         getHandler.handle(request, response);
-//     }
-//     else if (method == "POST")
-//     {
-//         PostRequestHandler postHandler(location, serverInfo);
-//         postHandler.handle(request, response);
-//     }
-//     else if (method == "DELETE")
-//     {
-//         DeleteRequestHandler deleteHandler(location, serverInfo);
-//         deleteHandler.handle(request, response);
-//     }
-//     else if (method == "OPTIONS")
-//     {
-//         OptionsRequestHandler optionsHandler(location, serverInfo);
-//         optionsHandler.handle(request, response);
-//     }
-//     else
-//     {
-//         logger.log("UNKNOWN method detected.");
-//         UnknownRequestHandler unknownHandler(location, serverInfo);
-//         unknownHandler.handle(request, response);
-//     }
-// }
-
-
 
 void Client::sendResponse()
 {
@@ -289,14 +226,14 @@ void Client::sendResponse()
         {
             if (errno == EINTR)
             {
-                continue; // Réessayer si l'envoi a été interrompu par un signal
+                continue;
             }
             else
             {
                 throw std::runtime_error("Error sending response: " + std::string(strerror(errno)));
             }
         }
-        sent += n; // Ajouter le nombre d'octets envoyés avec succès
+        sent += n;
     }
 }
 
@@ -346,7 +283,6 @@ bool Client::isKeepAlive() const
     std::string connectionHeader = _request.getHeader("Connection");
     if (connectionHeader.empty())
     {
-        // HTTP/1.1 default is keep-alive
         return _request.getHTTPVersion() == "HTTP/1.1";
     }
     else
