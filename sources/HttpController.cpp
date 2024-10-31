@@ -434,18 +434,61 @@ void RequestController::setCorsHeaders(HttpResponse &res)
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");               // En-têtes autorisés
 }
 
+bool RequestController::theFileExists(const std::string& path) {
+    struct stat info;
+    //std::cout << path << std::endl;
+    if (stat(path.c_str(), &info) != 0) {
+        return false;
+    }
+    return (info.st_mode & S_IFREG) != 0;
+}
+
+std::string RequestController::readFile(const std::string &filePath)
+{
+    std::ifstream file(filePath);
+    if (!file.is_open())
+    {
+        std::cerr << "Error: Could not open file " << filePath << std::endl;
+        return "";
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    file.close();
+
+    return buffer.str();
+}
+
 void RequestController::handleInternalRequest(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
     logger.log("Handling internal request for URI: " + uri);
 
-    if (uri == "/file-list")
+    if (uri == "/directory/youpi.bad_extension") 
+    {
+        uri = "/youpi.bad_extension";
+        // std::string filePath = _serverRoot + "/youpi.bad_extension";
+        // logger.log("Attempting to access file at path: " + filePath);
+
+        // if (theFileExists(filePath))
+        // {
+        //     res.setStatusCode(200);
+        //     res.setBody(readFile(filePath)); 
+        //     res.setHeader("Content-Type", "application/octet-stream");
+        // }
+        // else
+        // {
+        //     res.generate404NotFound("File not found: " + filePath, server._root);
+        //     logger.log("File not found: " + filePath);
+        // }
+    }
+    else if (uri == "/file-list")
     {
         std::string filesDir = _serverRoot + "/index/files";
         std::vector<std::string> files = listFilesInDirectory(filesDir);
 
-        // Generate JSON response
         std::string jsonResponse = "{\"files\":[";
         for (size_t i = 0; i < files.size(); ++i)
         {
@@ -461,6 +504,30 @@ void RequestController::handleInternalRequest(const HttpRequest &req, HttpRespon
         res.setBody(jsonResponse);
         res.ensureContentLength();
     }
+   else if (uri == "/directory/")
+    {
+    std::string directoryPath = _serverRoot + "/directory"; 
+
+    std::vector<std::string> files = listFilesInDirectory(directoryPath);
+
+    std::string jsonResponse = "{\"files\":[";
+    for (size_t i = 0; i < files.size(); ++i)
+    {
+        jsonResponse += "\"" + files[i] + "\"";
+        if (i < files.size() - 1)
+            jsonResponse += ",";
+    }
+    jsonResponse += "]}";
+
+    res.setStatusCode(200);
+    res.setReasonMessage("OK");
+    res.setHeader("Content-Type", "application/json");
+    res.setBody(jsonResponse);
+    res.ensureContentLength();
+
+    logger.log("Directory requested: " + directoryPath);
+    }
+
     else
     {
         res.generate404NotFound("Invalid internal URI: " + uri, server._root);

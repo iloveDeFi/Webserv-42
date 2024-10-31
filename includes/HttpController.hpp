@@ -74,6 +74,8 @@ public:
     void handleCgiResponseOutput(const std::string &output, HttpResponse &res);
     void handleError(const std::string &errorMessage, HttpResponse &res, Logger &logger);
     ServerData &getServerInfo();
+    static bool theFileExists(const std::string &path);
+    std::string readFile(const std::string &filePath);
 };
 
 class GetRequestHandler : public RequestController

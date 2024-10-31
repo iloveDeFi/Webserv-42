@@ -46,6 +46,6 @@
           methods: GET, UNKNOWN
           handler: internal
           allow_uploads: false
-          root: /Users/helenegandar/Documents/42_Lausanne/Webserv/YoupiBanane
+          root: /Users/bbessard/Desktop/we/YoupiBanane
   # Root directory for files
           search_for: youpi.bad_extension  # Look for this file if no specific file is requested

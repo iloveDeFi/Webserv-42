@@ -48,7 +48,7 @@ public:
     bool handleRedirect(const ServerData &serverInfo, const std::string &method, HttpResponse &response);
     const HttpConfig::Location* findMatchingLocation(const ServerData &serverInfo, const std::string &uri);
     void handleRequest(const HttpRequest &request, const HttpConfig::Location &location, const ServerData &serverInfo, HttpResponse &response);
-
+    std::string join(const std::vector<std::string>& strings, const std::string& delimiter);
 };
 
 #endif

@@ -22,6 +22,19 @@ bool Client::checkFileExists(const std::string &filePath)
     return (stat(filePath.c_str(), &buffer) == 0); // Renvoie true si le fichier existe
 }
 
+std::string Client::join(const std::vector<std::string>& strings, const std::string& delimiter) {
+    std::ostringstream result; // Use ostringstream for constructing the string
+
+    for (size_t i = 0; i < strings.size(); ++i) {
+        result << strings[i]; // Add the current string
+        if (i < strings.size() - 1) {
+            result << delimiter; // Add the delimiter if not the last element
+        }
+    }
+
+    return result.str(); // Return the constructed string
+}
+
 void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
 {
     HttpResponse response;
@@ -32,9 +45,25 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
 
     uri = _request.getURI();
     method = _request.getMethod();
-    logger.log("SIZE max" + to_string(maxSize) + " current size " + to_string(_request.getBody().size()));
 
+    logger.log("SIZE max" + to_string(maxSize) + " current size " + to_string(_request.getBody().size()));
     logger.log("PATH: " + uri);
+
+    
+
+    // TO DO TEST : Redirection conditionnelle pour gérer "/directory" et "/directory/"
+    if (uri == "/directory" && method == "GET") {
+        HttpResponse redirectResponse;
+        redirectResponse.setStatusCode(301); // Code de redirection 301
+        redirectResponse.setHeader("Location", "/directory/"); // URL redirigée
+        redirectResponse.setBody("Redirecting to /directory/"); // Corps de la réponse (optionnel)
+        redirectResponse.setHeader("Content-Length", std::to_string(redirectResponse.getBody().size()));
+
+        logger.log("Redirection from " + uri + " to /directory/ with status 301");
+        _response = redirectResponse;
+        return;
+    }
+
 
     try
     {
@@ -89,18 +118,38 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
         logger.log("Max size: " + to_string(maxSize) + " | Current size: " + to_string(_request.getBody().size()));
 
         // Find the best matching location
-        const HttpConfig::Location *matchedLocation = findMatchingLocation(serverInfo, uri);
+        // const HttpConfig::Location *matchedLocation = findMatchingLocation(serverInfo, uri);
+
+        // TO DO TEST instead of : const HttpConfig::Location *matchedLocation = findMatchingLocation(serverInfo, uri);
+        const HttpConfig::Location *matchedLocation = NULL; // Utiliser NULL au lieu de nullptr en C++98
+        for (size_t i = 0; i < serverInfo._locations.size(); ++i) {
+            const HttpConfig::Location &location = serverInfo._locations[i]; // Accéder à l'élément par son index
+            if (uri == location.path) {
+                matchedLocation = &location; // Faire correspondre l'emplacement
+                break; 
+            }
+        }
 
         if (matchedLocation == NULL)
         {
             response.generate404NotFound("The requested URL " + uri, serverInfo._root);
             logger.logError("404 Not Found for URI: " + uri);
+            _response = response;
+            return;
         }
-        else
-{
-            // Gestion de la requête en fonction de la méthode
+            // Gestion de la requête en fonction de la méthode HTTP
             const HttpConfig::Location &location = *matchedLocation;
             std::cout << "Matched Location Path: " << location.path << ", Handler: " << location.handler << std::endl;
+
+            // TO DO : add 405 method handler first for security and no bug?
+             // Vérifier si la méthode est autorisée
+        if (std::find(matchedLocation->methods.begin(), matchedLocation->methods.end(), method) == matchedLocation->methods.end()) {
+            response.generate405MethodNotAllowed("Method " + method + " not allowed for " + uri);
+            logger.logError("405 Method Not Allowed for URI: " + uri);
+            logger.log(">>>>>Allowed methods for " + uri + ": " + join(matchedLocation->methods, ", "));
+            _response = response;
+            return;
+        }
 
             if (location.iscgi)
             {
@@ -133,7 +182,7 @@ void Client::processRequest(const ServerData &serverInfo, size_t maxSize)
                 UnknownRequestHandler unknownHandler(location, serverInfo);
                 unknownHandler.handle(_request, response, serverInfo);
             }
-        }
+
         // Log the response status code
         int statusCode = response.getStatusCode();
         logger.logRequest(method, uri, statusCode);
