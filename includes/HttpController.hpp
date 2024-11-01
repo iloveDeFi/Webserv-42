@@ -21,6 +21,9 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+//#include <nlohmann/json.hpp>
+
+
 
 struct FormData;
 
@@ -74,6 +77,9 @@ public:
     void handleCgiResponseOutput(const std::string &output, HttpResponse &res);
     void handleError(const std::string &errorMessage, HttpResponse &res, Logger &logger);
     ServerData &getServerInfo();
+    bool isPostAllowed(const HttpRequest &req, HttpResponse &res, const ServerData &server);
+    void handleMultipartFormData(const HttpRequest &req, HttpResponse &res, const ServerData &server);
+    void handleTextData(const HttpRequest &req, HttpResponse &res);
 };
 
 class GetRequestHandler : public RequestController

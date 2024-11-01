@@ -266,79 +266,85 @@ void RequestController::handleGetResponse(const HttpRequest &req, HttpResponse &
     serveResource(resourcePath, res, server);
 }
 
-void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res, const ServerData &server)
-{
+void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse &res, const ServerData &server) {
     Logger &logger = Logger::getInstance("server.log");
     std::string uri = req.getURI();
     std::string version = req.getHTTPVersion();
-    std::string body = req.getBody();
     logger.log("Received POST request for URI: " + uri);
-    logger.log("Body: " + body);
 
-    // Check if POST method is allowed for this location
-    if (!isMethodAllowed("POST"))
-    {
+
+    if (!isPostAllowed(req, res, server)) {
+        return;
+    }
+
+    // Sélectionner la fonction de traitement en fonction du type de contenu
+    std::string contentType = req.getHeader("Content-Type");
+    if (contentType.find("multipart/form-data") != std::string::npos) {
+        handleMultipartFormData(req, res, server);
+    } else if (contentType == "text/plain") {
+        handleTextData(req, res);
+    } else {
+        res.generate415UnsupportedMediaType("Unsupported Media Type for post: " + contentType);
+        logger.logError("415 Unsupported Media Type for URI: " + uri);
+    }
+
+    //Finalisation de la réponse
+    res.setHTTPVersion(version);
+    res.ensureContentLength();
+    setCorsHeaders(res);
+}
+
+bool RequestController::isPostAllowed(const HttpRequest &req, HttpResponse &res, const ServerData &server) {
+    if (!isMethodAllowed("POST")) {
         res.generate405MethodNotAllowed("POST method not allowed for this location.");
-        return;
+        return false;
     }
-
-    if (req.getMethod() == "POST" && body.empty()) {
+    
+    if (req.getBody().empty()) {
         res.generate400BadRequest("Bad Request: Empty body or malformed request.");
-        return;
+        return false;
     }
 
-
-    // Check if uploads are allowed in this location
-    if (!_locationConfig.allowUploads)
-    {
+    if (!_locationConfig.allowUploads) {
         res.generate403Forbidden("Forbidden: Uploads are not allowed at this location.", server._root);
-        return;
+        return false;
     }
 
-    // Check if the uploads directory exists and is writable
     std::string uploadsDir = _serverRoot + "/uploads/";
     struct stat dirStat;
-    if (stat(uploadsDir.c_str(), &dirStat) != 0 || !S_ISDIR(dirStat.st_mode) || access(uploadsDir.c_str(), W_OK) != 0)
-    {
+    if (stat(uploadsDir.c_str(), &dirStat) != 0 || !S_ISDIR(dirStat.st_mode) || access(uploadsDir.c_str(), W_OK) != 0) {
         res.generate500InternalServerError("Uploads directory does not exist or is not writable.", server._root);
-        return;
+        return false;
     }
 
-    try
-    {
+    return true;
+}
 
-        if (body.size() > static_cast<std::size_t>(server._maxSize))
-        {
-            res.generate413PayloadTooLarge(server._maxSize);
-            return;
-        }
+// Gestion des requêtes multipart/form-data
+void RequestController::handleMultipartFormData(const HttpRequest &req, HttpResponse &res, const ServerData &server) {
+    Logger &logger = Logger::getInstance("server.log");
 
+    try {
         std::string boundary = req.getBoundary();
-        if (boundary.empty())
-        {
+        if (boundary.empty()) {
             throw std::runtime_error("No boundary found in Content-Type header");
         }
 
         HttpRequest::FormData formData = req.parseMultipartFormData();
-
-        // Assuming the file field is named "file"
-        if (formData.fields.find("file") == formData.fields.end())
-        {
+        if (formData.fields.find("file") == formData.fields.end()) {
             throw std::runtime_error("No file found in form data");
         }
 
         std::string fileContent = formData.fields["file"];
         std::string fileName = formData.fileName;
+        std::string filePath = _serverRoot + "/uploads/" + fileName;
 
-        // Security check to prevent directory traversal attacks
-        if (fileName.find("..") != std::string::npos)
-        {
+        if (fileName.find("..") != std::string::npos) {
             res.generate403Forbidden("Forbidden: Invalid filename", server._root);
             return;
         }
 
         // Check if the file already exists
-        std::string filePath = uploadsDir + fileName;
         std::ifstream existingFile(filePath.c_str());
         if (existingFile.good())
         {
@@ -349,10 +355,8 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
         }
         existingFile.close(); // Close the file if it was opened
 
-        // Save the file to the uploads directory
         std::ofstream outFile(filePath.c_str(), std::ios::binary);
-        if (!outFile.is_open())
-        {
+        if (!outFile.is_open()) {
             throw std::runtime_error("Failed to open file for writing: " + filePath);
         }
         outFile.write(fileContent.c_str(), fileContent.size());
@@ -360,17 +364,29 @@ void RequestController::handlePostResponse(const HttpRequest &req, HttpResponse 
 
         res.generate201Created("/files/" + fileName);
         logger.log("File uploaded successfully: " + filePath);
-    }
-    catch (const std::exception &e)
-    {
+    } catch (const std::exception &e) {
         res.generate500InternalServerError("Internal Server Error: " + std::string(e.what()), server._root);
         logger.log("Error processing POST request: " + std::string(e.what()));
     }
-
-    res.setHTTPVersion(version);
-    res.ensureContentLength();
-    setCorsHeaders(res);
 }
+
+
+// Gestion des requêtes text/plain
+void RequestController::handleTextData(const HttpRequest &req, HttpResponse &res) {
+    Logger &logger = Logger::getInstance("server.log");
+    std::string body = req.getBody();
+
+    if (body.empty()) {
+        res.generate400BadRequest("Bad Request: Empty text body.");
+        logger.logError("400 Bad Request: Empty text body.");
+        return;
+    }
+
+    res.generate200OK("text/html", "Text data processed successfully.");
+    logger.log("Text data processed for URI: " + req.getURI());
+}
+
+
 
 void RequestController::handleDeleteResponse(const HttpRequest &req, HttpResponse &res, const ServerData &server)
 {
