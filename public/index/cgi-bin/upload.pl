@@ -12,10 +12,23 @@ print $cgi->header(-type => "text/html; charset=UTF-8");
 
 # Get uploaded file
 my $upload_file = $cgi->param("fileToUpload");
+
+# Définir la taille maximale du fichier en octets (10 Mo = 10 * 1024 * 1024)
+my $max_file_size = 10 * 1024 * 1024;  # 10 Mo
+
 if ($upload_file) {
+    # Vérifiez la taille du fichier
+    my $file_size = $cgi->uploadInfo($upload_file)->{'Content-Length'}; # Récupère la taille du fichier
+
+    if ($file_size > $max_file_size) {
+        # Renvoie une erreur 413 si la taille du fichier dépasse 10 Mo
+        print_error_page("Erreur 413 : Le fichier dépasse la taille maximale autorisée de 10 Mo.");
+        return;
+    }
+
     my $filename = basename($upload_file);
     my $upload_path = "$upload_dir/$filename";
-    
+
     # Save uploaded file to the server
     if (open my $out, '>', $upload_path) {
         binmode $out;
@@ -113,6 +126,7 @@ if ($upload_file) {
 
 sub print_error_page {
     my ($error_message) = @_;
+    print $cgi->header(-status => '413 Payload Too Large', -type => "text/html; charset=UTF-8");
     print qq{
         <!DOCTYPE html>
         <html lang="fr">
