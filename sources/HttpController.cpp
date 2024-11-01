@@ -325,45 +325,51 @@ void RequestController::handleMultipartFormData(const HttpRequest &req, HttpResp
     Logger &logger = Logger::getInstance("server.log");
 
     try {
-        std::string boundary = req.getBoundary();
-        if (boundary.empty()) {
-            throw std::runtime_error("No boundary found in Content-Type header");
-        }
+    std::string boundary = req.getBoundary();
+    if (boundary.empty()) {
+        throw std::runtime_error("No boundary found in Content-Type header");
+    }
 
-        HttpRequest::FormData formData = req.parseMultipartFormData();
-        if (formData.fields.find("file") == formData.fields.end()) {
-            throw std::runtime_error("No file found in form data");
-        }
+    HttpRequest::FormData formData = req.parseMultipartFormData();
+    if (formData.fields.find("file") == formData.fields.end()) {
+        throw std::runtime_error("No file found in form data");
+    }
 
-        std::string fileContent = formData.fields["file"];
-        std::string fileName = formData.fileName;
-        std::string filePath = _serverRoot + "/uploads/" + fileName;
+    std::string fileContent = formData.fields["file"];
+    std::string fileName = formData.fileName;
+    /* if (fileName.empty()) {
+    throw std::runtime_error("Filename is missing in the form data");
+    } */
+    std::string filePath = _serverRoot + "/uploads/";
+    logger.log("File name " + fileName);
 
-        if (fileName.find("..") != std::string::npos) {
-            res.generate403Forbidden("Forbidden: Invalid filename", server._root);
-            return;
-        }
+    if (fileName.find("..") != std::string::npos) {
+        res.generate403Forbidden("Forbidden: Invalid filename", server._root);
+        return;
+    }
 
-        // Check if the file already exists
-        std::ifstream existingFile(filePath.c_str());
-        if (existingFile.good())
-        {
-            existingFile.close(); // Close the file if it exists
-            res.generate409Conflict("Conflict: The file already exists.");
-            logger.log("409 Conflict: File already exists: " + filePath);
-            return; // Early return to avoid writing the file
-        }
-        existingFile.close(); // Close the file if it was opened
+    filePath += fileName;
 
-        std::ofstream outFile(filePath.c_str(), std::ios::binary);
-        if (!outFile.is_open()) {
-            throw std::runtime_error("Failed to open file for writing: " + filePath);
-        }
-        outFile.write(fileContent.c_str(), fileContent.size());
-        outFile.close();
+    // Vérifiez si le fichier existe
+    std::ifstream existingFile(filePath.c_str());
+    if (existingFile.good() && !fileName.empty()) {
+        existingFile.close();
+        res.generate409Conflict("Conflict: The file already exists.");
+        logger.log("409 Conflict: File already exists: " + filePath);
+        return;
+    }
+    existingFile.close();
 
-        res.generate201Created("/files/" + fileName);
-        logger.log("File uploaded successfully: " + filePath);
+    // Écrire le fichier
+    std::ofstream outFile(filePath.c_str(), std::ios::binary);
+    if (!outFile.is_open()) {
+        throw std::runtime_error("Failed to open file for writing: " + filePath);
+    }
+    outFile.write(fileContent.c_str(), fileContent.size());
+    outFile.close();
+
+    res.generate201Created("/files/" + fileName);
+    logger.log("File uploaded successfully: " + filePath);
     } catch (const std::exception &e) {
         res.generate500InternalServerError("Internal Server Error: " + std::string(e.what()), server._root);
         logger.log("Error processing POST request: " + std::string(e.what()));
