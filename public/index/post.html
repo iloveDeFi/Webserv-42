@@ -13,7 +13,6 @@
             background-color: #595959;
             color: #333;
         }
-
         header {
             background: #35424a;
             color: #ffffff;
@@ -21,12 +20,10 @@
             text-align: center;
             position: relative;
         }
-
         header h1 {
             margin: 0;
             font-size: 2.5em;
         }
-
         .back-button {
             position: absolute;
             top: 20px;
@@ -39,11 +36,9 @@
             font-size: 1em;
             transition: background 0.3s;
         }
-
         .back-button:hover {
             background: #4cae4c;
         }
-
         .container {
             display: flex;
             flex-direction: column;
@@ -51,7 +46,6 @@
             justify-content: center;
             padding: 20px;
         }
-
         .content {
             background: #ffffff;
             border-radius: 8px;
@@ -60,14 +54,12 @@
             max-width: 600px;
             text-align: center;
         }
-
         .content input[type="file"] {
             width: 100%;
             padding: 10px;
             margin-bottom: 20px;
             font-size: 1.1em;
         }
-
         .content button {
             padding: 10px 20px;
             background: #5cb85c;
@@ -78,11 +70,9 @@
             cursor: pointer;
             transition: background 0.3s;
         }
-
         .content button:hover {
             background: #4cae4c;
         }
-
         footer {
             margin-top: 20px;
             padding: 10px 0;
@@ -102,7 +92,7 @@
 <div class="container">
     <div class="content">
         <h2>Sélectionnez un fichier à uploader</h2>
-        <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/add">
+        <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/upload">
             <input type="file" id="fileInput" name="file" required>
             <button type="submit">Post</button>
         </form>        
@@ -119,8 +109,17 @@
         event.preventDefault();
         
         const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        const maxSize = 10 * 1024 * 1024; // 10 Mo en octets
+
+        // Vérifier la taille du fichier avant de le téléverser
+        if (file.size > maxSize) {
+            alert('Le fichier est trop volumineux (max 10 Mo).');
+            return;
+        }
+
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        formData.append('file', file);
 
         // Envoyer la requête POST au serveur pour téléverser le fichier
         fetch('/upload', {
@@ -130,11 +129,11 @@
         .then(response => {
             if (response.ok) {
                 alert('Fichier téléversé avec succès');
-                fileInput.value = ''; // Reset file input after successful upload
+                fileInput.value = ''; // Réinitialiser l'input après un upload réussi
+            } else if (response.status === 413) {
+                alert('Échec du téléversement : le fichier est trop volumineux.');
             } else if (response.status === 409) {
                 alert('Échec du téléversement : le fichier existe déjà.');
-            } else if (response.status === 413) {
-                alert('Échec du téléversement : le fichier est trop lourd');
             } else {
                 alert('Échec du téléversement du fichier');
             }
