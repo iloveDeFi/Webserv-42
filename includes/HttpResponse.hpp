@@ -35,6 +35,7 @@ public:
     void generate405MethodNotAllowed(const std::string &allowedMethods);
     void generate409Conflict(const std::string &conflictInfo);
     void generate413PayloadTooLarge(size_t size);
+    void generate415UnsupportedMediaType(const std::string &contentType);
     void generate500InternalServerError(const std::string &errorMessage, const std::string &root);
     void generate501NotImplemented(const std::string &errorMessage);
 

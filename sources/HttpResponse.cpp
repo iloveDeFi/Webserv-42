@@ -179,6 +179,19 @@ void HttpResponse::generate413PayloadTooLarge(size_t size)
     setHeader("Content-Length", to_string(body.size()));
 }
 
+void HttpResponse::generate415UnsupportedMediaType(const std::string &contentType)
+{
+    setStatusCode(415);
+    setReasonMessage("Unsupported Media Type");
+    setHeader("Content-Type", "text/plain");
+
+    std::string body = "415 Unsupported Media Type: The media type '" + contentType;
+    setBody(body);
+
+    setHeader("Content-Length", std::to_string(body.size()));
+}
+
+
 void HttpResponse::generate500InternalServerError(const std::string &errorMessage, const std::string &root)
 {
     (void)root;
